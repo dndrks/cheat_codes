@@ -1,7 +1,16 @@
+-- cheat codes
+--          a sample playground
+--
+-- ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+-- need help?
+-- please see [?] menu
+-- for in-app instruction manual
+-- -------------------------------
+
 butts = 0
 
-local BeatClock = include 'lib/beatclock-crow'
 local pattern_time = require 'pattern_time'
+fileselect = require 'fileselect'
 help_menus = include 'lib/help_menus'
 main_menu = include 'lib/main_menu'
 encoder_actions = include 'lib/encoder_actions'
@@ -108,15 +117,15 @@ key1_hold = false
 
 clipboard = {}
 
-local clk = BeatClock.new()
-local clk_midi = midi.connect()
-clk_midi.event = clk.process_midi
+local beatclock = include "lib/beatclock-crow"
+clk = beatclock.new()
+clk_midi = midi.connect()
+clk_midi.event = function(data) clk:process_midi(data) end
 
---GRID
-t = 0
-dt = 1
+-- DO I NEED THESE?
+--t = 0
+--dt = 1
 grid.alt = 0
---/GRID
 
 local function crow_init()
   for i = 1,4 do
@@ -156,16 +165,38 @@ function init()
 
   screen.line_width(1)
 
-  clk.on_step = step
-  clk.on_select_internal = function() clk:start() crow.input[2].mode("none") end
-  clk.on_select_external = function() reset_pattern() crow.input[2].mode("none") end
+  clk.on_step = function() update_tempo() end
+  clk.on_select_internal = function()
+    clk:start()
+    crow.input[2].mode("none")
+    for i = 1,3 do
+      quantizer[i]:start()
+      grid_pat_quantizer[i]:start()
+    end
+  end
+  clk.on_select_external = function()
+    crow.input[2].mode("none")
+    for i = 1,3 do
+      quantizer[i]:stop()
+      grid_pat_quantizer[i]:stop()
+    end
+  end
   clk.on_select_crow = function()
-    crow.input[2].mode("change",2,0.1,"both")
+    for i = 1,3 do
+      quantizer[i]:stop()
+      grid_pat_quantizer[i]:stop()
+    end
+    crow.input[2].mode("change",2,0.1,"rising")
     crow.input[2].change = change
   end
-
   clk:add_clock_params()
-  params:set_action("bpm", function() update_tempo() end)
+  params:add{type = "number", id = "midi_device", name = "midi device", min = 1, max = 4, default = 1, action = function(value)
+    clk_midi.event = nil
+    clk_midi = midi.connect(value)
+    clk_midi.event = function(data) clk:process_midi(data) end
+  end}
+  
+  --params:set_action("bpm", function() update_tempo() end)
   params:add_option("quantize_pads", "quantize 4x4 pads?", { "no", "yes" })
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "quantize pattern button?", { "no", "yes" })
@@ -301,17 +332,64 @@ phase = function(n, x)
   end
 end
 
-function update_tempo()
-  bpm = params:get("bpm")
-  local t = params:get("bpm")
-  local d = params:get("quant_div")
-  local interval = (60/t) / d
-  for i = 1,3 do
-    quantizer[i].time = interval
-    grid_pat_quantizer[i].time = interval
+local tap = 0
+local deltatap = 1
+
+function change()
+  local tap1 = util.time()
+  deltatap = tap1 - tap
+  tap = tap1
+  local tap_tempo = 60/deltatap
+  for i = 1,2 do
+    local delay_rate_to_time = (tap_tempo) * delay[i].rate
+    local delay_time = delay_rate_to_time + (41 + (30*(i-1)))
+    delay[i].end_point = delay_time
+    softcut.loop_end(i+4,delay[i].end_point)
   end
-  --midiclocktimer.time = 60/24/t
+  for i = 1,3 do
+    cheat_q_clock(i)
+    grid_pat_q_clock(i)
+  end
 end
+
+function update_tempo()
+  if params:get("clock") == 1 then
+    --INTERNAL
+    bpm = params:get("bpm")
+    local t = params:get("bpm")
+    local d = params:get("quant_div")
+    local interval = (60/t) / d
+    for i = 1,3 do
+      quantizer[i].time = interval
+      grid_pat_quantizer[i].time = interval
+    end
+  end
+end
+
+--[[function update_tempo()
+  if params:get("clock") == 1 then
+    --INTERNAL
+    bpm = params:get("bpm")
+    local t = params:get("bpm")
+    local d = params:get("quant_div")
+    local interval = (60/t) / d
+    for i = 1,3 do
+      quantizer[i].time = interval
+      grid_pat_quantizer[i].time = interval
+    end
+  elseif params:get("clock") == 3 then
+    --CROW
+    local tap1 = util.time()
+    deltatap = tap1 - tap
+    tap = tap1
+    bpm = 60/deltatap
+    print(bpm.." / "..deltatap)
+    for i = 1,3 do
+      quantizer[i].time = deltatap
+      grid_pat_quantizer[i].time = deltatap
+    end
+  end
+end]]--
 
 function slice()
   --local t = params:get("bpm")
@@ -327,9 +405,6 @@ end
 
 function rec_count()
   rec_time = rec_time + 0.01
-end
-
-function step()
 end
 
 function reset_all_banks()
@@ -448,6 +523,12 @@ function load_sample(file,sample)
     print(len/48000)
     softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), (9+(8 * (sample-1)))-0.1, 1, 2)
   end
+end
+
+function save_sample(i)
+  local name = "cc_"..os.date("%y%m%d_%X-buff")..i..".wav"
+  local save_pos = i - 1
+  softcut.buffer_write_mono(_path.dust.."/audio/"..name,1+(8*save_pos),8,1)
 end
 
 function key(n,z)
@@ -669,8 +750,8 @@ function zilchmo(k,i)
   redraw()
 end
 
-function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k)
-  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k}) do
+function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l)
+  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l}) do
     clipboard[k] = v
   end
 end
@@ -688,6 +769,7 @@ function clipboard_paste(i)
   bank[i][d].filter_type = clipboard[9]
   bank[i][d].fc = clipboard[10]
   bank[i][d].q = clipboard[11]
+  bank[i][d].fifth = clipboard[12]
   redraw()
   if bank[i][d].loop == true then
     cheat(i,d)
@@ -797,7 +879,23 @@ function savestate()
       io.write(arc_control[i] .. "\n")
       io.write(arc_param[i] .. "\n")
     end
-      io.write(tostring(params:get("clip "..i.." sample") .. "\n"))
+    io.write(params:get("rate slew time ".. i) .. "\n")
+    io.write(tostring(params:get("clip "..i.." sample") .. "\n"))
+    local sides = {"delay L: ", "delay R: "}
+    for k = 1,2 do
+      io.write(params:get(sides[k].."rate") .. "\n")
+      io.write(params:get(sides[k].."global level") .. "\n")
+      io.write(params:get(sides[k].."feedback") .. "\n")
+      io.write(params:get(sides[k].."(a) send") .. "\n")
+      io.write(params:get(sides[k].."(b) send") .. "\n")
+      io.write(params:get(sides[k].."(c) send") .. "\n")
+      io.write(params:get(sides[k].."filter cut") .. "\n")
+      io.write(params:get(sides[k].."filter q") .. "\n")
+      io.write(params:get(sides[k].."filter lp") .. "\n")
+      io.write(params:get(sides[k].."filter hp") .. "\n")
+      io.write(params:get(sides[k].."filter bp") .. "\n")
+      io.write(params:get(sides[k].."filter dry") .. "\n")
+    end
   end
   io.write(params:get("offset").."\n")
   io.close(file)
@@ -850,9 +948,25 @@ function loadstate()
           arc_control[i] = tonumber(io.read())
           arc_param[i] = tonumber(io.read())
         end
+      params:set("rate slew time ".. i,tonumber(io.read()))
       local string_to_sample = io.read()
       params:set("clip "..i.." sample", string_to_sample)
+      local sides = {"delay L: ", "delay R: "}
+      for k = 1,2 do
+        params:set(sides[k].."rate",tonumber(io.read()))
+        params:set(sides[k].."global level",tonumber(io.read()))
+        params:set(sides[k].."feedback",tonumber(io.read()))
+        params:set(sides[k].."(a) send",tonumber(io.read()))
+        params:set(sides[k].."(b) send",tonumber(io.read()))
+        params:set(sides[k].."(c) send",tonumber(io.read()))
+        params:set(sides[k].."filter cut",tonumber(io.read()))
+        params:set(sides[k].."filter q",tonumber(io.read()))
+        params:set(sides[k].."filter lp",tonumber(io.read()))
+        params:set(sides[k].."filter hp",tonumber(io.read()))
+        params:set(sides[k].."filter bp",tonumber(io.read()))
+        params:set(sides[k].."filter dry",tonumber(io.read()))
       end
+    end
     params:set("offset",tonumber(io.read()))
     else
       print("invalid data file")
@@ -861,6 +975,9 @@ function loadstate()
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
         cheat(i,bank[i].id)
+      else
+        softcut.loop(i+1, 0)
+        softcut.position(i+1,bank[i][bank[i].id].start_point+(8*(bank[i][bank[i].id].clip-1)))
       end
     end
   end

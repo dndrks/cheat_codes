@@ -337,13 +337,27 @@ function zilchmos.init(k,i)
       end
     end
     if fingers[k][i].con == "1234" then
-      if math.abs(bank[i][bank[i].id].rate) < 4 then
-        if bank[i][bank[i].id].fifth == false then
-          bank[i][bank[i].id].rate = bank[i][bank[i].id].rate*1.5
-          bank[i][bank[i].id].fifth = true
-        else
-          bank[i][bank[i].id].rate = math.ceil(math.abs(bank[i][bank[i].id].rate))
-          bank[i][bank[i].id].fifth = false
+      if grid.alt == 0 then
+        if math.abs(bank[i][bank[i].id].rate) < 4 then
+          if bank[i][bank[i].id].fifth == false then
+            bank[i][bank[i].id].rate = bank[i][bank[i].id].rate*1.5
+            bank[i][bank[i].id].fifth = true
+          else
+            bank[i][bank[i].id].rate = math.ceil(math.abs(bank[i][bank[i].id].rate))
+            bank[i][bank[i].id].fifth = false
+          end
+        end
+      else
+        for j = 1,16 do
+          if math.abs(bank[i][j].rate) < 4 then
+            if bank[i][j].fifth == false then
+              bank[i][j].rate = bank[i][j].rate*1.5
+              bank[i][j].fifth = true
+            else
+              bank[i][j].rate = math.ceil(math.abs(bank[i][j].rate))
+              bank[i][j].fifth = false
+            end
+          end
         end
       end
       if bank[i][bank[i].id].pause == false then

@@ -89,6 +89,10 @@ function start_up.init()
     params:set_action("clip "..i.." sample", function(file) load_sample(file,i) end)
   end
   
+  for i = 1,3 do
+    params:add{type = "trigger", id = "save_buffer"..i, name = "save live buffer "..i, action = function() save_sample(i) end}
+  end
+  
   params:add_separator()
   
   params:add{type = "trigger", id = "midi_notify", name = "for midi mapping:"}
@@ -103,7 +107,9 @@ function start_up.init()
         softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
         softcut.level(i+1,bank[i][bank[i].id].level)
       end
-      end)
+    end)
+    params:add_control("rate slew time "..i, "rate slew time "..banks[i], controlspec.new(0,3,'lin',0,0))
+    params:set_action("rate slew time "..i, function(x) softcut.rate_slew_time(i+1,x) end)
   end
   
   for i = 1,3 do
