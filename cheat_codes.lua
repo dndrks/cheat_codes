@@ -453,9 +453,10 @@ function reset_all_banks()
 end
 
 function cheat(b,i)
+  env_counter[b]:stop()
   if bank[b][i].enveloped then
-    env_counter[b]:stop()
     env_counter[b].butt = bank[b][i].level
+    softcut.level(b+1,bank[b][i].level)
     env_counter[b].time = (bank[b][i].envelope_time/(bank[b][i].level/0.05))
     env_counter[b]:start()
   else

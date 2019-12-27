@@ -58,25 +58,51 @@ function main_menu.init()
     screen.level(3)
     screen.text("levels")
     screen.line_width(1)
+    local level_options = {"levels","envelope enable","decay"}
     for i = 1,3 do
       screen.level(3)
       screen.move(10,79-(i*20))
       local level_markers = {"0 -", "1 -", "2 -"}
       screen.text(level_markers[i])
-      screen.move(2+(i*30),64)
-      screen.level(bank[i][bank[i].id].pause and 3 or 15)
+      screen.move(10+(i*20),64)
+      screen.level(level_options[page.levels_sel+1] == "levels" and 15 or 3)
       local level_to_screen_options = {"a", "b", "c"}
       if key1_hold or grid.alt == 1 then
         screen.text("("..level_to_screen_options[i]..")")
       else
         screen.text(level_to_screen_options[i]..""..bank[i].id)
       end
-      screen.move(35+(30*(i-1)),57)
+      screen.move(35+(20*(i-1)),57)
       local level_to_screen = util.linlin(0,2,0,40,bank[i][bank[i].id].level)
-      screen.level(bank[i][bank[i].id].pause and 3 or 15)
-      screen.line(35+(30*(i-1)),57-level_to_screen)
+      --screen.level(bank[i][bank[i].id].pause and 3 or 15)
+      screen.line(35+(20*(i-1)),57-level_to_screen)
       screen.close()
       screen.stroke()
+      screen.level(level_options[page.levels_sel+1] == "envelope enable" and 15 or 3)
+      screen.move(90,10)
+      screen.text("env?")
+      screen.move(90+((i-1)*15),20)
+      if bank[i][bank[i].id].enveloped then
+        screen.text("+")
+      else
+        screen.text("x")
+      end
+      screen.level(level_options[page.levels_sel+1] == "decay" and 15 or 3)
+      screen.move(90,30)
+      screen.text("decay")
+      screen.move(90,30+((i)*10))
+      local envelope_to_screen_options = {"a", "b", "c"}
+      if key1_hold or grid.alt == 1 then
+        screen.text("("..envelope_to_screen_options[i]..")")
+      else
+        screen.text(envelope_to_screen_options[i]..""..bank[i].id)
+      end
+      screen.move(110,30+((i)*10))
+      if bank[i][bank[i].id].enveloped then
+        screen.text(string.format("%.1f", bank[i][bank[i].id].envelope_time))
+      else
+        screen.text("---")
+      end
     end
     screen.level(3)
     screen.move(0,64)

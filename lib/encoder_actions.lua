@@ -117,15 +117,31 @@ function encoder_actions.init(n,d)
     end
   end
   if menu == 3 then
-    if key1_hold or grid.alt == 1 then
-      for i = 1,16 do
-        bank[n][i].level = util.clamp(bank[n][i].level+d/10,0,2)
+    if page.levels_sel == 0 then
+      if key1_hold or grid.alt == 1 then
+        for i = 1,16 do
+          bank[n][i].level = util.clamp(bank[n][i].level+d/10,0,2)
+        end
+      else
+        bank[n][bank[n].id].level = util.clamp(bank[n][bank[n].id].level+d/10,0,2)
       end
-    else
-      bank[n][bank[n].id].level = util.clamp(bank[n][bank[n].id].level+d/10,0,2)
+      softcut.level_slew_time(n+1,1.0)
+      softcut.level(n+1,bank[n][bank[n].id].level)
+    elseif page.levels_sel == 1 then
+      if bank[n][bank[n].id].enveloped then
+        if d < 0 then
+          bank[n][bank[n].id].enveloped = false
+        end
+      else
+        if d > 0 then
+          bank[n][bank[n].id].enveloped = true
+        end
+      end
+    elseif page.levels_sel == 2 then
+      if bank[n][bank[n].id].enveloped then
+        bank[n][bank[n].id].envelope_time = util.clamp(bank[n][bank[n].id].envelope_time+d/10,0.1,60)
+      end
     end
-    softcut.level_slew_time(n+1,1.0)
-    softcut.level(n+1,bank[n][bank[n].id].level)
   end
   if menu == 4 then
     if key1_hold or grid.alt == 1 then
