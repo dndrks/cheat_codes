@@ -37,8 +37,10 @@ function zilchmos.init(k,i)
             end
           end
         end
-        softcut.level_slew_time(i+1,1.0)
-        softcut.level(i+1,bank[i][bank[i].id].level)
+        if not bank[i][bank[i].id].enveloped then
+          softcut.level_slew_time(i+1,1.0)
+          softcut.level(i+1,bank[i][bank[i].id].level)
+        end
       end
     end
     if fingers[k][i].con == "2" then
@@ -72,8 +74,10 @@ function zilchmos.init(k,i)
             end
           end
         end
-        softcut.level_slew_time(i+1,1.0)
-        softcut.level(i+1,bank[i][bank[i].id].level)
+        if not bank[i][bank[i].id].enveloped then
+          softcut.level_slew_time(i+1,1.0)
+          softcut.level(i+1,bank[i][bank[i].id].level)
+        end
       end
     end
     if fingers[k][i].con == "3" then
@@ -269,7 +273,8 @@ function zilchmos.init(k,i)
       end
       if bank[i][bank[i].id].pause == false then
         softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
-        softcut.level(i+1,bank[i][bank[i].id].level)
+        --softcut.level(i+1,bank[i][bank[i].id].level)
+        -- WILL THIS WORK??
       end
     end
     if fingers[k][i].con == "134" then
@@ -296,7 +301,8 @@ function zilchmos.init(k,i)
       end
       if bank[i][bank[i].id].pause == false then
         softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
-        softcut.level(i+1,bank[i][bank[i].id].level)
+        --softcut.level(i+1,bank[i][bank[i].id].level)
+        -- WILL THIS WORK??
       end
     end
     if fingers[k][i].con == "123" then

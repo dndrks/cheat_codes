@@ -318,8 +318,8 @@ function init()
     cheat(i,bank[i].id)
   end
   
-  gridredrawtimer = metro.init(function() grid_redraw() end, 0.02, -1)
-  gridredrawtimer:start()
+  hardware_redraw = metro.init(function() grid_redraw() arc_redraw() end, 0.02, -1)
+  hardware_redraw:start()
   
   softcut.poll_start_phase()
   
@@ -453,8 +453,15 @@ function reset_all_banks()
 end
 
 function cheat(b,i)
-  softcut.level_slew_time(b+1,0.1)
-  softcut.level(b+1,bank[b][i].level)
+  if bank[b][i].enveloped then
+    env_counter[b]:stop()
+    env_counter[b].butt = bank[b][i].level
+    env_counter[b].time = (bank[b][i].envelope_time/(bank[b][i].level/0.05))
+    env_counter[b]:start()
+  else
+    softcut.level_slew_time(b+1,0.1)
+    softcut.level(b+1,bank[b][i].level)
+  end
   softcut.loop_start(b+1,bank[b][i].start_point)
   softcut.loop_end(b+1,bank[b][i].end_point)
   softcut.buffer(b+1,bank[b][i].mode)
@@ -496,12 +503,6 @@ function cheat(b,i)
   softcut.pan(b+1,bank[b][i].pan)
   softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
   softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
-  env_counter[b]:stop()
-  env_counter[b].butt = bank[b][i].level
-  if bank[b][i].enveloped then
-    env_counter[b].time = (bank[b][i].envelope_time/(bank[b][i].level/0.05))
-    env_counter[b]:start()
-  end
   --softcut.level_slew_time(b+1,1.0)
   update_delays()
 end
@@ -802,13 +803,6 @@ function clipboard_paste(i)
     cheat(i,d)
   end
 end
-
-re = metro.init()
-re.time = 0.03
-re.event = function()
-  arc_redraw()
-end
-re:start()
 
 a = arc.connect()
 arc_d = {}
