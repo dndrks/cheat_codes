@@ -7,8 +7,6 @@
 -- for in-app instruction manual
 -- -------------------------------
 
-butts = 0
-
 local pattern_time = require 'pattern_time'
 fileselect = require 'fileselect'
 help_menus = include 'lib/help_menus'
@@ -45,6 +43,14 @@ help_menu = "welcome"
 
 rec_counter = metro.init(rec_count, 0.01, -1)
 rec_time = 0
+
+env_counter = {}
+for i = 1,3 do
+  env_counter[i] = metro.init()
+  env_counter[i].time = 0.01
+  env_counter[i].butts = 1
+  env_counter[i].event = function() envelope(i) end
+end
 
 quantize = 1
 quantize_events = {}
@@ -439,13 +445,15 @@ function reset_all_banks()
       bank[i][k].fd = 0.0
       bank[i][k].br = 0.0
       bank[i][k].filter_type = 1
+      bank[i][k].enveloped = false
+      bank[i][k].envelope_time = 0.01
     end
     cheat(i,bank[i].id)
   end
 end
 
 function cheat(b,i)
-  softcut.level_slew_time(b+1,0.0)
+  softcut.level_slew_time(b+1,0.1)
   softcut.level(b+1,bank[b][i].level)
   softcut.loop_start(b+1,bank[b][i].start_point)
   softcut.loop_end(b+1,bank[b][i].end_point)
@@ -488,8 +496,27 @@ function cheat(b,i)
   softcut.pan(b+1,bank[b][i].pan)
   softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
   softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
-  softcut.level_slew_time(b+1,1.0)
+  env_counter[b]:stop()
+  env_counter[b].butts = bank[b][i].level
+  if bank[b][i].enveloped then
+    env_counter[b].time = bank[b][i].envelope_time
+    env_counter[b]:start()
+  end
+  --softcut.level_slew_time(b+1,1.0)
   update_delays()
+end
+
+function envelope(i)
+  softcut.level_slew_time(i+1,0.01)
+  env_counter[i].butts = env_counter[i].butts - 0.03
+  if env_counter[i].butts > 0 then
+    softcut.level(i+1,env_counter[i].butts)
+  else
+    env_counter[i]:stop()
+    softcut.level(i+1,0)
+    env_counter[i].butts = bank[i][bank[i].id].level
+    softcut.level_slew_time(i+1,1.0)
+  end
 end
 
 function freeze()
