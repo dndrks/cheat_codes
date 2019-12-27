@@ -48,7 +48,7 @@ env_counter = {}
 for i = 1,3 do
   env_counter[i] = metro.init()
   env_counter[i].time = 0.01
-  env_counter[i].butts = 1
+  env_counter[i].butt = 1
   env_counter[i].event = function() envelope(i) end
 end
 
@@ -446,7 +446,7 @@ function reset_all_banks()
       bank[i][k].br = 0.0
       bank[i][k].filter_type = 1
       bank[i][k].enveloped = false
-      bank[i][k].envelope_time = 0.01
+      bank[i][k].envelope_time = 0.5
     end
     cheat(i,bank[i].id)
   end
@@ -497,9 +497,9 @@ function cheat(b,i)
   softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
   softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
   env_counter[b]:stop()
-  env_counter[b].butts = bank[b][i].level
+  env_counter[b].butt = bank[b][i].level
   if bank[b][i].enveloped then
-    env_counter[b].time = bank[b][i].envelope_time
+    env_counter[b].time = (bank[b][i].envelope_time/(bank[b][i].level/0.05))
     env_counter[b]:start()
   end
   --softcut.level_slew_time(b+1,1.0)
@@ -508,13 +508,13 @@ end
 
 function envelope(i)
   softcut.level_slew_time(i+1,0.01)
-  env_counter[i].butts = env_counter[i].butts - 0.03
-  if env_counter[i].butts > 0 then
-    softcut.level(i+1,env_counter[i].butts)
+  env_counter[i].butt = env_counter[i].butt - 0.05
+  if env_counter[i].butt > 0 then
+    softcut.level(i+1,env_counter[i].butt)
   else
     env_counter[i]:stop()
     softcut.level(i+1,0)
-    env_counter[i].butts = bank[i][bank[i].id].level
+    env_counter[i].butt = bank[i][bank[i].id].level
     softcut.level_slew_time(i+1,1.0)
   end
 end
@@ -601,10 +601,10 @@ end
 
 function redraw()
 if screen_focus == 1 then
-	screen.clear()
-	screen.level(15)
-	screen.font_size(8)
-	main_menu.init()
+  screen.clear()
+  screen.level(15)
+  screen.font_size(8)
+  main_menu.init()
   screen.update()
 end
 end
