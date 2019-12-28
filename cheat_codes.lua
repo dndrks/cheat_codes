@@ -457,11 +457,17 @@ function cheat(b,i)
   if bank[b][i].enveloped then
     env_counter[b].butt = bank[b][i].level
     softcut.level(b+1,bank[b][i].level)
+    --softcut.level_cut_cut(b+1,5,bank[b][i].left_delay_level)
+    --softcut.level_cut_cut(b+1,6,bank[b][i].right_delay_level)
+    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
+    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
     env_counter[b].time = (bank[b][i].envelope_time/(bank[b][i].level/0.05))
     env_counter[b]:start()
   else
     softcut.level_slew_time(b+1,0.1)
     softcut.level(b+1,bank[b][i].level)
+    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
+    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
   end
   softcut.loop_start(b+1,bank[b][i].start_point)
   softcut.loop_end(b+1,bank[b][i].end_point)
@@ -502,9 +508,6 @@ function cheat(b,i)
   end
   softcut.post_filter_dry(b+1,bank[b][i].fd)
   softcut.pan(b+1,bank[b][i].pan)
-  softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
-  softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
-  --softcut.level_slew_time(b+1,1.0)
   update_delays()
 end
 
@@ -513,10 +516,14 @@ function envelope(i)
   env_counter[i].butt = env_counter[i].butt - 0.05
   if env_counter[i].butt > 0 then
     softcut.level(i+1,env_counter[i].butt)
+    softcut.level_cut_cut(i+1,5,env_counter[i].butt)
+    softcut.level_cut_cut(i+1,6,env_counter[i].butt)
   else
     env_counter[i]:stop()
     softcut.level(i+1,0)
     env_counter[i].butt = bank[i][bank[i].id].level
+    softcut.level_cut_cut(i+1,5,0)
+    softcut.level_cut_cut(i+1,6,0)
     softcut.level_slew_time(i+1,1.0)
   end
 end
@@ -549,8 +556,8 @@ function load_sample(file,sample)
       --clip[sample].sample_length = 90
       clip[sample].sample_length = 8
     end
-    print(len/48000)
-    softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), (9+(8 * (sample-1)))-0.1, 1, 2)
+    --print(len/48000)
+    softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), 8, 1, 2)
   end
 end
 
@@ -603,10 +610,10 @@ end
 
 function redraw()
 if screen_focus == 1 then
-  screen.clear()
-  screen.level(15)
-  screen.font_size(8)
-  main_menu.init()
+	screen.clear()
+	screen.level(15)
+	screen.font_size(8)
+	main_menu.init()
   screen.update()
 end
 end
@@ -859,12 +866,14 @@ arc_redraw = function()
   for i = 1,13 do
     local arc_left_delay_level = (params:get("delay L: rate") == i and 15 or 5)
     local arc_right_delay_level = (params:get("delay R: rate") == i and 15 or 5)
+    local arc_try = params:get("delay L: rate")
     if grid.alt == 0 then
       a:led(4,(41+((i-1)*4)-16),arc_left_delay_level)
     else
       a:led(4,(41+((i-1)*4)-16),arc_right_delay_level)
     end
   end
+  
   a:refresh()
 end
 
@@ -920,6 +929,14 @@ function savestate()
     end
   end
   io.write(params:get("offset").."\n")
+    -- v1.1 items
+  io.write("v1.1".."\n")
+  for i = 1,3 do
+    for k = 1,16 do
+      io.write(tostring(bank[i][k].enveloped) .. "\n")
+      io.write(bank[i][k].envelope_time .. "\n")
+    end
+  end
   io.close(file)
 end
 
@@ -992,6 +1009,19 @@ function loadstate()
     params:set("offset",tonumber(io.read()))
     else
       print("invalid data file")
+    end
+    if io.read() == "v1.1" then
+      for i = 1,3 do
+        for k = 1,16 do
+          local enveloped_to_boolean = io.read()
+          if enveloped_to_boolean == "true" then
+            bank[i][k].enveloped = true
+          else
+            bank[i][k].enveloped = false
+          end
+          bank[i][k].envelope_time = tonumber(io.read())
+        end
+      end
     end
     io.close(file)
     for i = 1,3 do
