@@ -118,8 +118,14 @@ function start_up.init()
     params:set_action("pan "..i, function(x) softcut.pan(i+1,x) bank[i][bank[i].id].pan = x end)
     params:add_control("pan slew "..i,"pan slew "..banks[i], controlspec.new(0.,200.,'lin',0.1,5.0))
     params:set_action("pan slew "..i, function(x) softcut.pan_slew_time(i+1,x) end)
-    params:add_control("level "..i, "level "..banks[i], controlspec.new(0.,5.,'lin',0.01,1.0))
-    params:set_action("level "..i, function(x) softcut.level(i+1,x) bank[i][bank[i].id].level = x end)
+    params:add_control("level "..i, "level "..banks[i], controlspec.new(0.,2.,'lin',0.01,1.0))
+    params:set_action("level "..i, function(x)
+      if not bank[i][bank[i].id].enveloped then
+        softcut.level(i+1,x)
+      end
+      bank[i][bank[i].id].level = x
+      redraw()
+      end)
   end
 
   params:add_separator()
