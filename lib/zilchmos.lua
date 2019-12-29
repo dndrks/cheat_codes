@@ -124,7 +124,8 @@ function zilchmos.init(k,i)
             bank[i][j].start_point = math.random(min_start,current_end)/100
           end
         end
-        if bank[i][bank[i].id].loop == true then
+        if bank[i][bank[i].id].loop == true and bank[i][bank[i].id].enveloped == false then
+        --if bank[i][bank[i].id].loop == true then
           cheat(i,bank[i].id)
         end
       elseif k == 3 then

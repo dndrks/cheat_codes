@@ -16,6 +16,7 @@ arc_actions = include 'lib/arc_actions'
 rightangleslice = include 'lib/zilchmos'
 start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
+rec_head = include 'lib/rec_head'
 
 tau = math.pi * 2
 arc_param = {}
@@ -128,9 +129,6 @@ clk = beatclock.new()
 clk_midi = midi.connect()
 clk_midi.event = function(data) clk:process_midi(data) end
 
--- DO I NEED THESE?
---t = 0
---dt = 1
 grid.alt = 0
 
 local function crow_init()
@@ -199,7 +197,7 @@ function init()
   params:add{type = "number", id = "midi_device", name = "midi device", min = 1, max = 4, default = 1, action = function(value)
     clk_midi.event = nil
     clk_midi = midi.connect(value)
-    clk_midi.event = function(data) clk:process_midi(data) end
+    clk_midi.event = function(data) clk:process_midi(data) redraw() end
   end}
   
   --params:set_action("bpm", function() update_tempo() end)
@@ -207,8 +205,10 @@ function init()
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "quantize pattern button?", { "no", "yes" })
   params:set_action("quantize_pats", function(x) grid_pat_quantize = x-1 end)
-  params:add_number("quant_div", "quantization division", 1, 32, 4)
+  params:add_number("quant_div", "pad quant. division", 1, 32, 4)
   params:set_action("quant_div",function() update_tempo() end)
+  params:add_number("quant_div_pats", "pattern quant. division", 1, 32, 4)
+  params:set_action("quant_div_pats",function() update_tempo() end)
 
   params:default()
 
@@ -241,6 +241,7 @@ function init()
   edit = "all"
   
   start_up.init()
+  rec_head.init()
 
   bank = {}
   reset_all_banks()
@@ -364,10 +365,12 @@ function update_tempo()
     bpm = params:get("bpm")
     local t = params:get("bpm")
     local d = params:get("quant_div")
+    local d_pat = params:get("quant_div_pats")
     local interval = (60/t) / d
+    local interval_pats = (60/t) / d_pat
     for i = 1,3 do
       quantizer[i].time = interval
-      grid_pat_quantizer[i].time = interval
+      grid_pat_quantizer[i].time = interval_pats
     end
   end
 end
@@ -786,8 +789,8 @@ function zilchmo(k,i)
   redraw()
 end
 
-function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l)
-  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l}) do
+function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n)
+  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l,m,n}) do
     clipboard[k] = v
   end
 end
@@ -806,6 +809,8 @@ function clipboard_paste(i)
   bank[i][d].fc = clipboard[10]
   bank[i][d].q = clipboard[11]
   bank[i][d].fifth = clipboard[12]
+  bank[i][d].enveloped = clipboard[13]
+  bank[i][d].envelope_time = clipboard[14]
   redraw()
   if bank[i][d].loop == true then
     cheat(i,d)

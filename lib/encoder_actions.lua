@@ -128,13 +128,20 @@ function encoder_actions.init(n,d)
       softcut.level_slew_time(n+1,1.0)
       softcut.level(n+1,bank[n][bank[n].id].level)
     elseif page.levels_sel == 1 then
+      local pre_enveloped = bank[n][bank[n].id].enveloped
       if bank[n][bank[n].id].enveloped then
         if d < 0 then
           bank[n][bank[n].id].enveloped = false
+          if pre_enveloped ~= bank[n][bank[n].id].enveloped then
+            cheat(n, bank[n].id)
+          end
         end
       else
         if d > 0 then
           bank[n][bank[n].id].enveloped = true
+          if pre_enveloped ~= bank[n][bank[n].id].enveloped then
+            cheat(n, bank[n].id)
+          end
         end
       end
     elseif page.levels_sel == 2 then

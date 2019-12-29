@@ -43,7 +43,9 @@ function grid_actions.init(x,y,z)
             bank[i][bank[i].id].filter_type,
             bank[i][bank[i].id].fc,
             bank[i][bank[i].id].q,
-            bank[i][bank[i].id].fifth
+            bank[i][bank[i].id].fifth,
+            bank[i][bank[i].id].enveloped,
+            bank[i][bank[i].id].envelope_time
             )
         else
           selected[i].x = x

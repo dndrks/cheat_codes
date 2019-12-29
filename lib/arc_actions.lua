@@ -27,7 +27,9 @@ function arc_actions.init(n,d)
     softcut.loop_end(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].end_point)
   elseif arc_param[n] == 2 then
     if grid.alt == 0 then
-      bank[arc_control[n]][bank[arc_control[n]].id].start_point = util.clamp(bank[arc_control[n]][bank[arc_control[n]].id].start_point + d/80,(1+(8*(bank[arc_control[n]][bank[arc_control[n]].id].clip-1))),(9+(8*(bank[arc_control[n]][bank[arc_control[n]].id].clip-1))))
+      if bank[arc_control[n]][bank[arc_control[n]].id].start_point < (bank[arc_control[n]][bank[arc_control[n]].id].end_point - d/80) then
+        bank[arc_control[n]][bank[arc_control[n]].id].start_point = util.clamp(bank[arc_control[n]][bank[arc_control[n]].id].start_point + d/80,(1+(8*(bank[arc_control[n]][bank[arc_control[n]].id].clip-1))),(9+(8*(bank[arc_control[n]][bank[arc_control[n]].id].clip-1))))
+      end
     else
       for j = 1,16 do
         bank[arc_control[n]][j].start_point = util.clamp(bank[arc_control[n]][j].start_point + d/80,(1+(8*(bank[arc_control[n]][j].clip-1))),(9+(8*(bank[arc_control[n]][j].clip-1))))

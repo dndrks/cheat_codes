@@ -83,9 +83,9 @@ function main_menu.init()
       screen.text("env?")
       screen.move(90+((i-1)*15),20)
       if bank[i][bank[i].id].enveloped then
-        screen.text("+")
+        screen.text("|\\")
       else
-        screen.text("x")
+        screen.text("-")
       end
       screen.level(level_options[page.levels_sel+1] == "decay" and 15 or 3)
       screen.move(90,30)
