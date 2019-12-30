@@ -20,6 +20,11 @@ function grid_actions.init(x,y,z)
           grid_p[i].id = selected[i].id
           grid_p[i].x = selected[i].x
           grid_p[i].y = selected[i].y
+          grid_p[i].rate = bank[i][bank[i].id].rate
+          grid_p[i].start_point = bank[i][bank[i].id].start_point
+          grid_p[i].end_point = bank[i][bank[i].id].end_point
+          grid_p[i].cheat = 1
+          grid_p[i].rate_adjusted = false
           grid_pat[i]:watch(grid_p[i])
         else
           table.insert(quantize_events[i],selected[i].id)

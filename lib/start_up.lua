@@ -132,7 +132,7 @@ function start_up.init()
   
   for i = 1,3 do
     local banks = {"(a)", "(b)", "(c)"}
-    params:add_control("filter "..i.." cutoff", "filter "..banks[i].." cutoff", controlspec.new(10,12000,'exp',1,12000,"Hz"))
+    params:add_control("filter "..i.." cutoff", "filter "..banks[i].." cutoff", controlspec.new(10,12000,'lin',1,12000,"Hz"))
     params:set_action("filter "..i.." cutoff", function(x) softcut.post_filter_fc(i+1,x) bank[i][bank[i].id].fc = x end)
     params:add_control("filter "..i.." q", "filter "..banks[i].." q", controlspec.new(0.0005, 8.0, 'exp', 0, 2.0, ""))
     params:set_action("filter "..i.." q", function(x) softcut.post_filter_rq(i+1,x) bank[i][bank[i].id].q = x end)

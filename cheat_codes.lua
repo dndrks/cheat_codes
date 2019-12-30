@@ -92,6 +92,11 @@ function cheat_q_clock(i)
       grid_p[i].id = selected[i].id
       grid_p[i].x = selected[i].x
       grid_p[i].y = selected[i].y
+      grid_p[i].rate = bank[i][bank[i].id].rate
+      grid_p[i].start_point = bank[i][bank[i].id].start_point
+      grid_p[i].end_point = bank[i][bank[i].id].end_point
+      grid_p[i].cheat = 1
+      grid_p[i].rate_adjusted = false
       grid_pat[i]:watch(grid_p[i])
     end
     quantize_events[i] = {}
@@ -272,11 +277,29 @@ function init()
     counter_four[i].key_up.time = 0.05
     counter_four[i].key_up.count = 1
     counter_four[i].key_up.event = function()
+      local previous_rate = bank[i][bank[i].id].rate
       zilchmo(4,i)
       zilchmo_p1 = {}
       zilchmo_p1.con = fingers[4][i].con
       zilchmo_p1.row = 4
       zilchmo_p1.bank = i
+      --zilchmo_pat[1]:watch(zilchmo_p1)
+      --try this
+      grid_p[i] = {}
+      grid_p[i].i = i
+      grid_p[i].id = selected[i].id
+      grid_p[i].x = selected[i].x
+      grid_p[i].y = selected[i].y
+      grid_p[i].rate = bank[i][bank[i].id].rate
+      grid_p[i].start_point = bank[i][bank[i].id].start_point
+      grid_p[i].end_point = bank[i][bank[i].id].end_point
+      grid_p[i].cheat = 0
+      if grid_p[i].rate ~= previous_rate then
+        grid_p[i].rate_adjusted = true
+      else
+        grid_p[i].rate_adjusted = false
+      end
+      grid_pat[i]:watch(grid_p[i])
     end
     counter_four[i].key_up:stop()
     counter_three[i] = {}
@@ -374,31 +397,6 @@ function update_tempo()
     end
   end
 end
-
---[[function update_tempo()
-  if params:get("clock") == 1 then
-    --INTERNAL
-    bpm = params:get("bpm")
-    local t = params:get("bpm")
-    local d = params:get("quant_div")
-    local interval = (60/t) / d
-    for i = 1,3 do
-      quantizer[i].time = interval
-      grid_pat_quantizer[i].time = interval
-    end
-  elseif params:get("clock") == 3 then
-    --CROW
-    local tap1 = util.time()
-    deltatap = tap1 - tap
-    tap = tap1
-    bpm = 60/deltatap
-    print(bpm.." / "..deltatap)
-    for i = 1,3 do
-      quantizer[i].time = deltatap
-      grid_pat_quantizer[i].time = deltatap
-    end
-  end
-end]]--
 
 function slice()
   --local t = params:get("bpm")
@@ -749,7 +747,18 @@ function grid_pattern_execute(entry)
   selected[i].x = entry.x
   selected[i].y = entry.y
   bank[i].id = selected[i].id
-  cheat(i,bank[i].id)
+  bank[i][bank[i].id].rate = entry.rate
+  bank[i][bank[i].id].start_point = entry.start_point
+  bank[i][bank[i].id].end_point = entry.end_point
+  if entry.cheat == 1 then
+    cheat(i,bank[i].id)
+  else
+    if entry.rate_adjusted then
+      softcut.rate(i+1,bank[i][bank[i].id].rate)
+    end
+    softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+    softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
+  end
   grid_redraw()
   redraw()
 end
