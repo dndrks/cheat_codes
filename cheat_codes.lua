@@ -88,6 +88,7 @@ function cheat_q_clock(i)
     for k,e in pairs(quantize_events[i]) do
       cheat(i,e)
       grid_p[i] = {}
+      grid_p[i].action = "pads"
       grid_p[i].i = i
       grid_p[i].id = selected[i].id
       grid_p[i].x = selected[i].x
@@ -95,7 +96,6 @@ function cheat_q_clock(i)
       grid_p[i].rate = bank[i][bank[i].id].rate
       grid_p[i].start_point = bank[i][bank[i].id].start_point
       grid_p[i].end_point = bank[i][bank[i].id].end_point
-      grid_p[i].cheat = 1
       grid_p[i].rate_adjusted = false
       grid_pat[i]:watch(grid_p[i])
     end
@@ -287,18 +287,27 @@ function init()
       --try this
       grid_p[i] = {}
       grid_p[i].i = i
+      grid_p[i].action = "zilchmo_4"
+      --new
+      grid_p[i].con = fingers[4][i].con
+      grid_p[i].row = 4
+      grid_p[i].bank = i
+      --/new
       grid_p[i].id = selected[i].id
       grid_p[i].x = selected[i].x
       grid_p[i].y = selected[i].y
-      grid_p[i].rate = bank[i][bank[i].id].rate
-      grid_p[i].start_point = bank[i][bank[i].id].start_point
-      grid_p[i].end_point = bank[i][bank[i].id].end_point
-      grid_p[i].cheat = 0
-      if grid_p[i].rate ~= previous_rate then
+      grid_p[i].previous_rate = previous_rate
+      grid_p[i].rate = previous_rate
+      --
+      --grid_p[i].start_point = bank[i][bank[i].id].start_point
+      --grid_p[i].end_point = bank[i][bank[i].id].end_point
+      --
+      --grid_p[i].rate = bank[i][bank[i].id].rate
+      --[[if grid_p[i].rate ~= previous_rate then
         grid_p[i].rate_adjusted = true
       else
         grid_p[i].rate_adjusted = false
-      end
+      end]]--
       grid_pat[i]:watch(grid_p[i])
     end
     counter_four[i].key_up:stop()
@@ -611,10 +620,10 @@ end
 
 function redraw()
 if screen_focus == 1 then
-	screen.clear()
-	screen.level(15)
-	screen.font_size(8)
-	main_menu.init()
+  screen.clear()
+  screen.level(15)
+  screen.font_size(8)
+  main_menu.init()
   screen.update()
 end
 end
@@ -743,21 +752,28 @@ end
 
 function grid_pattern_execute(entry)
   local i = entry.i
-  selected[i].id = entry.id
-  selected[i].x = entry.x
-  selected[i].y = entry.y
-  bank[i].id = selected[i].id
-  bank[i][bank[i].id].rate = entry.rate
-  bank[i][bank[i].id].start_point = entry.start_point
-  bank[i][bank[i].id].end_point = entry.end_point
-  if entry.cheat == 1 then
+  --bank[i][entry.id].rate = entry.rate -- keeping this outside means zilchmo changes while pad pattern plays actually affect things
+  if entry.action == "pads" then
+    bank[i][entry.id].rate = entry.rate
+    selected[i].id = entry.id
+    selected[i].x = entry.x
+    selected[i].y = entry.y
+    bank[i].id = selected[i].id
+    --bank[i][bank[i].id].start_point = entry.start_point
+    --bank[i][bank[i].id].end_point = entry.end_point
     cheat(i,bank[i].id)
-  else
-    if entry.rate_adjusted then
-      softcut.rate(i+1,bank[i][bank[i].id].rate)
+  elseif entry.action == "zilchmo_4" then
+    bank[i][entry.id].rate = entry.rate
+    fingers[entry.row][entry.bank].con = entry.con
+    zilchmo(entry.row,entry.bank)
+    --[[if entry.con == "124" then
+      softcut.rate(i+1, (bank[i][bank[i].id].rate*2)*offset)
+    end]]--
+    local length = math.floor(math.log10(entry.con)+1)
+    for i = 1,length do
+      g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)
+      g:refresh()
     end
-    softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
-    softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
   end
   grid_redraw()
   redraw()

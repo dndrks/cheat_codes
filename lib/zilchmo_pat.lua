@@ -1,11 +1,7 @@
-zilchmos = {}
+zilchmo_pat = {}
 
-function zilchmos.init(k,i)
-
-  which_bank = i
-  if menu == 7 then
-    help_menu = "zilchmo_"..k
-  end
+function zilchmo_pat.init(k,i)
+  
     if fingers[k][i].con == "1" then
       if k == 4 then
         if grid.alt == 0 then
@@ -374,4 +370,4 @@ function zilchmos.init(k,i)
 
 end
 
-return zilchmos
+return zilchmo_pat

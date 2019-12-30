@@ -16,6 +16,7 @@ function grid_actions.init(x,y,z)
         if quantize == 0 then
           cheat(i, bank[i].id)
           grid_p[i] = {}
+          grid_p[i].action = "pads"
           grid_p[i].i = i
           grid_p[i].id = selected[i].id
           grid_p[i].x = selected[i].x
@@ -23,7 +24,6 @@ function grid_actions.init(x,y,z)
           grid_p[i].rate = bank[i][bank[i].id].rate
           grid_p[i].start_point = bank[i][bank[i].id].start_point
           grid_p[i].end_point = bank[i][bank[i].id].end_point
-          grid_p[i].cheat = 1
           grid_p[i].rate_adjusted = false
           grid_pat[i]:watch(grid_p[i])
         else
