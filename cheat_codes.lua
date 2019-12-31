@@ -94,9 +94,13 @@ function cheat_q_clock(i)
       grid_p[i].x = selected[i].x
       grid_p[i].y = selected[i].y
       grid_p[i].rate = bank[i][bank[i].id].rate
+      grid_p[i].pause = bank[i][bank[i].id].pause
       grid_p[i].start_point = bank[i][bank[i].id].start_point
       grid_p[i].end_point = bank[i][bank[i].id].end_point
       grid_p[i].rate_adjusted = false
+      grid_p[i].loop = bank[i][bank[i].id].loop
+      grid_p[i].mode = bank[i][bank[i].id].mode
+      grid_p[i].clip = bank[i][bank[i].id].clip
       grid_pat[i]:watch(grid_p[i])
     end
     quantize_events[i] = {}
@@ -299,8 +303,8 @@ function init()
       grid_p[i].previous_rate = previous_rate
       grid_p[i].rate = previous_rate
       --
-      --grid_p[i].start_point = bank[i][bank[i].id].start_point
-      --grid_p[i].end_point = bank[i][bank[i].id].end_point
+      grid_p[i].start_point = bank[i][bank[i].id].start_point
+      grid_p[i].end_point = bank[i][bank[i].id].end_point
       --
       --grid_p[i].rate = bank[i][bank[i].id].rate
       --[[if grid_p[i].rate ~= previous_rate then
@@ -759,16 +763,28 @@ function grid_pattern_execute(entry)
     selected[i].x = entry.x
     selected[i].y = entry.y
     bank[i].id = selected[i].id
-    --bank[i][bank[i].id].start_point = entry.start_point
-    --bank[i][bank[i].id].end_point = entry.end_point
+    bank[i][bank[i].id].loop = entry.loop
+    bank[i][bank[i].id].pause = entry.pause
+    bank[i][bank[i].id].mode = entry.mode
+    bank[i][bank[i].id].clip = entry.clip
+    if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
+        bank[i][bank[i].id].start_point = entry.start_point
+        bank[i][bank[i].id].end_point = entry.end_point
+    end
     cheat(i,bank[i].id)
   elseif entry.action == "zilchmo_4" then
+    -- throw a PARAM for which playback behavior!
     bank[i][entry.id].rate = entry.rate
     fingers[entry.row][entry.bank].con = entry.con
     zilchmo(entry.row,entry.bank)
     --[[if entry.con == "124" then
       softcut.rate(i+1, (bank[i][bank[i].id].rate*2)*offset)
     end]]--
+    if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
+      bank[i][bank[i].id].start_point = entry.start_point
+      bank[i][bank[i].id].end_point = entry.end_point
+      cheat(i,bank[i].id)
+    end
     local length = math.floor(math.log10(entry.con)+1)
     for i = 1,length do
       g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)

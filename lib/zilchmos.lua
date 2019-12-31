@@ -160,7 +160,11 @@ function zilchmos.init(k,i)
               bank[i][j].pause = false
             end
           end
-          softcut.level(i+1,bank[i][bank[i].id].level)
+          if not bank[i][bank[i].id].enveloped then
+            softcut.level(i+1,bank[i][bank[i].id].level)
+          else
+            cheat(i,bank[i].id)
+          end
           softcut.rate(i+1,bank[i][bank[i].id].rate*offset)
         end
       end

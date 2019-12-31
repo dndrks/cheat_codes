@@ -25,6 +25,10 @@ function grid_actions.init(x,y,z)
           grid_p[i].start_point = bank[i][bank[i].id].start_point
           grid_p[i].end_point = bank[i][bank[i].id].end_point
           grid_p[i].rate_adjusted = false
+          grid_p[i].loop = bank[i][bank[i].id].loop
+          grid_p[i].pause = bank[i][bank[i].id].pause
+          grid_p[i].mode = bank[i][bank[i].id].mode
+          grid_p[i].clip = bank[i][bank[i].id].clip
           grid_pat[i]:watch(grid_p[i])
         else
           table.insert(quantize_events[i],selected[i].id)
