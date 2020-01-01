@@ -438,6 +438,23 @@ phase = function(n, x)
   if menu == 2 then
     redraw()
   end
+  if rec.state == 1 then
+    for i = 2,4 do
+      local squiggle = tonumber(poll_position_new[i])
+      local other_squiggle = tonumber(poll_position_new[1])
+      if squiggle ~= nil and other_squiggle ~= nil then
+        if math.floor(((squiggle*10)+0.5))/10 == math.floor(((other_squiggle*10)+0.5))/10 then
+          softcut.level_slew_time(i,0.01)
+          softcut.level(i,0.04)
+        else
+          if not bank[i-1][bank[i-1].id].enveloped then
+            softcut.level_slew_time(i,1.0)
+            softcut.level(i,bank[i-1][bank[i-1].id].level)
+          end
+        end
+      end
+    end
+  end
 end
 
 local tap = 0
