@@ -42,8 +42,8 @@ end
 
 help_menu = "welcome"
 
-rec_counter = metro.init(rec_count, 0.01, -1)
-rec_time = 0
+--[[rec_counter = metro.init(rec_count, 0.01, -1)
+rec_time = 0]]--
 
 env_counter = {}
 for i = 1,3 do
@@ -126,6 +126,69 @@ function grid_pat_q_clock(i)
       end
     end
     grid_pat_quantize_events[i] = {}
+  end
+end
+
+function linearize_grid_pat(bank, mode, resolution)
+  if mode == "small" then
+    for k = 1,grid_pat[bank].count do
+        grid_pat[bank].time[k] = quantizer[bank].time * math.floor((grid_pat[bank].time[k] / quantizer[bank].time) + 0.5)
+    end
+  elseif mode == "quantize" then
+    local quarter_note = 60 / bpm
+    local eighth_note = (60 / bpm)/2
+    local eighth_triplet_note = (60 / bpm) / 3
+    local sixteenth_note = (60 / bpm) / 4
+    local resolutions = {quarter_note, eighth_note, eighth_triplet_note, sixteenth_note}
+    for k = 1,grid_pat[bank].count do
+      print("before quant: "..grid_pat[bank].time[k])
+      grid_pat[bank].time[k] = resolutions[resolution] * math.floor((grid_pat[bank].time[k] / resolutions[resolution]) + 0.5)
+      if grid_pat[bank].time[k] == 0 then
+        grid_pat[bank].time[k] = resolutions[resolution]
+      end
+      print("after quant: "..grid_pat[bank].time[k])
+    end
+  end
+end
+
+function sync_pattern_to_bpm(bank, resolution)
+  local total_time = 0
+  synced_to_bpm = bpm
+  for i = 1,#grid_pat[bank].event do
+    total_time = total_time + grid_pat[bank].time[i]
+  end
+  print("before total: "..total_time)
+  old_pat_time = table.clone(grid_pat[bank].time)
+  linearize_grid_pat(bank, "quantize", resolution)
+  total_time = 0
+  for i = 1,#grid_pat[bank].event do
+    total_time = total_time + grid_pat[bank].time[i]
+  end
+  print("after total: "..total_time)
+end
+
+function reset_pattern_time(bank)
+  if old_pat_time ~= nil then
+    grid_pat[bank].time = table.clone(old_pat_time)
+  end
+end
+
+function update_pattern_bpm(bank)
+  grid_pat[bank].time_factor = 1*(synced_to_bpm/bpm)
+end
+
+function table.clone(org)
+  return {table.unpack(org)}
+end
+
+function es_linearize(bank,mode)
+  -- modes: standard linearization, quarter, eighth, eighth triplet, sixteenth, random
+  if #grid_pat[bank].event > 1 then
+    local modes = {grid_pat[bank].time[1], 60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
+    for k = 1,#grid_pat[bank].event do
+      grid_pat[bank].time[k] = modes[mode]
+    end
+    print(modes[mode])
   end
 end
 
@@ -218,6 +281,8 @@ function init()
   params:set_action("quant_div",function() update_tempo() end)
   params:add_number("quant_div_pats", "pattern quant. division", 1, 32, 4)
   params:set_action("quant_div_pats",function() update_tempo() end)
+  params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "+zilchmo4" })
+  params:set_action("zilchmo_patterning", function() end)
 
   params:default()
 
@@ -756,39 +821,42 @@ end
 
 function grid_pattern_execute(entry)
   local i = entry.i
-  --bank[i][entry.id].rate = entry.rate -- keeping this outside means zilchmo changes while pad pattern plays actually affect things
   if entry.action == "pads" then
-    bank[i][entry.id].rate = entry.rate
+    if params:get("zilchmo_patterning") == 2 then
+      bank[i][entry.id].rate = entry.rate
+    end
     selected[i].id = entry.id
     selected[i].x = entry.x
     selected[i].y = entry.y
     bank[i].id = selected[i].id
-    bank[i][bank[i].id].loop = entry.loop
-    bank[i][bank[i].id].pause = entry.pause
-    bank[i][bank[i].id].mode = entry.mode
-    bank[i][bank[i].id].clip = entry.clip
+    --[[if params:get("zilchmo_patterning") == 2 then
+      bank[i][bank[i].id].loop = entry.loop
+      bank[i][bank[i].id].pause = entry.pause
+      bank[i][bank[i].id].mode = entry.mode
+      bank[i][bank[i].id].clip = entry.clip
+    end]]--
     if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
+      if params:get("zilchmo_patterning") == 2 then
         bank[i][bank[i].id].start_point = entry.start_point
         bank[i][bank[i].id].end_point = entry.end_point
+      end
     end
     cheat(i,bank[i].id)
   elseif entry.action == "zilchmo_4" then
-    -- throw a PARAM for which playback behavior!
-    bank[i][entry.id].rate = entry.rate
-    fingers[entry.row][entry.bank].con = entry.con
-    zilchmo(entry.row,entry.bank)
-    --[[if entry.con == "124" then
-      softcut.rate(i+1, (bank[i][bank[i].id].rate*2)*offset)
-    end]]--
-    if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
-      bank[i][bank[i].id].start_point = entry.start_point
-      bank[i][bank[i].id].end_point = entry.end_point
-      cheat(i,bank[i].id)
-    end
-    local length = math.floor(math.log10(entry.con)+1)
-    for i = 1,length do
-      g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)
-      g:refresh()
+    if params:get("zilchmo_patterning") == 2 then
+      bank[i][entry.id].rate = entry.rate
+      fingers[entry.row][entry.bank].con = entry.con
+      zilchmo(entry.row,entry.bank)
+      if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
+        bank[i][bank[i].id].start_point = entry.start_point
+        bank[i][bank[i].id].end_point = entry.end_point
+        cheat(i,bank[i].id)
+      end
+      local length = math.floor(math.log10(entry.con)+1)
+      for i = 1,length do
+        g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)
+        g:refresh()
+      end
     end
   end
   grid_redraw()
@@ -800,12 +868,15 @@ function arc_pattern_execute(entry)
   local id = arc_control[i]
   local param = entry.param
   arc_param[i] = param
-  bank[id][bank[id].id].start_point = (entry.start_point + (8*(bank[id][bank[id].id].clip-1)) + arc_offset)
-  bank[id][bank[id].id].end_point = (entry.end_point + (8*(bank[id][bank[id].id].clip-1)) + arc_offset)
-  softcut.loop_start(id+1, (entry.start_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
-  softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
-  bank[id][bank[id].id].fc = entry.fc
-  softcut.post_filter_fc(id+1,entry.fc)
+  if arc_param[i] ~= 4 then
+    bank[id][bank[id].id].start_point = (entry.start_point + (8*(bank[id][bank[id].id].clip-1)) + arc_offset)
+    bank[id][bank[id].id].end_point = (entry.end_point + (8*(bank[id][bank[id].id].clip-1)) + arc_offset)
+    softcut.loop_start(id+1, (entry.start_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
+    softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
+  else
+    bank[id][bank[id].id].fc = entry.fc
+    softcut.post_filter_fc(id+1,entry.fc)
+  end
   redraw()
 end
 

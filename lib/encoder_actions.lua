@@ -128,25 +128,54 @@ function encoder_actions.init(n,d)
       softcut.level_slew_time(n+1,1.0)
       softcut.level(n+1,bank[n][bank[n].id].level)
     elseif page.levels_sel == 1 then
-      local pre_enveloped = bank[n][bank[n].id].enveloped
-      if bank[n][bank[n].id].enveloped then
-        if d < 0 then
-          bank[n][bank[n].id].enveloped = false
-          if pre_enveloped ~= bank[n][bank[n].id].enveloped then
-            cheat(n, bank[n].id)
+      if k1_hold or grid.alt then
+        for j = 1,16 do
+          local pre_enveloped = bank[n][j].enveloped
+          if bank[n][j].enveloped then
+            if d < 0 then
+              bank[n][j].enveloped = false
+              if pre_enveloped ~= bank[n][j].enveloped then
+                cheat(n, bank[n].id)
+              end
+            end
+          else
+            if d > 0 then
+              bank[n][j].enveloped = true
+              if pre_enveloped ~= bank[n][j].enveloped then
+                cheat(n, bank[n].id)
+              end
+            end
           end
         end
       else
-        if d > 0 then
-          bank[n][bank[n].id].enveloped = true
-          if pre_enveloped ~= bank[n][bank[n].id].enveloped then
-            cheat(n, bank[n].id)
+        local pre_enveloped = bank[n][bank[n].id].enveloped
+        if bank[n][bank[n].id].enveloped then
+          if d < 0 then
+            bank[n][bank[n].id].enveloped = false
+            if pre_enveloped ~= bank[n][bank[n].id].enveloped then
+              cheat(n, bank[n].id)
+            end
+          end
+        else
+          if d > 0 then
+            bank[n][bank[n].id].enveloped = true
+            if pre_enveloped ~= bank[n][bank[n].id].enveloped then
+              cheat(n, bank[n].id)
+            end
           end
         end
       end
     elseif page.levels_sel == 2 then
-      if bank[n][bank[n].id].enveloped then
-        bank[n][bank[n].id].envelope_time = util.clamp(bank[n][bank[n].id].envelope_time+d/10,0.1,60)
+      if k1_hold or grid.alt then
+        for j = 1,16 do
+          if bank[n][j].enveloped then
+            bank[n][j].envelope_time = util.clamp(bank[n][j].envelope_time+d/10,0.1,60)
+          end
+        end
+      else
+        if bank[n][bank[n].id].enveloped then
+          bank[n][bank[n].id].envelope_time = util.clamp(bank[n][bank[n].id].envelope_time+d/10,0.1,60)
+        end
       end
     end
   end

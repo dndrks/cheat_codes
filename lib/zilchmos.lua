@@ -171,14 +171,28 @@ function zilchmos.init(k,i)
     end
     if fingers[k][i].con == "23" then
       if k == 4 then
-        local jump = math.random(100,900)/100+(8*(bank[i][bank[i].id].clip-1))
-        local current_difference = (bank[i][bank[i].id].end_point - bank[i][bank[i].id].start_point)
-        if jump+current_difference >= 9+(8*(bank[i][bank[i].id].clip-1)) then
-          bank[i][bank[i].id].end_point = 9+(8*(bank[i][bank[i].id].clip-1))
-          bank[i][bank[i].id].start_point = bank[i][bank[i].id].end_point - current_difference
+        if grid.alt == 0 then
+          local jump = math.random(100,900)/100+(8*(bank[i][bank[i].id].clip-1))
+          local current_difference = (bank[i][bank[i].id].end_point - bank[i][bank[i].id].start_point)
+          if jump+current_difference >= 9+(8*(bank[i][bank[i].id].clip-1)) then
+            bank[i][bank[i].id].end_point = 9+(8*(bank[i][bank[i].id].clip-1))
+            bank[i][bank[i].id].start_point = bank[i][bank[i].id].end_point - current_difference
+          else
+            bank[i][bank[i].id].start_point = jump
+            bank[i][bank[i].id].end_point = bank[i][bank[i].id].start_point + current_difference
+          end
         else
-          bank[i][bank[i].id].start_point = jump
-          bank[i][bank[i].id].end_point = bank[i][bank[i].id].start_point + current_difference
+          for j = 1,16 do
+            local jump = math.random(100,900)/100+(8*(bank[i][j].clip-1))
+            local current_difference = (bank[i][j].end_point - bank[i][j].start_point)
+            if jump+current_difference >= 9+(8*(bank[i][j].clip-1)) then
+              bank[i][j].end_point = 9+(8*(bank[i][j].clip-1))
+              bank[i][j].start_point = bank[i][j].end_point - current_difference
+            else
+              bank[i][j].start_point = jump
+              bank[i][j].end_point = bank[i][j].start_point + current_difference
+            end
+          end
         end
         softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
         softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
