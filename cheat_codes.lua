@@ -220,6 +220,9 @@ function init()
   rec = {}
   rec.state = 1
   rec.clip = 1
+  rec.start_point = 1
+  rec.end_point = 9
+  rec.loop = 1
   
   params:add_number("collection", "collection", 1,100,1)
   params:set_action("collection", function (x) selected_coll = x end)
@@ -673,7 +676,7 @@ if screen_focus == 1 then
         end
       end
     elseif menu == 2 then
-      local loop_nav = (page.loops_sel + 1)%3
+      local loop_nav = (page.loops_sel + 1)%4
       page.loops_sel = loop_nav
     elseif menu == 3 then
       local level_nav = (page.levels_sel + 1)%3

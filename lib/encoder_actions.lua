@@ -5,23 +5,35 @@ function encoder_actions.init(n,d)
     if menu == 2 then
       local id = page.loops_sel + 1
       --if key1_hold or grid.alt == 1 then
-      if key1_hold then
-        bank[id].id = util.clamp(bank[id].id + d,1,16)
-        selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
-        selected[id].y = 8-((bank[id].id-1)%4)
-        cheat(id,bank[id].id)
-      else
-        local current_difference = (bank[id][bank[id].id].end_point - bank[id][bank[id].id].start_point)
-        if bank[id][bank[id].id].start_point + current_difference <= (9+(8*(bank[id][bank[id].id].clip-1))) then
-          bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point + d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
-          bank[id][bank[id].id].end_point = bank[id][bank[id].id].start_point + current_difference
+      if id ~= 4 then
+        if key1_hold then
+          bank[id].id = util.clamp(bank[id].id + d,1,16)
+          selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
+          selected[id].y = 8-((bank[id].id-1)%4)
+          cheat(id,bank[id].id)
         else
-          bank[id][bank[id].id].end_point = (9+(8*(bank[id][bank[id].id].clip-1)))
-          bank[id][bank[id].id].start_point = bank[id][bank[id].id].end_point - current_difference
+          local current_difference = (bank[id][bank[id].id].end_point - bank[id][bank[id].id].start_point)
+          if bank[id][bank[id].id].start_point + current_difference <= (9+(8*(bank[id][bank[id].id].clip-1))) then
+            bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point + d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+            bank[id][bank[id].id].end_point = bank[id][bank[id].id].start_point + current_difference
+          else
+            bank[id][bank[id].id].end_point = (9+(8*(bank[id][bank[id].id].clip-1)))
+            bank[id][bank[id].id].start_point = bank[id][bank[id].id].end_point - current_difference
+          end
         end
+        softcut.loop_start(id+1,bank[id][bank[id].id].start_point)
+        softcut.loop_end(id+1,bank[id][bank[id].id].end_point)
+      elseif id == 4 then
+        local current_difference = (rec.end_point - rec.start_point)
+        if rec.start_point + current_difference <= (9+(8*(rec.clip-1))) then
+          rec.start_point = util.clamp(rec.start_point + d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+          rec.end_point = rec.start_point + current_difference
+        else
+          rec.end_point = (9+(8*(rec.clip-1)))
+          rec.start_point = rec.end_point - current_difference
+        end
+        -- NEED SOFTCUT PARAMS
       end
-      softcut.loop_start(id+1,bank[id][bank[id].id].start_point)
-      softcut.loop_end(id+1,bank[id][bank[id].id].end_point)
     elseif menu == 5 then
       local id = page.filtering_sel + 1
       if key1_hold or grid.alt == 1 then
@@ -51,12 +63,21 @@ function encoder_actions.init(n,d)
       page.main_sel = util.clamp(page.main_sel+d,1,6)
     elseif menu == 2 then
       local id = page.loops_sel + 1
-      if d >= 0 and bank[id][bank[id].id].start_point < (bank[id][bank[id].id].end_point - d/10) then
-        bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
-      elseif d < 0 then
-        bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
+      if id ~=4 then
+        if d >= 0 and bank[id][bank[id].id].start_point < (bank[id][bank[id].id].end_point - d/10) then
+          bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
+        elseif d < 0 then
+          bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
+        end
+        softcut.loop_start(id+1, bank[id][bank[id].id].start_point)
+      elseif id == 4 then
+        if d >= 0 and rec.start_point < (rec.end_point - d/10) then
+          rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+        elseif d < 0 then
+          rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+        end
+        softcut.loop_start(1, rec.start_point)
       end
-      softcut.loop_start(id+1, bank[id][bank[id].id].start_point)
     elseif menu == 5 then
       local id = page.filtering_sel + 1
       if key1_hold or grid.alt == 1 then
