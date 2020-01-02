@@ -258,9 +258,13 @@ function grid_actions.init(x,y,z)
   
   for i = 7,5,-1 do
     if x == 16 and z == 1 and y == i then
-      softcut.position(1,1+(8*(7-y)))
-      softcut.loop_start(1,1+(8*(7-y)))
-      softcut.loop_end(1,9+(8*(7-y)))
+      --softcut.position(1,1+(8*(7-y)))
+      --softcut.fade_time(1,0.1)
+      --softcut.recpre_slew_time(1,0.1)
+      softcut.level_slew_time(1,0.5)
+      softcut.fade_time(1,0)
+      softcut.loop_start(1,rec.start_point)
+      softcut.loop_end(1,rec.end_point)
       rec.clip = 8-y
       if grid.alt == 1 then
         freeze()

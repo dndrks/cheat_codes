@@ -443,16 +443,18 @@ phase = function(n, x)
   end
   if rec.state == 1 then
     for i = 2,4 do
-      local squiggle = tonumber(poll_position_new[i])
-      local other_squiggle = tonumber(poll_position_new[1])
-      if squiggle ~= nil and other_squiggle ~= nil then
-        if math.floor(((squiggle*10)+0.5))/10 == math.floor(((other_squiggle*10)+0.5))/10 then
-          softcut.level_slew_time(i,0.01)
-          softcut.level(i,0.04)
-        else
-          if not bank[i-1][bank[i-1].id].enveloped then
-            softcut.level_slew_time(i,1.0)
-            softcut.level(i,bank[i-1][bank[i-1].id].level)
+      if bank[i-1][bank[i-1].id].mode == 1 then
+        local squiggle = tonumber(poll_position_new[i])
+        local other_squiggle = tonumber(poll_position_new[1])
+        if squiggle ~= nil and other_squiggle ~= nil then
+          if math.floor(((squiggle*10)+0.5))/10 == math.floor(((other_squiggle*10)+0.5))/10 then
+            softcut.level_slew_time(i,0.01)
+            softcut.level(i,0.04)
+          else
+            if not bank[i-1][bank[i-1].id].enveloped then
+              softcut.level_slew_time(i,1.0)
+              softcut.level(i,bank[i-1][bank[i-1].id].level)
+            end
           end
         end
       end
@@ -628,8 +630,16 @@ function envelope(i)
 end
 
 function freeze()
+  softcut.recpre_slew_time(1,0.5)
+  softcut.level_slew_time(1,0.5)
+  softcut.fade_time(1,0)
   rec.state = (rec.state + 1)%2
-  softcut.rec(1,rec.state)
+  softcut.rec_level(1,rec.state)
+  if rec.state == 1 then
+    softcut.pre_level(1,params:get("live_rec_feedback"))
+  else
+    softcut.pre_level(1,1)
+  end
 end
 
 function update_delays()

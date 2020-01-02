@@ -32,7 +32,8 @@ function encoder_actions.init(n,d)
           rec.end_point = (9+(8*(rec.clip-1)))
           rec.start_point = rec.end_point - current_difference
         end
-        -- NEED SOFTCUT PARAMS
+        softcut.loop_start(1,rec.start_point)
+        softcut.loop_end(1,rec.end_point)
       end
     elseif menu == 5 then
       local id = page.filtering_sel + 1
@@ -106,12 +107,21 @@ function encoder_actions.init(n,d)
   if n == 3 then
     if menu == 2 then
       local id = page.loops_sel + 1
-      if d <= 0 and bank[id][bank[id].id].start_point < bank[id][bank[id].id].end_point + d/10 then
-        bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
-      elseif d > 0 then
-        bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+      if id ~= 4 then
+        if d <= 0 and bank[id][bank[id].id].start_point < bank[id][bank[id].id].end_point + d/10 then
+          bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+        elseif d > 0 then
+          bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+        end
+        softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
+      elseif id == 4 then
+        if d <= 0 and rec.start_point < rec.end_point + d/10 then
+          rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+        elseif d > 0 then
+          rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+        end
+        softcut.loop_end(1, rec.end_point)
       end
-      softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
     elseif menu == 5 then
       local id = page.filtering_sel + 1
       if key1_hold or grid.alt == 1 then
