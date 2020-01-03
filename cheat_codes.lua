@@ -442,7 +442,7 @@ function init()
   
   softcut.poll_start_phase()
   
-  filter_types = {"lp", "hp", "bp"}
+  filter_types = {"lp", "hp", "bp", "lp/hp"}
   
   rec_state_watcher = metro.init()
   rec_state_watcher.time = 0.25
@@ -628,14 +628,22 @@ function cheat(b,i)
     params:set("filter "..math.floor(tonumber(b)).." lp",1)
     params:set("filter "..math.floor(tonumber(b)).." hp",0)
     params:set("filter "..math.floor(tonumber(b)).." bp",0)
+    params:set("filter "..math.floor(tonumber(b)).." dry",0)
   elseif bank[b][i].filter_type == 2 then
     params:set("filter "..math.floor(tonumber(b)).." lp",0)
     params:set("filter "..math.floor(tonumber(b)).." hp",1)
     params:set("filter "..math.floor(tonumber(b)).." bp",0)
+    params:set("filter "..math.floor(tonumber(b)).." dry",0)
   elseif bank[b][i].filter_type == 3 then
     params:set("filter "..math.floor(tonumber(b)).." lp",0)
     params:set("filter "..math.floor(tonumber(b)).." hp",0)
     params:set("filter "..math.floor(tonumber(b)).." bp",1)
+    params:set("filter "..math.floor(tonumber(b)).." dry",0)
+  elseif bank[b][i].filter_type == 4 then
+    params:set("filter "..math.floor(tonumber(b)).." lp",0)
+    params:set("filter "..math.floor(tonumber(b)).." hp",0)
+    params:set("filter "..math.floor(tonumber(b)).." bp",0)
+    params:set("filter "..math.floor(tonumber(b)).." dry",1)
   end
   softcut.post_filter_dry(b+1,bank[b][i].fd)
   softcut.pan(b+1,bank[b][i].pan)
@@ -1050,6 +1058,8 @@ arc_redraw = function()
         a:segment(i, util.linlin(1, 12000, (tau*(1/4)), tau*1.24, fc_to_led), tau*(1/4), 15)
       elseif bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 3 then
         a:segment(i, util.linlin(10, 12000, (tau*(1/4)), tau*1.20, fc_to_led), util.linlin(10, 12000, (tau*(1/4))+0.3, tau*1.249999, fc_to_led), 15)
+      elseif bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 4 then
+        --NEED STUFF
       end
     end
   end

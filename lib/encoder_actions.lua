@@ -39,23 +39,36 @@ function encoder_actions.init(n,d)
       local id = page.filtering_sel + 1
       if key1_hold or grid.alt == 1 then
         for j = 1,16 do
-          bank[id][j].filter_type = util.clamp(bank[id][j].filter_type+d,1,3)
+          bank[id][j].filter_type = util.clamp(bank[id][j].filter_type+d,1,4)
         end
       else
-        bank[id][bank[id].id].filter_type = util.clamp(bank[id][bank[id].id].filter_type+d,1,3)
+        bank[id][bank[id].id].filter_type = util.clamp(bank[id][bank[id].id].filter_type+d,1,4)
       end
       if bank[id][bank[id].id].filter_type == 1 then
         params:set("filter "..math.floor(tonumber(id)).." lp",1)
         params:set("filter "..math.floor(tonumber(id)).." hp",0)
         params:set("filter "..math.floor(tonumber(id)).." bp",0)
+        params:set("filter "..math.floor(tonumber(id)).." dry",0)
       elseif bank[id][bank[id].id].filter_type == 2 then
         params:set("filter "..math.floor(tonumber(id)).." lp",0)
         params:set("filter "..math.floor(tonumber(id)).." hp",1)
         params:set("filter "..math.floor(tonumber(id)).." bp",0)
+        params:set("filter "..math.floor(tonumber(id)).." dry",0)
       elseif bank[id][bank[id].id].filter_type == 3 then
         params:set("filter "..math.floor(tonumber(id)).." lp",0)
         params:set("filter "..math.floor(tonumber(id)).." hp",0)
         params:set("filter "..math.floor(tonumber(id)).." bp",1)
+        params:set("filter "..math.floor(tonumber(id)).." dry",0)
+      elseif bank[id][bank[id].id].filter_type == 4 then
+        params:set("filter "..math.floor(tonumber(id)).." lp",0)
+        params:set("filter "..math.floor(tonumber(id)).." hp",0)
+        params:set("filter "..math.floor(tonumber(id)).." bp",0)
+        params:set("filter "..math.floor(tonumber(id)).." dry",1)
+        cross_filter = {}
+        cross_filter.fc = 12000
+        cross_filter.lp = 0
+        cross_filter.hp = 0
+        cross_filter.dry = 1
       end
     end
   end
@@ -81,14 +94,58 @@ function encoder_actions.init(n,d)
       end
     elseif menu == 5 then
       local id = page.filtering_sel + 1
-      if key1_hold or grid.alt == 1 then
-        for j = 1,16 do
-          bank[id][j].fc = util.clamp(bank[id][j].fc+(d*100), 10, 12000)
+      if bank[id][bank[id].id].filter_type ~= 4 then
+        if key1_hold or grid.alt == 1 then
+          for j = 1,16 do
+            bank[id][j].fc = util.clamp(bank[id][j].fc+(d*100), 10, 12000)
+          end
+        else
+          bank[id][bank[id].id].fc = util.clamp(bank[id][bank[id].id].fc+(d*100), 10, 12000)
         end
-      else
-        bank[id][bank[id].id].fc = util.clamp(bank[id][bank[id].id].fc+(d*100), 10, 12000)
+        params:set("filter "..id.." cutoff", bank[id][bank[id].id].fc)
+      elseif bank[id][bank[id].id].filter_type == 4 then
+        if d < 0 and cross_filter.lp < 1 and cross_filter.hp == 0 then
+          cross_filter.lp = util.clamp(cross_filter.lp-(d/100),0,1)
+          cross_filter.dry = util.clamp(cross_filter.dry+(d/100),0,1)
+          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
+          cross_filter.fc = util.linexp(0,1,12000,80,cross_filter.lp)
+          params:set("filter "..id.." cutoff",cross_filter.fc)
+          params:set("filter "..id.." lp", math.abs(exp_cf_dry-1))
+          params:set("filter "..id.." dry", exp_cf_dry)
+        elseif d > 0 and cross_filter.lp <= 1.0 and cross_filter.hp == 0 and cross_filter.dry < 1 then
+          cross_filter.lp = util.clamp(cross_filter.lp-(d/100),0,1)
+          cross_filter.dry = util.clamp(cross_filter.dry+(d/100),0,1)
+          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
+          cross_filter.fc = util.linexp(0,1,12000,80,cross_filter.lp)
+          params:set("filter "..id.." cutoff",cross_filter.fc)
+          params:set("filter "..id.." lp", math.abs(exp_cf_dry-1))
+          params:set("filter "..id.." dry", exp_cf_dry)
+        --[[elseif d > 0 and cross_filter.lp == 0.0 and cross_filter.hp == 0.0 then
+          cross_filter.fc = 80
+          cross_filter.dry = util.clamp(cross_filter.dry-(d/100),0,1)
+          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
+          cross_filter.hp = util.clamp(cross_filter.hp+(d/100),0,1)
+          params:set("filter "..id.." cutoff", 10)
+          params:set("filter "..id.." hp", cross_filter.hp)
+          params:set("filter "..id.." dry", exp_cf_dry)]]--
+        elseif d > 0 and cross_filter.lp == 0.0 and cross_filter.hp < 1.0 then
+          cross_filter.hp = util.clamp(cross_filter.hp+(d/100),0,1)
+          cross_filter.fc = util.linexp(0,1,80,12000,cross_filter.hp)
+          cross_filter.dry = util.clamp(cross_filter.dry-(d/100),0,1)
+          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
+          params:set("filter "..id.." cutoff",cross_filter.fc)
+          params:set("filter "..id.." hp", math.abs(exp_cf_dry-1))
+          params:set("filter "..id.." dry", exp_cf_dry)
+        elseif d < 0 and cross_filter.hp <= 1.0 and cross_filter.lp == 0 then
+          cross_filter.hp = util.clamp(cross_filter.hp+(d/100),0,1)
+          cross_filter.dry = util.clamp(cross_filter.dry-(d/100),0,1)
+          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
+          cross_filter.fc = util.linexp(0,1,80,12000,cross_filter.hp)
+          params:set("filter "..id.." cutoff",cross_filter.fc)
+          params:set("filter "..id.." hp", math.abs(exp_cf_dry-1))
+          params:set("filter "..id.." dry", exp_cf_dry)
+        end
       end
-      params:set("filter "..id.." cutoff", bank[id][bank[id].id].fc)
     elseif menu == 6 then
       local line = page.delay_sel
       if line == 0 then
