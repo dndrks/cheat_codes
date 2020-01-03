@@ -45,6 +45,20 @@ help_menu = "welcome"
 --[[rec_counter = metro.init(rec_count, 0.01, -1)
 rec_time = 0]]--
 
+function f1()
+  softcut.post_filter_lp(2,0)
+  softcut.post_filter_hp(2,1)
+  softcut.post_filter_fc(2,10)
+  params:set("filter 1 cutoff",10)
+end
+
+function f2()
+  softcut.post_filter_hp(2,0)
+  softcut.post_filter_lp(2,1)
+  softcut.post_filter_fc(2,12000)
+  params:set("filter 1 cutoff",12000)
+end
+
 env_counter = {}
 for i = 1,3 do
   env_counter[i] = metro.init()
@@ -284,7 +298,7 @@ function init()
   params:set_action("quant_div",function() update_tempo() end)
   params:add_number("quant_div_pats", "pattern quant. division", 1, 32, 4)
   params:set_action("quant_div_pats",function() update_tempo() end)
-  params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "+zilchmo4" })
+  params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
   params:set_action("zilchmo_patterning", function() end)
 
   params:default()
@@ -429,6 +443,22 @@ function init()
   softcut.poll_start_phase()
   
   filter_types = {"lp", "hp", "bp"}
+  
+  rec_state_watcher = metro.init()
+  rec_state_watcher.time = 0.25
+  rec_state_watcher.event = function()
+    if rec.loop == 0 then
+      if rec.state == 1 then
+        if rec.end_point < poll_position_new[1] +0.01 then
+          rec.state = 0
+          print("phase: "..rec.state)
+          rec_state_watcher:stop()
+        end
+      end
+    end
+  end
+  rec_state_watcher.count = -1
+  rec_state_watcher:start()
 end
 
 poll_position_new = {}
@@ -629,7 +659,7 @@ function envelope(i)
   end
 end
 
-function freeze()
+function buff_freeze()
   softcut.recpre_slew_time(1,0.5)
   softcut.level_slew_time(1,0.5)
   softcut.fade_time(1,0)
@@ -640,6 +670,10 @@ function freeze()
   else
     softcut.pre_level(1,1)
   end
+end
+
+function buff_flush()
+  --softcut.buffer_clear_region(rec.start_point, rec.end_point)
 end
 
 function update_delays()
@@ -787,13 +821,23 @@ function grid_redraw()
   end
   
   for i = 1,3 do
+    if grid_pat[i].led == nil then grid_pat[i].led = 0 end
     if grid_pat[i].rec == 1 then
-      g:led(2+(5*(i-1)),1,(15*1))
+      grid_pat[i].led = (grid_pat[i].led + 1)
+      if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
+        g:led(2+(5*(i-1)),1,(9))
+      elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
+        g:led(2+(5*(i-1)),1,(0))
+        grid_pat[i].led = 0
+      end
     elseif grid_pat[i].play == 1 then
+      grid_pat[i].led = 0
       g:led(2+(5*(i-1)),1,9)
     elseif grid_pat[i].count > 0 then
+      grid_pat[i].led = 0
       g:led(2+(5*(i-1)),1,5)
     else
+      grid_pat[i].led = 0
       g:led(2+(5*(i-1)),1,3)
     end
   end
@@ -859,12 +903,12 @@ function grid_pattern_execute(entry)
     selected[i].x = entry.x
     selected[i].y = entry.y
     bank[i].id = selected[i].id
-    --[[if params:get("zilchmo_patterning") == 2 then
-      bank[i][bank[i].id].loop = entry.loop
-      bank[i][bank[i].id].pause = entry.pause
+    if params:get("zilchmo_patterning") == 2 then
+      --bank[i][bank[i].id].loop = entry.loop
+      --bank[i][bank[i].id].pause = entry.pause
       bank[i][bank[i].id].mode = entry.mode
       bank[i][bank[i].id].clip = entry.clip
-    end]]--
+    end
     if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
       if params:get("zilchmo_patterning") == 2 then
         bank[i][bank[i].id].start_point = entry.start_point
@@ -1084,6 +1128,7 @@ function savestate()
       io.write(bank[i][k].envelope_time .. "\n")
     end
   end
+  io.write(params:get("zilchmo_patterning") .. "\n")
   io.close(file)
 end
 
@@ -1169,6 +1214,7 @@ function loadstate()
           bank[i][k].envelope_time = tonumber(io.read())
         end
       end
+      params:set("zilchmo_patterning",tonumber(io.read()))
     end
     io.close(file)
     for i = 1,3 do

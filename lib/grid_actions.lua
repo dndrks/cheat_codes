@@ -263,14 +263,40 @@ function grid_actions.init(x,y,z)
       --softcut.recpre_slew_time(1,0.1)
       softcut.level_slew_time(1,0.5)
       softcut.fade_time(1,0)
+      
+      for go = 1,2 do
+      local old_min = (1+(8*(rec.clip-1)))
+      local old_max = (9+(8*(rec.clip-1)))
+      local old_range = old_min - old_max
+      rec.clip = 8-y
+      local new_min = (1+(8*(rec.clip-1)))
+      local new_max = (9+(8*(rec.clip-1)))
+      local new_range = new_max - new_min
+      local current_difference = (rec.end_point - rec.start_point)
+      rec.start_point = (((rec.start_point - old_min) * new_range) / old_range) + new_min
+      rec.end_point = rec.start_point + current_difference
+      end
+      
+      if rec.loop == 0 then
+        softcut.position(1,rec.start_point)
+        if rec.state == 0 then rec.state = 1 print("grid: "..rec.state) rec_state_watcher:start() end
+      end
+      
       softcut.loop_start(1,rec.start_point)
       softcut.loop_end(1,rec.end_point)
-      rec.clip = 8-y
-      if grid.alt == 1 then
-        freeze()
+      if grid.alt == 1 and rec.loop == 1 then
+        buff_freeze()
+      --[[else
+        buff_freeze()]]--
       end
       if menu == 7 then
         help_menu = "buffer switch"
+      end
+      buff_key_down = util.time()
+    elseif x == 16 and z == 0 and y == i then
+      local buff_key_up = util.time()
+      if buff_key_up - buff_key_down >=1.5 then
+        buff_flush()
       end
     end
   end

@@ -69,6 +69,15 @@ function start_up.init()
   params:add{id="live_rec_feedback", name="live rec feedback", type="control", 
   controlspec=controlspec.new(0,1.0,'lin',0,0.25,""),
   action=function(x) softcut.pre_level(1,x) end}
+
+  params:add_option("rec_loop", "live rec behavior", {"loop","1-shot"}, 1)
+  params:set_action("rec_loop",
+    function(x)
+      rec.loop = 2-x
+      softcut.loop(1,rec.loop)
+      softcut.position(1,rec.start_point)
+    end
+  )
   
   offset = 0
   params:add_control("offset", "global pitch offset", controlspec.new(-24, 24, 'lin', 1, 0, "st"))
