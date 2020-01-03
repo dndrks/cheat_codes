@@ -545,6 +545,7 @@ function rec_count()
 end
 
 function reset_all_banks()
+  cross_filter = {}
   for i = 1,3 do
     bank[i] = {}
     bank[i].id = 1
@@ -579,6 +580,12 @@ function reset_all_banks()
       bank[i][k].enveloped = false
       bank[i][k].envelope_time = 0.5
     end
+    cross_filter[i] = {}
+    cross_filter[i].fc = 12000
+    cross_filter[i].lp = 0
+    cross_filter[i].hp = 0
+    cross_filter[i].dry = 1
+    cross_filter[i].exp_dry = 1
     cheat(i,bank[i].id)
   end
 end
@@ -621,7 +628,13 @@ function cheat(b,i)
       softcut.position(b+1,bank[b][i].end_point-0.05)
   end
   --
-  softcut.post_filter_fc(b+1,bank[b][i].fc)
+  if bank[b][i].filter_type ~=4 then
+    softcut.post_filter_fc(b+1,bank[b][i].fc)
+    softcut.post_filter_dry(b+1,bank[b][i].fd)
+  else
+    softcut.post_filter_fc(b+1,cross_filter[b].fc)
+    softcut.post_filter_dry(b+1,cross_filter[b].exp_dry)
+  end
   softcut.post_filter_rq(b+1,bank[b][i].q)
   local filter_type = bank[b][i].filter_type
   if bank[b][i].filter_type == 1 then
@@ -640,12 +653,11 @@ function cheat(b,i)
     params:set("filter "..math.floor(tonumber(b)).." bp",1)
     params:set("filter "..math.floor(tonumber(b)).." dry",0)
   elseif bank[b][i].filter_type == 4 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",0)
-    params:set("filter "..math.floor(tonumber(b)).." hp",0)
+    params:set("filter "..math.floor(tonumber(b)).." lp",math.abs(cross_filter[b].exp_dry-1))
+    params:set("filter "..math.floor(tonumber(b)).." hp",math.abs(cross_filter[b].exp_dry-1))
     params:set("filter "..math.floor(tonumber(b)).." bp",0)
-    params:set("filter "..math.floor(tonumber(b)).." dry",1)
+    params:set("filter "..math.floor(tonumber(b)).." dry",cross_filter[b].exp_dry)
   end
-  softcut.post_filter_dry(b+1,bank[b][i].fd)
   softcut.pan(b+1,bank[b][i].pan)
   update_delays()
 end

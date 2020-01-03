@@ -64,11 +64,6 @@ function encoder_actions.init(n,d)
         params:set("filter "..math.floor(tonumber(id)).." hp",0)
         params:set("filter "..math.floor(tonumber(id)).." bp",0)
         params:set("filter "..math.floor(tonumber(id)).." dry",1)
-        cross_filter = {}
-        cross_filter.fc = 12000
-        cross_filter.lp = 0
-        cross_filter.hp = 0
-        cross_filter.dry = 1
       end
     end
   end
@@ -104,46 +99,46 @@ function encoder_actions.init(n,d)
         end
         params:set("filter "..id.." cutoff", bank[id][bank[id].id].fc)
       elseif bank[id][bank[id].id].filter_type == 4 then
-        if d < 0 and cross_filter.lp < 1 and cross_filter.hp == 0 then
-          cross_filter.lp = util.clamp(cross_filter.lp-(d/100),0,1)
-          cross_filter.dry = util.clamp(cross_filter.dry+(d/100),0,1)
-          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
-          cross_filter.fc = util.linexp(0,1,12000,80,cross_filter.lp)
-          params:set("filter "..id.." cutoff",cross_filter.fc)
-          params:set("filter "..id.." lp", math.abs(exp_cf_dry-1))
-          params:set("filter "..id.." dry", exp_cf_dry)
-        elseif d > 0 and cross_filter.lp <= 1.0 and cross_filter.hp == 0 and cross_filter.dry < 1 then
-          cross_filter.lp = util.clamp(cross_filter.lp-(d/100),0,1)
-          cross_filter.dry = util.clamp(cross_filter.dry+(d/100),0,1)
-          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
-          cross_filter.fc = util.linexp(0,1,12000,80,cross_filter.lp)
-          params:set("filter "..id.." cutoff",cross_filter.fc)
-          params:set("filter "..id.." lp", math.abs(exp_cf_dry-1))
-          params:set("filter "..id.." dry", exp_cf_dry)
-        --[[elseif d > 0 and cross_filter.lp == 0.0 and cross_filter.hp == 0.0 then
-          cross_filter.fc = 80
-          cross_filter.dry = util.clamp(cross_filter.dry-(d/100),0,1)
-          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
-          cross_filter.hp = util.clamp(cross_filter.hp+(d/100),0,1)
-          params:set("filter "..id.." cutoff", 10)
-          params:set("filter "..id.." hp", cross_filter.hp)
-          params:set("filter "..id.." dry", exp_cf_dry)]]--
-        elseif d > 0 and cross_filter.lp == 0.0 and cross_filter.hp < 1.0 then
-          cross_filter.hp = util.clamp(cross_filter.hp+(d/100),0,1)
-          cross_filter.fc = util.linexp(0,1,80,12000,cross_filter.hp)
-          cross_filter.dry = util.clamp(cross_filter.dry-(d/100),0,1)
-          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
-          params:set("filter "..id.." cutoff",cross_filter.fc)
-          params:set("filter "..id.." hp", math.abs(exp_cf_dry-1))
-          params:set("filter "..id.." dry", exp_cf_dry)
-        elseif d < 0 and cross_filter.hp <= 1.0 and cross_filter.lp == 0 then
-          cross_filter.hp = util.clamp(cross_filter.hp+(d/100),0,1)
-          cross_filter.dry = util.clamp(cross_filter.dry-(d/100),0,1)
-          local exp_cf_dry = (util.linexp(0,1,1,101,cross_filter.dry)-1)/100
-          cross_filter.fc = util.linexp(0,1,80,12000,cross_filter.hp)
-          params:set("filter "..id.." cutoff",cross_filter.fc)
-          params:set("filter "..id.." hp", math.abs(exp_cf_dry-1))
-          params:set("filter "..id.." dry", exp_cf_dry)
+        if d < 0 and cross_filter[id].lp < 1 and cross_filter[id].hp == 0 then
+          cross_filter[id].lp = util.clamp(cross_filter[id].lp-(d/100),0,1)
+          cross_filter[id].dry = util.clamp(cross_filter[id].dry+(d/100),0,1)
+          cross_filter[id].exp_dry = (util.linexp(0,1,1,101,cross_filter[id].dry)-1)/100
+          cross_filter[id].fc = util.linexp(0,1,12000,10,cross_filter[id].lp)
+          params:set("filter "..id.." cutoff",cross_filter[id].fc)
+          params:set("filter "..id.." lp", math.abs(cross_filter[id].exp_dry-1))
+          if cross_filter[id].exp_dry < 0.05 then
+            params:set("filter "..id.." dry", 0)
+          else
+            params:set("filter "..id.." dry", cross_filter[id].exp_dry)
+          end
+        elseif d > 0 and cross_filter[id].lp <= 1.0 and cross_filter[id].hp == 0 and cross_filter[id].dry < 1 then
+          cross_filter[id].lp = util.clamp(cross_filter[id].lp-(d/100),0,1)
+          cross_filter[id].dry = util.clamp(cross_filter[id].dry+(d/100),0,1)
+          cross_filter[id].exp_dry = (util.linexp(0,1,1,101,cross_filter[id].dry)-1)/100
+          cross_filter[id].fc = util.linexp(0,1,12000,10,cross_filter[id].lp)
+          params:set("filter "..id.." cutoff",cross_filter[id].fc)
+          params:set("filter "..id.." lp", math.abs(cross_filter[id].exp_dry-1))
+          if cross_filter[id].exp_dry < 0.05 then
+            params:set("filter "..id.." dry", 0)
+          else
+            params:set("filter "..id.." dry", cross_filter[id].exp_dry)
+          end
+        elseif d > 0 and cross_filter[id].lp <= 0.001 then
+          cross_filter[id].hp = util.clamp(cross_filter[id].hp+(d/100),0,1)
+          cross_filter[id].fc = util.linexp(0,1,10,12000,cross_filter[id].hp)
+          cross_filter[id].dry = util.clamp(cross_filter[id].dry-(d/100),0,1)
+          cross_filter[id].exp_dry = (util.linexp(0,1,1,101,cross_filter[id].dry)-1)/100
+          params:set("filter "..id.." cutoff",cross_filter[id].fc)
+          params:set("filter "..id.." hp", math.abs(cross_filter[id].exp_dry-1))
+          params:set("filter "..id.." dry", cross_filter[id].exp_dry)
+        elseif d < 0 and cross_filter[id].hp <= 1.0 and cross_filter[id].lp <= 0.001 then
+          cross_filter[id].hp = util.clamp(cross_filter[id].hp+(d/100),0,1)
+          cross_filter[id].fc = util.linexp(0,1,10,12000,cross_filter[id].hp)
+          cross_filter[id].dry = util.clamp(cross_filter[id].dry-(d/100),0,1)
+          cross_filter[id].exp_dry = (util.linexp(0,1,1,101,cross_filter[id].dry)-1)/100
+          params:set("filter "..id.." cutoff",cross_filter[id].fc)
+          params:set("filter "..id.." hp", math.abs(cross_filter[id].exp_dry-1))
+          params:set("filter "..id.." dry", cross_filter[id].exp_dry)
         end
       end
     elseif menu == 6 then
