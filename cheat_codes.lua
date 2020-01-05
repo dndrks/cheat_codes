@@ -237,6 +237,7 @@ function init()
   rec.start_point = 1
   rec.end_point = 9
   rec.loop = 1
+  rec.clear = 0
   
   params:add_number("collection", "collection", 1,100,1)
   params:set_action("collection", function (x) selected_coll = x end)
@@ -459,6 +460,7 @@ function init()
   end
   rec_state_watcher.count = -1
   rec_state_watcher:start()
+
 end
 
 poll_position_new = {}
@@ -471,13 +473,13 @@ phase = function(n, x)
   if menu == 2 then
     redraw()
   end
-  if rec.state == 1 then
+  --[[if rec.state == 1 then
     for i = 2,4 do
       if bank[i-1][bank[i-1].id].mode == 1 then
         local squiggle = tonumber(poll_position_new[i])
         local other_squiggle = tonumber(poll_position_new[1])
         if squiggle ~= nil and other_squiggle ~= nil then
-          if math.floor(((squiggle*10)+0.5))/10 == math.floor(((other_squiggle*10)+0.5))/10 then
+          if math.floor(((squiggle*100)+0.5))/100 == math.floor(((other_squiggle*100)+0.5))/100 then
             softcut.level_slew_time(i,0.01)
             softcut.level(i,0.04)
           else
@@ -489,7 +491,14 @@ phase = function(n, x)
         end
       end
     end
-  end
+  elseif rec.state == 0 then
+    for i = 2,4 do
+      if not bank[i-1][bank[i-1].id].enveloped then
+        softcut.level_slew_time(i,0.01)
+        softcut.level(i,bank[i-1][bank[i-1].id].level)
+      end
+    end
+  end]]--
 end
 
 local tap = 0
@@ -576,6 +585,11 @@ function reset_all_banks()
       bank[i][k].bp = 0.0
       bank[i][k].fd = 0.0
       bank[i][k].br = 0.0
+      bank[i][k].cf_fc = 12000
+      bank[i][k].cf_lp = 0
+      bank[i][k].cf_hp = 0
+      bank[i][k].cf_dry = 1
+      bank[i][k].cf_exp_dry = 1
       bank[i][k].filter_type = 1
       bank[i][k].enveloped = false
       bank[i][k].envelope_time = 0.5
@@ -682,7 +696,7 @@ end
 function buff_freeze()
   softcut.recpre_slew_time(1,0.5)
   softcut.level_slew_time(1,0.5)
-  softcut.fade_time(1,0)
+  softcut.fade_time(1,0.01)
   rec.state = (rec.state + 1)%2
   softcut.rec_level(1,rec.state)
   if rec.state == 1 then
@@ -693,7 +707,9 @@ function buff_freeze()
 end
 
 function buff_flush()
-  --softcut.buffer_clear_region(rec.start_point, rec.end_point)
+  softcut.buffer_clear_region(rec.start_point, rec.end_point)
+  rec.state = 0
+  rec.clear = 1
 end
 
 function update_delays()
@@ -907,7 +923,11 @@ function grid_redraw()
     end
   end
   
-  g:led(16,8-rec.clip,(5*rec.state)+5)
+  if rec.clear == 0 then
+    g:led(16,8-rec.clip,(5*rec.state)+10)
+  elseif rec.clear == 1 then
+    g:led(16,8-rec.clip,3)
+  end
   
   g:refresh()
 end
@@ -1151,6 +1171,7 @@ function savestate()
     end
   end
   io.write(params:get("zilchmo_patterning") .. "\n")
+  io.write(params:get("rec_loop") .. "\n")
   io.close(file)
 end
 
@@ -1238,6 +1259,7 @@ function loadstate()
       end
       params:set("zilchmo_patterning",tonumber(io.read()))
     end
+    params:set("rec_loop",tonumber(io.read()))
     io.close(file)
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then

@@ -262,7 +262,7 @@ function grid_actions.init(x,y,z)
       --softcut.fade_time(1,0.1)
       --softcut.recpre_slew_time(1,0.1)
       softcut.level_slew_time(1,0.5)
-      softcut.fade_time(1,0)
+      softcut.fade_time(1,0.01)
       
       for go = 1,2 do
       local old_min = (1+(8*(rec.clip-1)))
@@ -277,27 +277,41 @@ function grid_actions.init(x,y,z)
       rec.end_point = rec.start_point + current_difference
       end
       
-      if rec.loop == 0 then
+      if rec.loop == 0 and grid.alt == 0 then
         softcut.position(1,rec.start_point)
         if rec.state == 0 then rec.state = 1 print("grid: "..rec.state) rec_state_watcher:start() end
+        if rec.clear == 1 then rec.clear = 0 end
+      elseif rec.loop == 0 and grid.alt == 1 then
+        buff_flush()
       end
       
       softcut.loop_start(1,rec.start_point)
       softcut.loop_end(1,rec.end_point)
-      if grid.alt == 1 and rec.loop == 1 then
+      if rec.loop == 1 then
         buff_freeze()
+        print("buff_freeze")
+        if rec.clear == 1 then
+          rec.clear = 0
+        end
+      end
+      if grid.alt == 1 then
+        buff_flush()
+      end
+      
+      --[[if grid.alt == 1 and rec.loop == 1 then
+        buff_freeze()]]--
       --[[else
         buff_freeze()]]--
-      end
+      --end
       if menu == 7 then
         help_menu = "buffer switch"
       end
       buff_key_down = util.time()
-    elseif x == 16 and z == 0 and y == i then
+    --[[elseif x == 16 and z == 0 and y == i then
       local buff_key_up = util.time()
       if buff_key_up - buff_key_down >=1.5 then
         buff_flush()
-      end
+      end-]]--
     end
   end
   

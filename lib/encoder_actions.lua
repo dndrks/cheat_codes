@@ -39,10 +39,10 @@ function encoder_actions.init(n,d)
       local id = page.filtering_sel + 1
       if key1_hold or grid.alt == 1 then
         for j = 1,16 do
-          bank[id][j].filter_type = util.clamp(bank[id][j].filter_type+d,1,4)
+          bank[id][j].filter_type = util.clamp(bank[id][j].filter_type+d,1,3)
         end
       else
-        bank[id][bank[id].id].filter_type = util.clamp(bank[id][bank[id].id].filter_type+d,1,4)
+        bank[id][bank[id].id].filter_type = util.clamp(bank[id][bank[id].id].filter_type+d,1,3)
       end
       if bank[id][bank[id].id].filter_type == 1 then
         params:set("filter "..math.floor(tonumber(id)).." lp",1)
@@ -99,46 +99,46 @@ function encoder_actions.init(n,d)
         end
         params:set("filter "..id.." cutoff", bank[id][bank[id].id].fc)
       elseif bank[id][bank[id].id].filter_type == 4 then
-        if d < 0 and cross_filter[id].lp < 1 and cross_filter[id].hp == 0 then
-          cross_filter[id].lp = util.clamp(cross_filter[id].lp-(d/100),0,1)
-          cross_filter[id].dry = util.clamp(cross_filter[id].dry+(d/100),0,1)
-          cross_filter[id].exp_dry = (util.linexp(0,1,1,101,cross_filter[id].dry)-1)/100
-          cross_filter[id].fc = util.linexp(0,1,12000,10,cross_filter[id].lp)
-          params:set("filter "..id.." cutoff",cross_filter[id].fc)
-          params:set("filter "..id.." lp", math.abs(cross_filter[id].exp_dry-1))
-          if cross_filter[id].exp_dry < 0.05 then
+        if d < 0 and bank[id][bank[id].id].cf_lp < 1 and bank[id][bank[id].id].cf_hp == 0 then
+          bank[id][bank[id].id].cf_lp = util.clamp(bank[id][bank[id].id].cf_lp-(d/100),0,1)
+          bank[id][bank[id].id].cf_dry = util.clamp(bank[id][bank[id].id].cf_dry+(d/100),0,1)
+          bank[id][bank[id].id].cf_exp_dry = (util.linexp(0,1,1,101,bank[id][bank[id].id].cf_dry)-1)/100
+          bank[id][bank[id].id].cf_fc = util.linexp(0,1,12000,10,bank[id][bank[id].id].cf_lp)
+          params:set("filter "..id.." cutoff",bank[id][bank[id].id].cf_fc)
+          params:set("filter "..id.." lp", math.abs(bank[id][bank[id].id].cf_exp_dry-1))
+          if bank[id][bank[id].id].cf_exp_dry < 0.05 then
             params:set("filter "..id.." dry", 0)
           else
-            params:set("filter "..id.." dry", cross_filter[id].exp_dry)
+            params:set("filter "..id.." dry", bank[id][bank[id].id].cf_exp_dry)
           end
-        elseif d > 0 and cross_filter[id].lp <= 1.0 and cross_filter[id].hp == 0 and cross_filter[id].dry < 1 then
-          cross_filter[id].lp = util.clamp(cross_filter[id].lp-(d/100),0,1)
-          cross_filter[id].dry = util.clamp(cross_filter[id].dry+(d/100),0,1)
-          cross_filter[id].exp_dry = (util.linexp(0,1,1,101,cross_filter[id].dry)-1)/100
-          cross_filter[id].fc = util.linexp(0,1,12000,10,cross_filter[id].lp)
-          params:set("filter "..id.." cutoff",cross_filter[id].fc)
-          params:set("filter "..id.." lp", math.abs(cross_filter[id].exp_dry-1))
-          if cross_filter[id].exp_dry < 0.05 then
+        elseif d > 0 and bank[id][bank[id].id].cf_lp <= 1.0 and bank[id][bank[id].id].cf_hp == 0 and bank[id][bank[id].id].cf_dry < 1 then
+          bank[id][bank[id].id].cf_lp = util.clamp(bank[id][bank[id].id].cf_lp-(d/100),0,1)
+          bank[id][bank[id].id].cf_dry = util.clamp(bank[id][bank[id].id].cf_dry+(d/100),0,1)
+          bank[id][bank[id].id].cf_exp_dry = (util.linexp(0,1,1,101,bank[id][bank[id].id].cf_dry)-1)/100
+          bank[id][bank[id].id].cf_fc = util.linexp(0,1,12000,10,bank[id][bank[id].id].cf_lp)
+          params:set("filter "..id.." cutoff",bank[id][bank[id].id].cf_fc)
+          params:set("filter "..id.." lp", math.abs(bank[id][bank[id].id].cf_exp_dry-1))
+          if bank[id][bank[id].id].cf_exp_dry < 0.05 then
             params:set("filter "..id.." dry", 0)
           else
-            params:set("filter "..id.." dry", cross_filter[id].exp_dry)
+            params:set("filter "..id.." dry", bank[id][bank[id].id].cf_exp_dry)
           end
-        elseif d > 0 and cross_filter[id].lp <= 0.001 then
-          cross_filter[id].hp = util.clamp(cross_filter[id].hp+(d/100),0,1)
-          cross_filter[id].fc = util.linexp(0,1,10,12000,cross_filter[id].hp)
-          cross_filter[id].dry = util.clamp(cross_filter[id].dry-(d/100),0,1)
-          cross_filter[id].exp_dry = (util.linexp(0,1,1,101,cross_filter[id].dry)-1)/100
-          params:set("filter "..id.." cutoff",cross_filter[id].fc)
-          params:set("filter "..id.." hp", math.abs(cross_filter[id].exp_dry-1))
-          params:set("filter "..id.." dry", cross_filter[id].exp_dry)
-        elseif d < 0 and cross_filter[id].hp <= 1.0 and cross_filter[id].lp <= 0.001 then
-          cross_filter[id].hp = util.clamp(cross_filter[id].hp+(d/100),0,1)
-          cross_filter[id].fc = util.linexp(0,1,10,12000,cross_filter[id].hp)
-          cross_filter[id].dry = util.clamp(cross_filter[id].dry-(d/100),0,1)
-          cross_filter[id].exp_dry = (util.linexp(0,1,1,101,cross_filter[id].dry)-1)/100
-          params:set("filter "..id.." cutoff",cross_filter[id].fc)
-          params:set("filter "..id.." hp", math.abs(cross_filter[id].exp_dry-1))
-          params:set("filter "..id.." dry", cross_filter[id].exp_dry)
+        elseif d > 0 and bank[id][bank[id].id].cf_lp <= 0.001 then
+          bank[id][bank[id].id].cf_hp = util.clamp(bank[id][bank[id].id].cf_hp+(d/100),0,1)
+          bank[id][bank[id].id].cf_fc = util.linexp(0,1,10,12000,bank[id][bank[id].id].cf_hp)
+          bank[id][bank[id].id].cf_dry = util.clamp(bank[id][bank[id].id].cf_dry-(d/100),0,1)
+          bank[id][bank[id].id].cf_exp_dry = (util.linexp(0,1,1,101,bank[id][bank[id].id].cf_dry)-1)/100
+          params:set("filter "..id.." cutoff",bank[id][bank[id].id].cf_fc)
+          params:set("filter "..id.." hp", math.abs(bank[id][bank[id].id].cf_exp_dry-1))
+          params:set("filter "..id.." dry", bank[id][bank[id].id].cf_exp_dry)
+        elseif d < 0 and bank[id][bank[id].id].cf_hp <= 1.0 and bank[id][bank[id].id].cf_lp <= 0.001 then
+          bank[id][bank[id].id].cf_hp = util.clamp(bank[id][bank[id].id].cf_hp+(d/100),0,1)
+          bank[id][bank[id].id].cf_fc = util.linexp(0,1,10,12000,bank[id][bank[id].id].cf_hp)
+          bank[id][bank[id].id].cf_dry = util.clamp(bank[id][bank[id].id].cf_dry-(d/100),0,1)
+          bank[id][bank[id].id].cf_exp_dry = (util.linexp(0,1,1,101,bank[id][bank[id].id].cf_dry)-1)/100
+          params:set("filter "..id.." cutoff",bank[id][bank[id].id].cf_fc)
+          params:set("filter "..id.." hp", math.abs(bank[id][bank[id].id].cf_exp_dry-1))
+          params:set("filter "..id.." dry", bank[id][bank[id].id].cf_exp_dry)
         end
       end
     elseif menu == 6 then

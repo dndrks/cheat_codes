@@ -76,6 +76,14 @@ function start_up.init()
       rec.loop = 2-x
       softcut.loop(1,rec.loop)
       softcut.position(1,rec.start_point)
+      rec.state = 1
+      rec.clear = 0
+      if x == 2 then
+        rec_state_watcher:start()
+        softcut.rec_level(1,rec.state)
+      elseif x == 1 then
+        softcut.pre_level(1,params:get("live_rec_feedback"))
+      end
     end
   )
   
