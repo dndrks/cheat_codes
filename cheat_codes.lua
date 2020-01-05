@@ -1277,11 +1277,11 @@ function loadstate()
       rec.clip = tonumber(io.read())
       rec.start_point = tonumber(io.read())
       rec.end_point = tonumber(io.read())
+      softcut.loop_start(1,rec.start_point)
+      softcut.loop_end(1,rec.end_point)
+      softcut.position(1,rec.start_point)
     end
     io.close(file)
-    softcut.loop_start(1,rec.start_point)
-    softcut.loop_end(1,rec.end_point)
-    softcut.position(1,rec.start_point)
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
         cheat(i,bank[i].id)
