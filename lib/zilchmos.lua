@@ -37,8 +37,10 @@ function zilchmos.init(k,i)
             end
           end
         end
-        softcut.level_slew_time(i+1,1.0)
-        softcut.level(i+1,bank[i][bank[i].id].level)
+        if not bank[i][bank[i].id].enveloped then
+          softcut.level_slew_time(i+1,1.0)
+          softcut.level(i+1,bank[i][bank[i].id].level)
+        end
       end
     end
     if fingers[k][i].con == "2" then
@@ -72,8 +74,10 @@ function zilchmos.init(k,i)
             end
           end
         end
-        softcut.level_slew_time(i+1,1.0)
-        softcut.level(i+1,bank[i][bank[i].id].level)
+        if not bank[i][bank[i].id].enveloped then
+          softcut.level_slew_time(i+1,1.0)
+          softcut.level(i+1,bank[i][bank[i].id].level)
+        end
       end
     end
     if fingers[k][i].con == "3" then
@@ -120,7 +124,8 @@ function zilchmos.init(k,i)
             bank[i][j].start_point = math.random(min_start,current_end)/100
           end
         end
-        if bank[i][bank[i].id].loop == true then
+        if bank[i][bank[i].id].loop == true and bank[i][bank[i].id].enveloped == false then
+        --if bank[i][bank[i].id].loop == true then
           cheat(i,bank[i].id)
         end
       elseif k == 3 then
@@ -155,21 +160,39 @@ function zilchmos.init(k,i)
               bank[i][j].pause = false
             end
           end
-          softcut.level(i+1,bank[i][bank[i].id].level)
+          if not bank[i][bank[i].id].enveloped then
+            softcut.level(i+1,bank[i][bank[i].id].level)
+          else
+            cheat(i,bank[i].id)
+          end
           softcut.rate(i+1,bank[i][bank[i].id].rate*offset)
         end
       end
     end
     if fingers[k][i].con == "23" then
       if k == 4 then
-        local jump = math.random(100,900)/100+(8*(bank[i][bank[i].id].clip-1))
-        local current_difference = (bank[i][bank[i].id].end_point - bank[i][bank[i].id].start_point)
-        if jump+current_difference >= 9+(8*(bank[i][bank[i].id].clip-1)) then
-          bank[i][bank[i].id].end_point = 9+(8*(bank[i][bank[i].id].clip-1))
-          bank[i][bank[i].id].start_point = bank[i][bank[i].id].end_point - current_difference
+        if grid.alt == 0 then
+          local jump = math.random(100,900)/100+(8*(bank[i][bank[i].id].clip-1))
+          local current_difference = (bank[i][bank[i].id].end_point - bank[i][bank[i].id].start_point)
+          if jump+current_difference >= 9+(8*(bank[i][bank[i].id].clip-1)) then
+            bank[i][bank[i].id].end_point = 9+(8*(bank[i][bank[i].id].clip-1))
+            bank[i][bank[i].id].start_point = bank[i][bank[i].id].end_point - current_difference
+          else
+            bank[i][bank[i].id].start_point = jump
+            bank[i][bank[i].id].end_point = bank[i][bank[i].id].start_point + current_difference
+          end
         else
-          bank[i][bank[i].id].start_point = jump
-          bank[i][bank[i].id].end_point = bank[i][bank[i].id].start_point + current_difference
+          for j = 1,16 do
+            local jump = math.random(100,900)/100+(8*(bank[i][j].clip-1))
+            local current_difference = (bank[i][j].end_point - bank[i][j].start_point)
+            if jump+current_difference >= 9+(8*(bank[i][j].clip-1)) then
+              bank[i][j].end_point = 9+(8*(bank[i][j].clip-1))
+              bank[i][j].start_point = bank[i][j].end_point - current_difference
+            else
+              bank[i][j].start_point = jump
+              bank[i][j].end_point = bank[i][j].start_point + current_difference
+            end
+          end
         end
         softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
         softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
@@ -269,7 +292,8 @@ function zilchmos.init(k,i)
       end
       if bank[i][bank[i].id].pause == false then
         softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
-        softcut.level(i+1,bank[i][bank[i].id].level)
+        --softcut.level(i+1,bank[i][bank[i].id].level)
+        -- WILL THIS WORK??
       end
     end
     if fingers[k][i].con == "134" then
@@ -296,7 +320,8 @@ function zilchmos.init(k,i)
       end
       if bank[i][bank[i].id].pause == false then
         softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
-        softcut.level(i+1,bank[i][bank[i].id].level)
+        --softcut.level(i+1,bank[i][bank[i].id].level)
+        -- WILL THIS WORK??
       end
     end
     if fingers[k][i].con == "123" then

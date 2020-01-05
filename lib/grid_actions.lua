@@ -16,10 +16,19 @@ function grid_actions.init(x,y,z)
         if quantize == 0 then
           cheat(i, bank[i].id)
           grid_p[i] = {}
+          grid_p[i].action = "pads"
           grid_p[i].i = i
           grid_p[i].id = selected[i].id
           grid_p[i].x = selected[i].x
           grid_p[i].y = selected[i].y
+          grid_p[i].rate = bank[i][bank[i].id].rate
+          grid_p[i].start_point = bank[i][bank[i].id].start_point
+          grid_p[i].end_point = bank[i][bank[i].id].end_point
+          grid_p[i].rate_adjusted = false
+          grid_p[i].loop = bank[i][bank[i].id].loop
+          grid_p[i].pause = bank[i][bank[i].id].pause
+          grid_p[i].mode = bank[i][bank[i].id].mode
+          grid_p[i].clip = bank[i][bank[i].id].clip
           grid_pat[i]:watch(grid_p[i])
         else
           table.insert(quantize_events[i],selected[i].id)
@@ -43,7 +52,9 @@ function grid_actions.init(x,y,z)
             bank[i][bank[i].id].filter_type,
             bank[i][bank[i].id].fc,
             bank[i][bank[i].id].q,
-            bank[i][bank[i].id].fifth
+            bank[i][bank[i].id].fifth,
+            bank[i][bank[i].id].enveloped,
+            bank[i][bank[i].id].envelope_time
             )
         else
           selected[i].x = x
@@ -247,16 +258,62 @@ function grid_actions.init(x,y,z)
   
   for i = 7,5,-1 do
     if x == 16 and z == 1 and y == i then
-      softcut.position(1,1+(8*(7-y)))
-      softcut.loop_start(1,1+(8*(7-y)))
-      softcut.loop_end(1,9+(8*(7-y)))
+      --softcut.position(1,1+(8*(7-y)))
+      --softcut.fade_time(1,0.1)
+      --softcut.recpre_slew_time(1,0.1)
+      softcut.level_slew_time(1,0.5)
+      softcut.fade_time(1,0.01)
+      
+      local old_clip = rec.clip
+      
+      for go = 1,2 do
+      local old_min = (1+(8*(rec.clip-1)))
+      local old_max = (9+(8*(rec.clip-1)))
+      local old_range = old_min - old_max
       rec.clip = 8-y
-      if grid.alt == 1 then
-        freeze()
+      local new_min = (1+(8*(rec.clip-1)))
+      local new_max = (9+(8*(rec.clip-1)))
+      local new_range = new_max - new_min
+      local current_difference = (rec.end_point - rec.start_point)
+      rec.start_point = (((rec.start_point - old_min) * new_range) / old_range) + new_min
+      rec.end_point = rec.start_point + current_difference
       end
+      
+      if rec.loop == 0 and grid.alt == 0 then
+        softcut.position(1,rec.start_point)
+        if rec.state == 0 then
+          rec.state = 1
+          softcut.rec_level(1,1)
+          rec_state_watcher:start()
+          end
+        if rec.clear == 1 then rec.clear = 0 end
+      elseif rec.loop == 0 and grid.alt == 1 then
+        buff_flush()
+      end
+      
+      softcut.loop_start(1,rec.start_point)
+      softcut.loop_end(1,rec.end_point)
+      if rec.loop == 1 then
+        if old_clip ~= rec.clip then rec.state = 0 end
+        --if rec.state == 0 then rec.state = 1
+        buff_freeze()
+        if rec.clear == 1 then
+          rec.clear = 0
+        end
+      end
+      if grid.alt == 1 then
+        buff_flush()
+      end
+      
       if menu == 7 then
         help_menu = "buffer switch"
       end
+      buff_key_down = util.time()
+    --[[elseif x == 16 and z == 0 and y == i then
+      local buff_key_up = util.time()
+      if buff_key_up - buff_key_down >=1.5 then
+        buff_flush()
+      end-]]--
     end
   end
   

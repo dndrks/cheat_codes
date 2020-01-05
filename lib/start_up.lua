@@ -13,7 +13,6 @@ function start_up.init()
     audio.level_adc_cut(1)
     --softcut.fade_time(i, 0.1)
     softcut.fade_time(i, 0.01)
-
     softcut.play(i, 1)
     softcut.rate(i, 1)
     softcut.loop_start(i, 1)
@@ -70,6 +69,26 @@ function start_up.init()
   params:add{id="live_rec_feedback", name="live rec feedback", type="control", 
   controlspec=controlspec.new(0,1.0,'lin',0,0.25,""),
   action=function(x) softcut.pre_level(1,x) end}
+
+  params:add_option("rec_loop", "live rec behavior", {"loop","1-shot"}, 1)
+  params:set_action("rec_loop",
+    function(x)
+      rec.loop = 2-x
+      softcut.loop(1,rec.loop)
+      softcut.position(1,rec.start_point)
+      rec.state = 1
+      rec.clear = 0
+      softcut.rec_level(1,rec.state)
+      if x == 2 then
+        rec_state_watcher:start()
+        --softcut.rec_level(1,rec.state)
+        softcut.pre_level(1,params:get("live_rec_feedback"))
+      elseif x == 1 then
+        softcut.pre_level(1,params:get("live_rec_feedback"))
+        --softcut.rec_level(1,rec.state)
+      end
+    end
+  )
   
   offset = 0
   params:add_control("offset", "global pitch offset", controlspec.new(-24, 24, 'lin', 1, 0, "st"))
@@ -100,12 +119,13 @@ function start_up.init()
   for i = 1,3 do
     banks = {"(a)","(b)","(c)"}
     local rates = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
-    params:add_option("rate "..i, "rate "..banks[i], {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}, 10)
+    params:add_control("rate "..i, "rate "..banks[i].." (RAW)", controlspec.new(1,12,'lin',1,10))
+    --params:add_option("rate "..i, "rate "..banks[i], {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}, 10)
     params:set_action("rate "..i, function(x)
       bank[i][bank[i].id].rate = rates[x]
       if bank[i][bank[i].id].pause == false then
         softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
-        softcut.level(i+1,bank[i][bank[i].id].level)
+        --softcut.level(i+1,bank[i][bank[i].id].level)
       end
     end)
     params:add_control("rate slew time "..i, "rate slew time "..banks[i], controlspec.new(0,3,'lin',0,0))
@@ -115,18 +135,24 @@ function start_up.init()
   for i = 1,3 do
     banks = {"(a)","(b)","(c)"}
     params:add_control("pan "..i, "pan "..banks[i], controlspec.new(-1,1,'lin',0.01,0))
-    params:set_action("pan "..i, function(x) softcut.pan(i+1,x) end)
+    params:set_action("pan "..i, function(x) softcut.pan(i+1,x) bank[i][bank[i].id].pan = x end)
     params:add_control("pan slew "..i,"pan slew "..banks[i], controlspec.new(0.,200.,'lin',0.1,5.0))
     params:set_action("pan slew "..i, function(x) softcut.pan_slew_time(i+1,x) end)
-    params:add_control("level "..i, "level "..banks[i], controlspec.new(0.,5.,'lin',0.01,1.0))
-    params:set_action("level "..i, function(x) softcut.level(i+1,x) end)
+    params:add_control("level "..i, "level "..banks[i], controlspec.new(0.,2.,'lin',0.01,1.0))
+    params:set_action("level "..i, function(x)
+      if not bank[i][bank[i].id].enveloped then
+        softcut.level(i+1,x)
+      end
+      bank[i][bank[i].id].level = x
+      redraw()
+      end)
   end
 
   params:add_separator()
   
   for i = 1,3 do
     local banks = {"(a)", "(b)", "(c)"}
-    params:add_control("filter "..i.." cutoff", "filter "..banks[i].." cutoff", controlspec.new(10,12000,'exp',1,12000,"Hz"))
+    params:add_control("filter "..i.." cutoff", "filter "..banks[i].." cutoff", controlspec.new(10,12000,'lin',1,12000,"Hz"))
     params:set_action("filter "..i.." cutoff", function(x) softcut.post_filter_fc(i+1,x) bank[i][bank[i].id].fc = x end)
     params:add_control("filter "..i.." q", "filter "..banks[i].." q", controlspec.new(0.0005, 8.0, 'exp', 0, 2.0, ""))
     params:set_action("filter "..i.." q", function(x) softcut.post_filter_rq(i+1,x) bank[i][bank[i].id].q = x end)
@@ -150,7 +176,8 @@ function start_up.init()
   
   for i = 4,5 do
     local sides = {"L","R"}
-    params:add_option("delay "..sides[i-3]..": rate", "delay "..sides[i-3]..": rate", {"x2","x1 3/4","x1 2/3","x1 1/2","x1 1/3","x1 1/4","x1","/1 1/4","/1 1/3","/1 1/2","/1 2/3","/1 3/4","/2"},7)
+    --params:add_option("delay "..sides[i-3]..": rate", "delay "..sides[i-3]..": rate", {"x2","x1 3/4","x1 2/3","x1 1/2","x1 1/3","x1 1/4","x1","/1 1/4","/1 1/3","/1 1/2","/1 2/3","/1 3/4","/2"},7)
+    params:add_control("delay "..sides[i-3]..": rate", "delay "..sides[i-3]..": rate (RAW)", controlspec.new(1,13,'lin',1,7))
     params:set_action("delay "..sides[i-3]..": rate", function(x)
       delay[i-3].rate = delay_rates[x]
       delay[i-3].id = x
