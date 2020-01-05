@@ -78,11 +78,14 @@ function start_up.init()
       softcut.position(1,rec.start_point)
       rec.state = 1
       rec.clear = 0
+      softcut.rec_level(1,rec.state)
       if x == 2 then
         rec_state_watcher:start()
-        softcut.rec_level(1,rec.state)
+        --softcut.rec_level(1,rec.state)
+        softcut.pre_level(1,params:get("live_rec_feedback"))
       elseif x == 1 then
         softcut.pre_level(1,params:get("live_rec_feedback"))
+        --softcut.rec_level(1,rec.state)
       end
     end
   )

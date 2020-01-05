@@ -452,7 +452,6 @@ function init()
       if rec.state == 1 then
         if rec.end_point < poll_position_new[1] +0.01 then
           rec.state = 0
-          print("phase: "..rec.state)
           rec_state_watcher:stop()
         end
       end
@@ -710,6 +709,7 @@ function buff_flush()
   softcut.buffer_clear_region(rec.start_point, rec.end_point)
   rec.state = 0
   rec.clear = 1
+  softcut.rec_level(1,0)
 end
 
 function update_delays()
@@ -1172,6 +1172,15 @@ function savestate()
   end
   io.write(params:get("zilchmo_patterning") .. "\n")
   io.write(params:get("rec_loop") .. "\n")
+  io.write(params:get("live_rec_feedback") .. "\n")
+  io.write(params:get("quantize_pads") .. "\n")
+  io.write(params:get("quantize_pats") .. "\n")
+  io.write(params:get("quant_div") .. "\n")
+  io.write(params:get("quant_div_pats") .. "\n")
+  io.write(params:get("bpm") .. "\n")
+  io.write(rec.clip .. "\n")
+  io.write(rec.start_point .. "\n")
+  io.write(rec.end_point .. "\n")
   io.close(file)
 end
 
@@ -1260,13 +1269,25 @@ function loadstate()
       params:set("zilchmo_patterning",tonumber(io.read()))
     end
     params:set("rec_loop",tonumber(io.read()))
+    params:set("live_rec_feedback",tonumber(io.read()))
+    params:set("quantize_pads",tonumber(io.read()))
+    params:set("quantize_pats",tonumber(io.read()))
+    params:set("quant_div",tonumber(io.read()))
+    params:set("quant_div_pats",tonumber(io.read()))
+    params:set("bpm",tonumber(io.read()))
+    rec.clip = tonumber(io.read())
+    rec.start_point = tonumber(io.read())
+    rec.end_point = tonumber(io.read())
     io.close(file)
+    softcut.loop_start(1,rec.start_point)
+    softcut.loop_end(1,rec.end_point)
+    softcut.position(1,rec.start_point)
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
         cheat(i,bank[i].id)
       else
         softcut.loop(i+1, 0)
-        softcut.position(i+1,bank[i][bank[i].id].start_point+(8*(bank[i][bank[i].id].clip-1)))
+        softcut.position(i+1,bank[i][bank[i].id].start_point)
       end
     end
   end
