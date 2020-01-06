@@ -47,10 +47,15 @@ function arc_actions.init(n,d)
     softcut.loop_end(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].end_point)
   elseif arc_param[n] == 4 then
     if grid.alt == 0 then
+      bank[arc_control[n]][bank[arc_control[n]].id].fc = util.explin(10,12000,10,12000,bank[arc_control[n]][bank[arc_control[n]].id].fc)
       bank[arc_control[n]][bank[arc_control[n]].id].fc = util.clamp(bank[arc_control[n]][bank[arc_control[n]].id].fc+(d*10), 10, 12000)
+      bank[arc_control[n]][bank[arc_control[n]].id].fc = util.linexp(10,12000,10,12000,bank[arc_control[n]][bank[arc_control[n]].id].fc)
     else
       for j = 1,16 do
+        --bank[arc_control[n]][j].fc = util.clamp(bank[arc_control[n]][j].fc+(d*10), 10, 12000)
+        bank[arc_control[n]][j].fc = util.explin(10,12000,10,12000,bank[arc_control[n]][j].fc)
         bank[arc_control[n]][j].fc = util.clamp(bank[arc_control[n]][j].fc+(d*10), 10, 12000)
+        bank[arc_control[n]][j].fc = util.linexp(10,12000,10,12000,bank[arc_control[n]][j].fc)
       end
     end
     params:set("filter "..arc_control[n].." cutoff", bank[arc_control[n]][bank[arc_control[n]].id].fc)

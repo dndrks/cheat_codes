@@ -259,7 +259,29 @@ function init()
 
   screen.line_width(1)
 
-  clk.on_step = function() update_tempo() end
+  local etap = 0
+  local edelta = 1
+  local prebpm = 110
+  
+  clk.on_step = function()
+    update_tempo()
+    if clk.externalmidi then
+      prebpm = params:get("bpm")
+      local etap1 = util.time()
+      edelta = etap1 - etap
+      etap = etap1
+      local tap_tempo = math.floor((60/edelta)/4)
+      bpm = tap_tempo
+      update_delays()
+      if math.abs(prebpm - bpm) > 1 then
+        params:set("bpm",tap_tempo)
+      end
+      for i = 1,3 do
+        cheat_q_clock(i)
+        grid_pat_q_clock(i)
+      end
+    end
+  end
   clk.on_select_internal = function()
     clk:start()
     crow.input[2].mode("none")
@@ -274,6 +296,7 @@ function init()
       quantizer[i]:stop()
       grid_pat_quantizer[i]:stop()
     end
+    print("external MIDI clock")
   end
   clk.on_select_crow = function()
     for i = 1,3 do

@@ -153,7 +153,7 @@ function main_menu.init()
       screen.move(35,10+(i*15))
       screen.text(filter_types[bank[i][bank[i].id].filter_type])
       screen.move(55,10+(i*15))
-      screen.text(bank[i][bank[i].id].fc)
+      screen.text(string.format("%.0f", bank[i][bank[i].id].fc))
       screen.move(95,10+(i*15))
       screen.text(string.format("%.2f", bank[i][bank[i].id].q))
     end

@@ -391,15 +391,17 @@ function help_menus.buffer_switch()
   screen.move(0,30)
   screen.text("- switch b/w 8 sec buffers")
   screen.move(0,40)
-  screen.text("- record up to 8*3=24 sec")
+  screen.text("- PARAMS for loop / 1-shot")
   screen.move(0,50)
-  screen.text("- use alt to stop rec")
+  screen.text("- use alt to clear")
   screen.level(3)
   screen.move(0,60)
   screen.text("live buffer: "..rec.clip)
   screen.move(60,60)
   if rec.clip ~= 3 then
     screen.text("try: button to R")
+  elseif rec.clip == 3 then
+    screen.text("try: tap 3 again")
   end
 end
 
