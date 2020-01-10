@@ -92,10 +92,15 @@ function encoder_actions.init(n,d)
       if bank[id][bank[id].id].filter_type ~= 4 then
         if key1_hold or grid.alt == 1 then
           for j = 1,16 do
+            bank[id][j].fc = util.explin(10,12000,10,12000,bank[id][j].fc)
             bank[id][j].fc = util.clamp(bank[id][j].fc+(d*100), 10, 12000)
+            bank[id][j].fc = util.linexp(10,12000,10,12000,bank[id][j].fc)
+            --bank[id][j].fc = util.clamp(bank[id][j].fc+(d*100), 10, 12000)
           end
         else
+          bank[id][bank[id].id].fc = util.explin(10,12000,10,12000,bank[id][bank[id].id].fc)
           bank[id][bank[id].id].fc = util.clamp(bank[id][bank[id].id].fc+(d*100), 10, 12000)
+          bank[id][bank[id].id].fc = util.linexp(10,12000,10,12000,bank[id][bank[id].id].fc)
         end
         params:set("filter "..id.." cutoff", bank[id][bank[id].id].fc)
       elseif bank[id][bank[id].id].filter_type == 4 then

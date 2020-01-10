@@ -198,11 +198,33 @@ end
 function es_linearize(bank,mode)
   -- modes: standard linearization, quarter, eighth, eighth triplet, sixteenth, random
   if #grid_pat[bank].event > 1 then
-    local modes = {grid_pat[bank].time[1], 60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
-    for k = 1,#grid_pat[bank].event do
-      grid_pat[bank].time[k] = modes[mode]
+    if mode < 5 then
+      local modes = {grid_pat[bank].time[1], 60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
+      for k = 1,#grid_pat[bank].event do
+        grid_pat[bank].time[k] = modes[mode]
+        print(modes[mode])
+      end
+    else
+      local modes = {60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
+      for k = 1,#grid_pat[bank].event do
+        grid_pat[bank].time[k] = modes[math.random(4)]
+        print(modes[mode])
+      end
     end
-    print(modes[mode])
+  end
+end
+
+function midi_clock_linearize()
+  for i = 1,grid_pat[1].count do
+    g_p_q[1].clicks[i] = math.floor((grid_pat[1].time[i] / ((60/bpm)/4))+0.5)
+    g_p_q[1].event[i] = {}
+    for j = 1,g_p_q[1].clicks[i] do
+      if j == 1 then
+        g_p_q[1].event[i][1] = "something"
+      else
+        g_p_q[1].event[i][j] = "nothing"
+      end
+    end
   end
 end
 
@@ -263,23 +285,99 @@ function init()
   local edelta = 1
   local prebpm = 110
   
+  clock_counting = 0
+  
+  clock_resolution = 4
+  
+  function testing_clocks()
+    local current = g_p_q[1].current_step
+    local sub_step = g_p_q[1].sub_step
+    if go ~= nil and grid_pat[1].count > 0 then
+      if g_p_q[1].event[current][sub_step] == "something" then
+        --print(current, sub_step, "+++")
+        grid_pattern_execute(grid_pat[1].event[grid_pat[1].step])
+      else
+        -- nothing!
+      end
+      --increase sub_step now
+      if g_p_q[1].sub_step == #g_p_q[1].event[grid_pat[1].step] then
+        g_p_q[1].sub_step = 0
+        --if we're at the end of the events in this step, move to the next step
+        if grid_pat[1].step == grid_pat[1].count then
+          grid_pat[1].step = 0
+          g_p_q[1].current_step = 0
+        end
+        grid_pat[1].step = grid_pat[1].step + 1
+        g_p_q[1].current_step = g_p_q[1].current_step + 1
+      end
+      g_p_q[1].sub_step = g_p_q[1].sub_step + 1
+    end
+  end
+  
   clk.on_step = function()
     update_tempo()
     if clk.externalmidi then
-      prebpm = params:get("bpm")
-      local etap1 = util.time()
-      edelta = etap1 - etap
-      etap = etap1
-      local tap_tempo = math.floor((60/edelta)/4)
-      bpm = tap_tempo
-      update_delays()
-      if math.abs(prebpm - bpm) > 1 then
-        params:set("bpm",tap_tempo)
+      testing_clocks()
+      --
+      --[[if go ~= nil and grid_pat[1].count > 0 then
+        g_p_q[1].sub_step = grid_pat[1].step
+        for i = 1,g_p_q[1].clicks[grid_pat[1].step] do
+          for j = 1,#g_p_q[1].event[grid_pat[1].step] do
+            if g_p_q[1].event[grid_pat[1].step][j] == "something" then
+              --grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
+              print("+++")
+            else
+              print("---")
+            end
+          end
+        end
+        if grid_pat[1].step == grid_pat[1].count then
+          grid_pat[1].step = 0
+        end
+        grid_pat[1].step = grid_pat[1].step + 1
       end
-      for i = 1,3 do
-        cheat_q_clock(i)
-        grid_pat_q_clock(i)
+      --
+      if clock_resolution == 1 then
+        for i = 1,3 do
+          --if grid_pat[i].count > 0 and grid_pat[i].rec == 0 and grid_pat[i].play ~= 1 then
+          if gogogo ~= nil and grid_pat[i].count > 0 then
+            grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
+            if grid_pat[i].step == grid_pat[i].count then
+              grid_pat[i].step = 0
+            end
+            grid_pat[i].step = grid_pat[i].step + 1
+          end
+        end
+      elseif (clk.step+1)%clock_resolution == 1 then
+        for i = 1,3 do
+          --if grid_pat[i].count > 0 and grid_pat[i].rec == 0 and grid_pat[i].play ~= 1 then
+          if gogogo ~= nil and grid_pat[i].count > 0 then
+            grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
+            --print(grid_pat[i].step)
+            if grid_pat[i].step == grid_pat[i].count then
+              grid_pat[i].step = 0
+            end
+            grid_pat[i].step = grid_pat[i].step + 1
+          end
+        end
+        for i = 1,3 do
+          cheat_q_clock(i)
+          grid_pat_q_clock(i)
+        end
+        ]]--
+      if (clk.step+1)%clock_resolution == 1 then
+        prebpm = params:get("bpm")
+        local etap1 = util.time()
+        edelta = etap1 - etap
+        etap = etap1
+        local tap_tempo = math.floor(60/edelta)
+        bpm = tap_tempo
+        update_delays()
+        if math.abs(prebpm - bpm) > 1 then
+          params:set("bpm",tap_tempo)
+        end
       end
+      --end
     end
   end
   clk.on_select_internal = function()
@@ -443,6 +541,15 @@ function init()
   for i = 1,3 do
     grid_pat[i] = pattern_time.new()
     grid_pat[i].process = grid_pattern_execute
+  end
+  
+  g_p_q = {}
+  for i = 1,3 do
+    g_p_q[i] = {}
+    g_p_q[i].clicks = {}
+    g_p_q[i].event = {}
+    g_p_q[i].sub_step = 1
+    g_p_q[i].current_step = 1
   end
   
   arc_pat = {}
@@ -759,7 +866,7 @@ function load_sample(file,sample)
       clip[sample].sample_length = 8
     end
     --print(len/48000)
-    softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), 8, 1, 2)
+    softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), 8.05, 1, 2)
   end
 end
 
