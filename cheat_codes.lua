@@ -130,7 +130,7 @@ function grid_pat_q_clock(i)
         grid_pat[i]:clear()
       elseif grid_pat[i].rec == 1 then
         grid_pat[i]:rec_stop()
-        if params:get("auto-sync") == 2 then
+        if params:get("auto-sync") == 2 and quantize == 1 then
           sync_pattern_to_bpm(i,params:get("quant_div"))
         end
         grid_pat[i]:start()
@@ -699,7 +699,7 @@ function update_tempo()
       quantizer[i].time = interval
       grid_pat_quantizer[i].time = interval_pats
     end
-    if synced_to_bpm ~= nil and synced_to_bpm ~= bpm then
+    if synced_to_bpm ~= nil and synced_to_bpm ~= bpm and params:get("auto-sync") == 2 then
       for i = 1,3 do
         if grid_pat[i].count > 0 then
           sync_pattern_to_bpm(i,params:get("quant_div"))
