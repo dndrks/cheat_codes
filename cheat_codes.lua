@@ -130,6 +130,9 @@ function grid_pat_q_clock(i)
         grid_pat[i]:clear()
       elseif grid_pat[i].rec == 1 then
         grid_pat[i]:rec_stop()
+        if params:get("auto-sync") == 2 then
+          sync_pattern_to_bpm(i,params:get("quant_div"))
+        end
         grid_pat[i]:start()
       elseif grid_pat[i].count == 0 then
         grid_pat[i]:rec_start()
@@ -153,12 +156,17 @@ function linearize_grid_pat(bank, mode, resolution)
     local eighth_note = (60 / bpm)/2
     local eighth_triplet_note = (60 / bpm) / 3
     local sixteenth_note = (60 / bpm) / 4
-    local resolutions = {quarter_note, eighth_note, eighth_triplet_note, sixteenth_note}
+    local thirtysecond_note = (60 / bpm) / 8
+    local resolutions = {quarter_note, eighth_note, eighth_triplet_note, sixteenth_note, thirtysecond_note}
     for k = 1,grid_pat[bank].count do
       print("before quant: "..grid_pat[bank].time[k])
       grid_pat[bank].time[k] = resolutions[resolution] * math.floor((grid_pat[bank].time[k] / resolutions[resolution]) + 0.5)
       if grid_pat[bank].time[k] == 0 then
-        grid_pat[bank].time[k] = resolutions[resolution]
+        if quantize == 1 then
+          grid_pat[bank].time[k] = 0
+        elseif quantize == 0 then
+          grid_pat[bank].time[k] = resolutions[resolution]
+        end
       end
       print("after quant: "..grid_pat[bank].time[k])
     end
@@ -198,7 +206,7 @@ end
 function es_linearize(bank,mode)
   -- modes: standard linearization, quarter, eighth, eighth triplet, sixteenth, random
   if #grid_pat[bank].event > 1 then
-    if mode < 5 then
+    if mode <= 5 then
       local modes = {grid_pat[bank].time[1], 60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
       for k = 1,#grid_pat[bank].event do
         grid_pat[bank].time[k] = modes[mode]
@@ -287,8 +295,6 @@ function init()
   
   clock_counting = 0
   
-  clock_resolution = 4
-  
   function testing_clocks()
     local current = g_p_q[1].current_step
     local sub_step = g_p_q[1].sub_step
@@ -317,7 +323,7 @@ function init()
   clk.on_step = function()
     update_tempo()
     if clk.externalmidi then
-      testing_clocks()
+      --testing_clocks()
       --
       --[[if go ~= nil and grid_pat[1].count > 0 then
         g_p_q[1].sub_step = grid_pat[1].step
@@ -336,8 +342,37 @@ function init()
         end
         grid_pat[1].step = grid_pat[1].step + 1
       end
-      --
-      if clock_resolution == 1 then
+      ]]--
+      for i = 1,3 do
+        if bank[i][bank[i].id].clock_resolution == 1 and bank[i].ext_clock == 1 then
+          if gogogo ~= nil and grid_pat[i].count > 0 then
+            grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
+            if grid_pat[i].step == grid_pat[i].count then
+              grid_pat[i].step = 0
+            end
+            grid_pat[i].step = grid_pat[i].step + 1
+          end
+        elseif (clk.step+1)%bank[i][bank[i].id].clock_resolution == 1 and bank[i].ext_clock == 1 then
+          if gogogo ~= nil and grid_pat[i].count > 0 then
+            grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
+            --print(grid_pat[i].step)
+            if grid_pat[i].step == grid_pat[i].count then
+              grid_pat[i].step = 0
+            end
+            grid_pat[i].step = grid_pat[i].step + 1
+          end
+        end
+        if (clk.step+1)%4 then
+          for i = 1,3 do
+            cheat_q_clock(i)
+            grid_pat_q_clock(i)
+          end
+        end
+      end
+    end
+  end
+        
+      --[[if clock_resolution == 1 then
         for i = 1,3 do
           --if grid_pat[i].count > 0 and grid_pat[i].rec == 0 and grid_pat[i].play ~= 1 then
           if gogogo ~= nil and grid_pat[i].count > 0 then
@@ -364,7 +399,7 @@ function init()
           cheat_q_clock(i)
           grid_pat_q_clock(i)
         end
-        ]]--
+      end
       if (clk.step+1)%clock_resolution == 1 then
         prebpm = params:get("bpm")
         local etap1 = util.time()
@@ -377,9 +412,9 @@ function init()
           params:set("bpm",tap_tempo)
         end
       end
-      --end
     end
-  end
+  end]]--
+  
   clk.on_select_internal = function()
     clk:start()
     crow.input[2].mode("none")
@@ -420,6 +455,7 @@ function init()
   params:set_action("quant_div",function() update_tempo() end)
   params:add_number("quant_div_pats", "pattern quant. division", 1, 32, 4)
   params:set_action("quant_div_pats",function() update_tempo() end)
+  params:add_option("auto-sync", "auto-sync pat. to bpm?", {"no", "yes"} )
   params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
   params:set_action("zilchmo_patterning", function() end)
 
@@ -663,6 +699,13 @@ function update_tempo()
       quantizer[i].time = interval
       grid_pat_quantizer[i].time = interval_pats
     end
+    if synced_to_bpm ~= nil and synced_to_bpm ~= bpm then
+      for i = 1,3 do
+        if grid_pat[i].count > 0 then
+          sync_pattern_to_bpm(i,params:get("quant_div"))
+        end
+      end
+    end
   end
 end
 
@@ -687,6 +730,7 @@ function reset_all_banks()
   for i = 1,3 do
     bank[i] = {}
     bank[i].id = 1
+    bank[i].ext_clock = 1
     for k = 1,16 do
       bank[i][k] = {}
       bank[i][k].clip = 1
@@ -722,6 +766,7 @@ function reset_all_banks()
       bank[i][k].filter_type = 1
       bank[i][k].enveloped = false
       bank[i][k].envelope_time = 0.5
+      bank[i][k].clock_resolution = 4
     end
     cross_filter[i] = {}
     cross_filter[i].fc = 12000
