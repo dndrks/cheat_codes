@@ -120,7 +120,9 @@ function grid_actions.init(x,y,z)
             grid_pat[i]:clear()
           elseif grid_pat[i].rec == 1 then
             grid_pat[i]:rec_stop()
-            if params:get("auto-sync") == 2 then
+            if params:get("auto-sync") == 2 and quantize == 1 then
+              sync_pattern_to_bpm(i,params:get("quant_div"))
+            elseif params:get("auto-sync") == 2 and quantize == 0 then
               sync_pattern_to_bpm(i,5)
             end
             grid_pat[i]:start()

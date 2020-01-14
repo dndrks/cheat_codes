@@ -130,8 +130,10 @@ function grid_pat_q_clock(i)
         grid_pat[i]:clear()
       elseif grid_pat[i].rec == 1 then
         grid_pat[i]:rec_stop()
-        if params:get("auto-sync") == 2 and quantize == 1 then
+        if params:get("lock_pat") == 2 and quantize == 1 then
           sync_pattern_to_bpm(i,params:get("quant_div"))
+        elseif params:get("lock_pat") == 2 and quantize == 0 then
+          sync_pattern_to_bpm(i,5)
         end
         grid_pat[i]:start()
       elseif grid_pat[i].count == 0 then
@@ -159,7 +161,7 @@ function linearize_grid_pat(bank, mode, resolution)
     local thirtysecond_note = (60 / bpm) / 8
     local resolutions = {quarter_note, eighth_note, eighth_triplet_note, sixteenth_note, thirtysecond_note}
     for k = 1,grid_pat[bank].count do
-      print("before quant: "..grid_pat[bank].time[k])
+      --print("before quant: "..grid_pat[bank].time[k])
       grid_pat[bank].time[k] = resolutions[resolution] * math.floor((grid_pat[bank].time[k] / resolutions[resolution]) + 0.5)
       if grid_pat[bank].time[k] == 0 then
         if quantize == 1 then
@@ -168,25 +170,27 @@ function linearize_grid_pat(bank, mode, resolution)
           grid_pat[bank].time[k] = resolutions[resolution]
         end
       end
-      print("after quant: "..grid_pat[bank].time[k])
+      --print("after quant: "..grid_pat[bank].time[k])
     end
   end
 end
 
 function sync_pattern_to_bpm(bank, resolution)
-  local total_time = 0
-  synced_to_bpm = bpm
-  for i = 1,#grid_pat[bank].event do
-    total_time = total_time + grid_pat[bank].time[i]
+  if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
+    local total_time = 0
+    synced_to_bpm = bpm
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("before total: "..total_time)
+    old_pat_time = table.clone(grid_pat[bank].time)
+    linearize_grid_pat(bank, "quantize", resolution)
+    total_time = 0
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("after total: "..total_time)
   end
-  print("before total: "..total_time)
-  old_pat_time = table.clone(grid_pat[bank].time)
-  linearize_grid_pat(bank, "quantize", resolution)
-  total_time = 0
-  for i = 1,#grid_pat[bank].event do
-    total_time = total_time + grid_pat[bank].time[i]
-  end
-  print("after total: "..total_time)
 end
 
 function reset_pattern_time(bank)
@@ -455,7 +459,8 @@ function init()
   params:set_action("quant_div",function() update_tempo() end)
   params:add_number("quant_div_pats", "pattern quant. division", 1, 32, 4)
   params:set_action("quant_div_pats",function() update_tempo() end)
-  params:add_option("auto-sync", "auto-sync pat. to bpm?", {"no", "yes"} )
+  params:add_option("lock_pat", "lock pattern rec to bpm?", {"no", "yes"} )
+  params:add{type = "trigger", id = "sync_pat", name = "sync patterns to bpm", action = slide_to_tempo}
   params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
   params:set_action("zilchmo_patterning", function() end)
 
@@ -699,14 +704,32 @@ function update_tempo()
       quantizer[i].time = interval
       grid_pat_quantizer[i].time = interval_pats
     end
-    if synced_to_bpm ~= nil and synced_to_bpm ~= bpm and params:get("auto-sync") == 2 then
-      for i = 1,3 do
-        if grid_pat[i].count > 0 then
-          sync_pattern_to_bpm(i,params:get("quant_div"))
-        end
+  end
+end
+
+function slide_to_tempo()
+  if synced_to_bpm == nil then
+    for i = 1,3 do
+      if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
+        sync_pattern_to_bpm(i,4)
       end
     end
   end
+  local remembered = synced_to_bpm
+  for i = 1,3 do
+    if remembered >= params:get("bpm") then
+      for j = remembered,params:get("bpm"),-1 do
+        bpm = j
+        sync_pattern_to_bpm(i,4)
+      end
+    elseif remembered < params:get("bpm") then
+      for j = remembered,params:get("bpm") do
+        bpm = j
+        sync_pattern_to_bpm(i,4)
+      end
+    end
+  end
+  bpm = params:get("bpm")
 end
 
 function slice()
