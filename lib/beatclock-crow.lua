@@ -147,7 +147,7 @@ function BeatClockCrow:add_clock_params()
       tap = tap1
       local tap_tempo = 60/deltatap
       if tap_tempo >=20 then
-        params:set("bpm",math.floor(tap_tempo))
+        params:set("bpm",math.floor(tap_tempo+0.5))
       end
     end
   }
