@@ -226,16 +226,41 @@ function es_linearize(bank,mode)
   end
 end
 
-function midi_clock_linearize()
-  for i = 1,grid_pat[1].count do
-    g_p_q[1].clicks[i] = math.floor((grid_pat[1].time[i] / ((60/bpm)/4))+0.5)
-    g_p_q[1].event[i] = {}
-    for j = 1,g_p_q[1].clicks[i] do
-      if j == 1 then
-        g_p_q[1].event[i][1] = "something"
-      else
-        g_p_q[1].event[i][j] = "nothing"
+function midi_clock_linearize(bank)
+  for i = 1,grid_pat[bank].count do
+    g_p_q[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / ((60/bpm)/4))+0.5)
+    g_p_q[bank].event[i] = {}
+    if grid_pat[bank].time[i] == 0 or g_p_q[bank].clicks[i] == 0 then
+      g_p_q[bank].event[i][1] = "nothing"
+    else
+      for j = 1,g_p_q[bank].clicks[i] do
+        if j == 1 then
+          g_p_q[bank].event[i][1] = "something"
+        else
+          g_p_q[bank].event[i][j] = "nothing"
+        end
       end
+    end
+  end
+  g_p_q[bank].current_step = 1
+  g_p_q[bank].sub_step = 1
+end
+
+function pattern_timing_to_clock_resolution(i)
+  local quarter_note = 60 / bpm
+  local eighth_note = (60 / bpm)/2
+  local eighth_triplet_note = (60 / bpm) / 3
+  local sixteenth_note = (60 / bpm) / 4
+  local thirtysecond_note = (60 / bpm) / 8
+  for j = 1,grid_pat[i].count do
+    if grid_pat[i].time[j] == quarter_note then
+      bank[i][bank[i].id].clock_resolution = 4
+    elseif grid_pat[i].time[j] == eighth_note then
+      bank[i][bank[i].id].clock_resolution = 2
+    elseif grid_pat[i].time[j] == eighth_triplet_note then
+      bank[i][bank[i].id].clock_resolution = 3
+    elseif grid_pat[i].time[j] == sixteenth_note then
+      bank[i][bank[i].id].clock_resolution = 1
     end
   end
 end
@@ -299,35 +324,46 @@ function init()
   
   clock_counting = 0
   
-  function testing_clocks()
-    local current = g_p_q[1].current_step
-    local sub_step = g_p_q[1].sub_step
-    if go ~= nil and grid_pat[1].count > 0 then
-      if g_p_q[1].event[current][sub_step] == "something" then
+  function testing_clocks(bank)
+    local current = g_p_q[bank].current_step
+    local sub_step = g_p_q[bank].sub_step
+    if go ~= nil and grid_pat[bank].count > 0 then
+      if g_p_q[bank].event[current][sub_step] == "something" then
         --print(current, sub_step, "+++")
-        grid_pattern_execute(grid_pat[1].event[grid_pat[1].step])
+        grid_pattern_execute(grid_pat[bank].event[grid_pat[bank].step])
       else
         -- nothing!
       end
       --increase sub_step now
-      if g_p_q[1].sub_step == #g_p_q[1].event[grid_pat[1].step] then
-        g_p_q[1].sub_step = 0
+      if g_p_q[bank].sub_step == #g_p_q[bank].event[grid_pat[bank].step] then
+        g_p_q[bank].sub_step = 0
         --if we're at the end of the events in this step, move to the next step
-        if grid_pat[1].step == grid_pat[1].count then
-          grid_pat[1].step = 0
-          g_p_q[1].current_step = 0
+        if grid_pat[bank].step == grid_pat[bank].count then
+          grid_pat[bank].step = 0
+          g_p_q[bank].current_step = 0
         end
-        grid_pat[1].step = grid_pat[1].step + 1
-        g_p_q[1].current_step = g_p_q[1].current_step + 1
+        grid_pat[bank].step = grid_pat[bank].step + 1
+        --g_p_q[bank].current_step = g_p_q[bank].current_step + 1
+        g_p_q[bank].current_step = grid_pat[bank].step
       end
-      g_p_q[1].sub_step = g_p_q[1].sub_step + 1
+      g_p_q[bank].sub_step = g_p_q[bank].sub_step + 1
     end
   end
   
   clk.on_step = function()
     update_tempo()
     if clk.externalmidi then
-      --testing_clocks()
+      for i = 1,3 do
+        if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
+          testing_clocks(i)
+        end
+      end
+      if (clk.step+1)%4 then
+        for i = 1,3 do
+          cheat_q_clock(i)
+          grid_pat_q_clock(i)
+        end
+      end
       --
       --[[if go ~= nil and grid_pat[1].count > 0 then
         g_p_q[1].sub_step = grid_pat[1].step
@@ -347,6 +383,8 @@ function init()
         grid_pat[1].step = grid_pat[1].step + 1
       end
       ]]--
+    --otherwise:
+    --[[
       for i = 1,3 do
         if bank[i][bank[i].id].clock_resolution == 1 and bank[i].ext_clock == 1 then
           if gogogo ~= nil and grid_pat[i].count > 0 then
@@ -372,7 +410,7 @@ function init()
             grid_pat_q_clock(i)
           end
         end
-      end
+      end]]--
     end
   end
         
@@ -730,6 +768,12 @@ function slide_to_tempo()
     end
   end
   bpm = params:get("bpm")
+end
+
+function random_clock_resolution(bank)
+  for i = 1,16 do
+    bank[bank][i].clock_resolution = math.random(1,4)
+  end
 end
 
 function slice()
