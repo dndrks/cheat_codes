@@ -130,18 +130,23 @@ function grid_pat_q_clock(i)
         grid_pat[i]:clear()
       elseif grid_pat[i].rec == 1 then
         grid_pat[i]:rec_stop()
+        midi_clock_linearize(i)
         if params:get("lock_pat") == 2 and quantize == 1 then
           sync_pattern_to_bpm(i,params:get("quant_div"))
         elseif params:get("lock_pat") == 2 and quantize == 0 then
           sync_pattern_to_bpm(i,5)
         end
-        grid_pat[i]:start()
+        if not clk.externalmidi and not clk.externalcrow then
+          grid_pat[i]:start()
+        end
       elseif grid_pat[i].count == 0 then
         grid_pat[i]:rec_start()
       elseif grid_pat[i].play == 1 then
         grid_pat[i]:stop()
       else
-        grid_pat[i]:start()
+        if not clk.externalmidi and not clk.externalcrow then
+          grid_pat[i]:start()
+        end
       end
     end
     grid_pat_quantize_events[i] = {}
@@ -330,6 +335,9 @@ function init()
     if go ~= nil and grid_pat[bank].count > 0 then
       if g_p_q[bank].event[current][sub_step] == "something" then
         --print(current, sub_step, "+++")
+        if grid_pat[bank].step == 0 then
+          grid_pat[bank].step = 1
+        end
         grid_pattern_execute(grid_pat[bank].event[grid_pat[bank].step])
       else
         -- nothing!

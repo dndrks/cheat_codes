@@ -120,18 +120,23 @@ function grid_actions.init(x,y,z)
             grid_pat[i]:clear()
           elseif grid_pat[i].rec == 1 then
             grid_pat[i]:rec_stop()
-            if params:get("auto-sync") == 2 and quantize == 1 then
+            if params:get("lock_pat") == 2 and quantize == 1 then
               sync_pattern_to_bpm(i,params:get("quant_div"))
-            elseif params:get("auto-sync") == 2 and quantize == 0 then
+            elseif params:get("lock_pat") == 2 and quantize == 0 then
               sync_pattern_to_bpm(i,5)
             end
-            grid_pat[i]:start()
+            midi_clock_linearize(i)
+            if not clk.externalmidi and not clk.externalcrow then
+              grid_pat[i]:start()
+            end
           elseif grid_pat[i].count == 0 then
             grid_pat[i]:rec_start()
           elseif grid_pat[i].play == 1 then
             grid_pat[i]:stop()
           else
-            grid_pat[i]:start()
+            if not clk.externalmidi and not clk.externalcrow then
+              grid_pat[i]:start()
+            end
           end
         else
           if grid.alt == 1 then
