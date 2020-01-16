@@ -930,13 +930,6 @@ function cheat(b,i)
       softcut.position(b+1,bank[b][i].end_point-0.05)
   end
   --
-  if bank[b][i].filter_type ~=4 then
-    softcut.post_filter_fc(b+1,bank[b][i].fc)
-    softcut.post_filter_dry(b+1,bank[b][i].fd)
-  else
-    softcut.post_filter_fc(b+1,cross_filter[b].fc)
-    softcut.post_filter_dry(b+1,cross_filter[b].exp_dry)
-  end
   softcut.post_filter_rq(b+1,bank[b][i].q)
   local filter_type = bank[b][i].filter_type
   if bank[b][i].filter_type == 1 then
@@ -955,10 +948,22 @@ function cheat(b,i)
     params:set("filter "..math.floor(tonumber(b)).." bp",1)
     params:set("filter "..math.floor(tonumber(b)).." dry",0)
   elseif bank[b][i].filter_type == 4 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",math.abs(cross_filter[b].exp_dry-1))
-    params:set("filter "..math.floor(tonumber(b)).." hp",math.abs(cross_filter[b].exp_dry-1))
+    if bank[b][i].cf_lp <= 1 and bank[b][i].cf_hp == 0 then
+      params:set("filter "..math.floor(tonumber(b)).." lp",math.abs(bank[b][i].cf_exp_dry-1))
+      params:set("filter "..math.floor(tonumber(b)).." hp",0)
+    elseif bank[b][i].cf_lp <= 0.001 then
+      params:set("filter "..math.floor(tonumber(b)).." lp",0)
+      params:set("filter "..math.floor(tonumber(b)).." hp",math.abs(bank[b][i].cf_exp_dry-1))
+    end
     params:set("filter "..math.floor(tonumber(b)).." bp",0)
-    params:set("filter "..math.floor(tonumber(b)).." dry",cross_filter[b].exp_dry)
+    params:set("filter "..math.floor(tonumber(b)).." dry",bank[b][i].cf_exp_dry)
+  end
+  if bank[b][i].filter_type ~=4 then
+    softcut.post_filter_fc(b+1,bank[b][i].fc)
+    softcut.post_filter_dry(b+1,bank[b][i].fd)
+  else
+    softcut.post_filter_fc(b+1,bank[b][i].fc)
+    softcut.post_filter_dry(b+1,bank[b][i].cf_exp_dry)
   end
   softcut.pan(b+1,bank[b][i].pan)
   update_delays()
