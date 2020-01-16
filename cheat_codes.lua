@@ -127,25 +127,37 @@ function grid_pat_q_clock(i)
       if grid.alt == 1 then
         grid_pat[i]:rec_stop()
         grid_pat[i]:stop()
+        grid_pat[i].external_start = 0
         grid_pat[i]:clear()
       elseif grid_pat[i].rec == 1 then
         grid_pat[i]:rec_stop()
-        midi_clock_linearize(i)
         if params:get("lock_pat") == 2 and quantize == 1 then
           sync_pattern_to_bpm(i,params:get("quant_div"))
         elseif params:get("lock_pat") == 2 and quantize == 0 then
           sync_pattern_to_bpm(i,5)
         end
+        midi_clock_linearize(i)
         if not clk.externalmidi and not clk.externalcrow then
           grid_pat[i]:start()
+        else
+          if grid_pat[i].count > 0 then
+            grid_pat[i].external_start = 1
+          end
         end
       elseif grid_pat[i].count == 0 then
         grid_pat[i]:rec_start()
       elseif grid_pat[i].play == 1 then
         grid_pat[i]:stop()
+      elseif grid_pat[i].external_start == 1 then
+        grid_pat[i].external_start = 0
+        grid_pat[i].step = 1
+        g_p_q[i].current_step = 1
+        g_p_q[i].sub_step = 1
       else
         if not clk.externalmidi and not clk.externalcrow then
           grid_pat[i]:start()
+        else
+          grid_pat[i].external_start = 1
         end
       end
     end
@@ -195,6 +207,7 @@ function sync_pattern_to_bpm(bank, resolution)
       total_time = total_time + grid_pat[bank].time[i]
     end
     print("after total: "..total_time)
+    midi_clock_linearize(bank)
   end
 end
 
@@ -249,6 +262,7 @@ function midi_clock_linearize(bank)
   end
   g_p_q[bank].current_step = 1
   g_p_q[bank].sub_step = 1
+  print("midi linearized")
 end
 
 function pattern_timing_to_clock_resolution(i)
@@ -329,10 +343,28 @@ function init()
   
   clock_counting = 0
   
+  --JUST A TEST CAN REMOVE
+  grid_pat = {}
+  for i = 1,3 do
+    grid_pat[i] = pattern_time.new()
+    grid_pat[i].process = grid_pattern_execute
+    grid_pat[i].external_start = 0
+  end
+  
+  g_p_q = {}
+  for i = 1,3 do
+    g_p_q[i] = {}
+    g_p_q[i].clicks = {}
+    g_p_q[i].event = {}
+    g_p_q[i].sub_step = 1
+    g_p_q[i].current_step = 1
+  end
+  ---^
+  
   function testing_clocks(bank)
     local current = g_p_q[bank].current_step
     local sub_step = g_p_q[bank].sub_step
-    if go ~= nil and grid_pat[bank].count > 0 then
+    if grid_pat[bank].external_start == 1 and grid_pat[bank].count > 0 then
       if g_p_q[bank].event[current][sub_step] == "something" then
         --print(current, sub_step, "+++")
         if grid_pat[bank].step == 0 then
@@ -341,6 +373,9 @@ function init()
         grid_pattern_execute(grid_pat[bank].event[grid_pat[bank].step])
       else
         -- nothing!
+        if grid_pat[bank].step == 0 then
+          grid_pat[bank].step = 1
+        end
       end
       --increase sub_step now
       if g_p_q[bank].sub_step == #g_p_q[bank].event[grid_pat[bank].step] then
@@ -366,7 +401,7 @@ function init()
           testing_clocks(i)
         end
       end
-      if (clk.step+1)%4 then
+      if (clk.step+1)%4 == 1 or (clk.step+1)%4 == 3 then
         for i = 1,3 do
           cheat_q_clock(i)
           grid_pat_q_clock(i)
@@ -471,6 +506,7 @@ function init()
     for i = 1,3 do
       quantizer[i]:start()
       grid_pat_quantizer[i]:start()
+      grid_pat[i].external_start = 0
     end
   end
   clk.on_select_external = function()
@@ -478,6 +514,7 @@ function init()
     for i = 1,3 do
       quantizer[i]:stop()
       grid_pat_quantizer[i]:stop()
+      grid_pat[i]:stop()
     end
     print("external MIDI clock")
   end
@@ -485,6 +522,7 @@ function init()
     for i = 1,3 do
       quantizer[i]:stop()
       grid_pat_quantizer[i]:stop()
+      grid_pat[i]:stop()
     end
     crow.input[2].mode("change",2,0.1,"rising")
     crow.input[2].change = change
@@ -624,11 +662,12 @@ function init()
     counter_two[i].key_up:stop()
   end
   
-  grid_pat = {}
+  --[[grid_pat = {}
   for i = 1,3 do
     grid_pat[i] = pattern_time.new()
     grid_pat[i].process = grid_pattern_execute
-  end
+    grid_pat[i].external_start = 0
+  end]]--
   
   g_p_q = {}
   for i = 1,3 do
@@ -1108,23 +1147,44 @@ function grid_redraw()
   
   for i = 1,3 do
     if grid_pat[i].led == nil then grid_pat[i].led = 0 end
-    if grid_pat[i].rec == 1 then
-      grid_pat[i].led = (grid_pat[i].led + 1)
-      if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
-        g:led(2+(5*(i-1)),1,(9))
-      elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
-        g:led(2+(5*(i-1)),1,(0))
+    if not clk.externalmidi and not clk.externalcrow then
+      if grid_pat[i].rec == 1 then
+        grid_pat[i].led = (grid_pat[i].led + 1)
+        if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
+          g:led(2+(5*(i-1)),1,(9))
+        elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
+          g:led(2+(5*(i-1)),1,(0))
+          grid_pat[i].led = 0
+        end
+      elseif grid_pat[i].play == 1 then
         grid_pat[i].led = 0
+        g:led(2+(5*(i-1)),1,9)
+      elseif grid_pat[i].count > 0 then
+        grid_pat[i].led = 0
+        g:led(2+(5*(i-1)),1,5)
+      else
+        grid_pat[i].led = 0
+        g:led(2+(5*(i-1)),1,3)
       end
-    elseif grid_pat[i].play == 1 then
-      grid_pat[i].led = 0
-      g:led(2+(5*(i-1)),1,9)
-    elseif grid_pat[i].count > 0 then
-      grid_pat[i].led = 0
-      g:led(2+(5*(i-1)),1,5)
     else
-      grid_pat[i].led = 0
-      g:led(2+(5*(i-1)),1,3)
+      if grid_pat[i].rec == 1 then
+        grid_pat[i].led = (grid_pat[i].led + 1)
+        if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
+          g:led(2+(5*(i-1)),1,(9))
+        elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
+          g:led(2+(5*(i-1)),1,(0))
+          grid_pat[i].led = 0
+        end
+      elseif grid_pat[i].external_start == 1 then
+        grid_pat[i].led = 0
+        g:led(2+(5*(i-1)),1,9)
+      elseif grid_pat[i].count > 0 then
+        grid_pat[i].led = 0
+        g:led(2+(5*(i-1)),1,5)
+      else
+        grid_pat[i].led = 0
+        g:led(2+(5*(i-1)),1,3)
+      end
     end
   end
   
