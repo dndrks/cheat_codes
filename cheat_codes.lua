@@ -17,7 +17,6 @@ rightangleslice = include 'lib/zilchmos'
 start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
 rec_head = include 'lib/rec_head'
-FilterGraph = require "filtergraph"
 
 tau = math.pi * 2
 arc_param = {}
@@ -725,12 +724,6 @@ function init()
   end
   rec_state_watcher.count = -1
   rec_state_watcher:start()
-  
-  filter = {}
-  for i = 1,3 do
-    filter[i] = FilterGraph.new(100,12000,-20,20,"lowpass",24,12000,0.2)
-    filter[i]:set_position_and_size(5+(45*(i-1)), 30, 30, 30)
-  end
 
 end
 
@@ -913,8 +906,13 @@ function tilt_process(b,i)
   if util.round(bank[b][i].tilt*100) < 0 then
     bank[b][i].cf_lp = math.abs(bank[b][i].tilt)
     bank[b][i].cf_dry = 1+bank[b][i].tilt
-    bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    --bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
     bank[b][i].cf_fc = util.linexp(0,1,12000,10,bank[b][i].cf_lp)
+    if util.round(bank[b][i].tilt*100) > -20 then
+      bank[b][i].cf_exp_dry = (util.linexp(0.83,0.9,10,101,bank[b][i].cf_dry)-1)/100
+    elseif util.round(bank[b][i].tilt*100) <= -20 then
+      --bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    end
     params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
     params:set("filter "..b.." lp", math.abs(bank[b][i].cf_exp_dry-1))
     if bank[b][i].cf_exp_dry < 0.20 then
@@ -928,11 +926,15 @@ function tilt_process(b,i)
     if bank[b][i].cf_hp ~= 0 then
       bank[b][i].cf_hp = 0
     end
-  elseif util.round(bank[b][i].tilt*100) > 0 then
+  elseif util.round(bank[b][i].tilt*100) > 30 then
     bank[b][i].cf_hp = math.abs(bank[b][i].tilt)
     bank[b][i].cf_fc = util.linexp(0,1,10,12000,bank[b][i].cf_hp)
     bank[b][i].cf_dry = 1-bank[b][i].tilt
-    bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    if util.round(bank[b][i].tilt*100) < 50 then
+      bank[b][i].cf_exp_dry = (util.linexp(0.5,0.69,1,101,bank[b][i].cf_dry)-1)/100
+    elseif util.round(bank[b][i].tilt*100) >= 50 then
+      bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    end
     params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
     params:set("filter "..b.." hp", math.abs(bank[b][i].cf_exp_dry-1))
     params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)

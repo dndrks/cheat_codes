@@ -104,9 +104,34 @@ function encoder_actions.init(n,d)
         end
         params:set("filter "..id.." cutoff", bank[id][bank[id].id].fc)
       elseif bank[id][bank[id].id].filter_type == 4 then
-        bank[id][bank[id].id].tilt = util.clamp(bank[id][bank[id].id].tilt+(d/100),-1,1)
-        --slew_counter[id].prev_tilt = bank[id][bank[id].id].tilt
-        tilt_process(util.round(id),bank[id].id)
+        if key1_hold or grid.alt == 1 then
+          bank[id][bank[id].id].tilt = util.clamp(bank[id][bank[id].id].tilt+(d/100),-1,1)
+          if d > 0 and bank[id][bank[id].id].tilt > 0 and bank[id][bank[id].id].tilt < 0.30 then
+            bank[id][bank[id].id].tilt = 0.30
+          elseif d < 0 and bank[id][bank[id].id].tilt > 0 and bank[id][bank[id].id].tilt < 0.30 then
+            bank[id][bank[id].id].tilt = 0
+          elseif d > 0 and bank[id][bank[id].id].tilt < 0 and bank[id][bank[id].id].tilt > -0.1 then
+            bank[id][bank[id].id].tilt = 0
+          elseif d < 0 and bank[id][bank[id].id].tilt < 0 and bank[id][bank[id].id].tilt > -0.1 then
+            bank[id][bank[id].id].tilt = -0.1
+          end
+          tilt_process(util.round(id),bank[id].id)
+        else
+          for j = 1,16 do
+            bank[id][j].tilt = util.clamp(bank[id][j].tilt+(d/100),-1,1)
+            if d > 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
+              bank[id][j].tilt = 0.30
+            elseif d < 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
+              bank[id][j].tilt = 0
+            elseif d > 0 and bank[id][j].tilt < 0 and bank[id][j].tilt > -0.1 then
+              bank[id][j].tilt = 0
+            elseif d < 0 and bank[id][j].tilt < 0 and bank[id][j].tilt > -0.1 then
+              bank[id][j].tilt = -0.1
+            end
+            print(id, j, bank[id][j].tilt)
+            tilt_process(util.round(id),j)
+          end
+        end
       end
     elseif menu == 6 then
       local line = page.delay_sel
@@ -144,11 +169,11 @@ function encoder_actions.init(n,d)
     elseif menu == 5 then
       local id = page.filtering_sel + 1
       if key1_hold or grid.alt == 1 then
-        for j = 1,16 do
-          bank[id][j].q = util.clamp(bank[id][j].q+(d/100), 0, 8)
-        end
+        bank[id][bank[id].id].q = util.clamp(bank[id][bank[id].id].q-(d/100), 0, 8)
       else
-        bank[id][bank[id].id].q = util.clamp(bank[id][bank[id].id].q+(d/100), 0, 8)
+        for j = 1,16 do
+          bank[id][j].q = util.clamp(bank[id][j].q-(d/100), 0, 2)
+        end
       end
       params:set("filter "..id.." q", bank[id][bank[id].id].q)
     elseif menu == 6 then

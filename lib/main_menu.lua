@@ -142,32 +142,44 @@ function main_menu.init()
     screen.level(3)
     screen.text("filters")
     for i = 1,3 do
-      screen.move(13+((i-1)*45),25)
+      screen.move(16+((i-1)*45),25)
       screen.level(page.filtering_sel == i-1 and 15 or 3)
       local filters_to_screen_options = {"a", "b", "c"}
       if key1_hold or grid.alt == 1 then
-        screen.text("("..filters_to_screen_options[i]..")")
+        screen.text_center(filters_to_screen_options[i]..""..bank[i].id)
       else
-        screen.text(filters_to_screen_options[i]..""..bank[i].id)
+        screen.text_center("("..filters_to_screen_options[i]..")")
       end
-      screen.move(35,10+(i*15))
-      --screen.text(filter_types[bank[i][bank[i].id].filter_type])
-      screen.move(55,10+(i*15))
-      --screen.text(string.format("%.0f", bank[i][bank[i].id].fc))
-      screen.move(95,10+(i*15))
-      --screen.text(string.format("%.2f", bank[i][bank[i].id].q))
+      screen.move(17+((i-1)*45),35)
+      if bank[i][bank[i].id].tilt >= -0.1 and bank[i][bank[i].id].tilt <=0.32 then
+        screen.text_center("neutral")
+      elseif bank[i][bank[i].id].tilt < -0.1 then
+        screen.text_center("LP")
+      elseif bank[i][bank[i].id].tilt > 0.32 then
+        screen.text_center("HP")
+      end
+      screen.move(17+((i-1)*45),45)
+      if bank[i][bank[i].id].tilt >= -0.1 and bank[i][bank[i].id].tilt <=0.32 then
+        screen.level(3)
+        screen.text_center("-")
+      elseif bank[i][bank[i].id].tilt < -0.1 or bank[i][bank[i].id].tilt > 0.32 then
+        screen.level(page.filtering_sel == i-1 and 15 or 3)
+        screen.text_center(string.format("%.0f",bank[i][bank[i].id].cf_fc))
+      end
+      screen.move(17+((i-1)*45),55)
+      if bank[i][bank[i].id].tilt >= -0.1 and bank[i][bank[i].id].tilt <=0.32 then
+        screen.level(3)
+        local q_to_screen = util.linlin(0,2,2,0,bank[i][bank[i].id].q)
+        screen.text_center(string.format("%.2f",q_to_screen))
+      elseif bank[i][bank[i].id].tilt < -0.1 or bank[i][bank[i].id].tilt > 0.32 then
+        local q_to_screen = util.linlin(0,2,2,0,bank[i][bank[i].id].q)
+        screen.level(page.filtering_sel == i-1 and 15 or 3)
+        screen.text_center(string.format("%.2f",q_to_screen))
+      end
     end
     screen.level(3)
     screen.move(0,64)
     screen.text("...")
-    for i = 1,3 do
-      if util.round(bank[i][bank[i].id].tilt*100) < 0 then
-        filter[i]:edit("lowpass", 12, bank[i][bank[i].id].fc, util.linlin(0,8,1,-0.2,bank[i][bank[i].id].q))
-      elseif util.round(bank[1][1].tilt*100) > 0 then
-        filter[i]:edit("highpass", 12, bank[i][bank[i].id].fc, util.linlin(0,8,1,-0.2,bank[i][bank[i].id].q))
-      end
-      filter[i]:redraw()
-    end
   elseif menu == 6 then
     screen.move(0,10)
     screen.level(3)
