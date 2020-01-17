@@ -17,6 +17,7 @@ rightangleslice = include 'lib/zilchmos'
 start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
 rec_head = include 'lib/rec_head'
+FilterGraph = require "filtergraph"
 
 tau = math.pi * 2
 arc_param = {}
@@ -66,6 +67,15 @@ for i = 1,3 do
   env_counter[i].butt = 1
   env_counter[i].event = function() envelope(i) end
 end
+
+--[[slew_counter = {}
+for i = 1,1 do
+  slew_counter[i] = metro.init()
+  slew_counter[i].time = 0.005
+  slew_counter[i].prev_tilt = 0
+  slew_counter[i].next_tilt = 0
+  slew_counter[i].event = function() filter_slew(i) end
+end]]--
 
 quantize = 1
 quantize_events = {}
@@ -715,6 +725,12 @@ function init()
   end
   rec_state_watcher.count = -1
   rec_state_watcher:start()
+  
+  filter = {}
+  for i = 1,3 do
+    filter[i] = FilterGraph.new(100,12000,-20,20,"lowpass",24,12000,0.2)
+    filter[i]:set_position_and_size(5+(45*(i-1)), 30, 30, 30)
+  end
 
 end
 
@@ -872,12 +888,13 @@ function reset_all_banks()
       bank[i][k].bp = 0.0
       bank[i][k].fd = 0.0
       bank[i][k].br = 0.0
+      bank[i][k].tilt = 0
       bank[i][k].cf_fc = 12000
       bank[i][k].cf_lp = 0
       bank[i][k].cf_hp = 0
       bank[i][k].cf_dry = 1
       bank[i][k].cf_exp_dry = 1
-      bank[i][k].filter_type = 1
+      bank[i][k].filter_type = 4
       bank[i][k].enveloped = false
       bank[i][k].envelope_time = 0.5
       bank[i][k].clock_resolution = 4
@@ -889,6 +906,52 @@ function reset_all_banks()
     cross_filter[i].dry = 1
     cross_filter[i].exp_dry = 1
     cheat(i,bank[i].id)
+  end
+end
+
+function tilt_process(b,i)
+  if util.round(bank[b][i].tilt*100) < 0 then
+    bank[b][i].cf_lp = math.abs(bank[b][i].tilt)
+    bank[b][i].cf_dry = 1+bank[b][i].tilt
+    bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    bank[b][i].cf_fc = util.linexp(0,1,12000,10,bank[b][i].cf_lp)
+    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
+    params:set("filter "..b.." lp", math.abs(bank[b][i].cf_exp_dry-1))
+    if bank[b][i].cf_exp_dry < 0.20 then
+      params:set("filter "..b.." dry", 0)
+    else
+      params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
+    end
+    if params:get("filter "..b.." hp") ~= 0 then
+      params:set("filter "..b.." hp", 0)
+    end
+    if bank[b][i].cf_hp ~= 0 then
+      bank[b][i].cf_hp = 0
+    end
+  elseif util.round(bank[b][i].tilt*100) > 0 then
+    bank[b][i].cf_hp = math.abs(bank[b][i].tilt)
+    bank[b][i].cf_fc = util.linexp(0,1,10,12000,bank[b][i].cf_hp)
+    bank[b][i].cf_dry = 1-bank[b][i].tilt
+    bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
+    params:set("filter "..b.." hp", math.abs(bank[b][i].cf_exp_dry-1))
+    params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
+    if params:get("filter "..b.." lp") ~= 0 then
+      params:set("filter "..b.." lp", 0)
+    end
+    if bank[b][i].cf_lp ~= 0 then
+      bank[b][i].cf_lp = 0
+    end
+  elseif util.round(bank[b][i].tilt*100) == 0 then
+    bank[b][i].cf_fc = 12000
+    bank[b][i].cf_lp = 0
+    bank[b][i].cf_hp = 0
+    bank[b][i].cf_dry = 1
+    bank[b][i].cf_exp_dry = 1
+    params:set("filter "..b.." cutoff",12000)
+    params:set("filter "..b.." lp", 0)
+    params:set("filter "..b.." hp", 0)
+    params:set("filter "..b.." dry", 1)
   end
 end
 
@@ -929,9 +992,9 @@ function cheat(b,i)
   elseif bank[b][i].rate < 0 then
       softcut.position(b+1,bank[b][i].end_point-0.05)
   end
-  --
+  params:set("filter "..math.floor(tonumber(b)).." q",bank[b][i].q)
   softcut.post_filter_rq(b+1,bank[b][i].q)
-  local filter_type = bank[b][i].filter_type
+  --[[local filter_type = bank[b][i].filter_type
   if bank[b][i].filter_type == 1 then
     params:set("filter "..math.floor(tonumber(b)).." lp",1)
     params:set("filter "..math.floor(tonumber(b)).." hp",0)
@@ -962,9 +1025,15 @@ function cheat(b,i)
     softcut.post_filter_fc(b+1,bank[b][i].fc)
     softcut.post_filter_dry(b+1,bank[b][i].fd)
   else
-    softcut.post_filter_fc(b+1,bank[b][i].fc)
-    softcut.post_filter_dry(b+1,bank[b][i].cf_exp_dry)
-  end
+    --softcut.post_filter_fc(b+1,bank[b][i].fc)
+    params:set("filter "..math.floor(tonumber(b)).." cutoff", bank[b][i].fc)
+    --softcut.post_filter_dry(b+1,bank[b][i].cf_exp_dry)
+  end]]--
+  -- HERE'S WHERE A FILTER SLEW WOULD GO
+  --[[slew_counter[1]:stop()
+  slew_counter[1].next_tilt = bank[1][i].tilt
+  slew_counter[1]:start()]]--
+  tilt_process(util.round(b),i)
   softcut.pan(b+1,bank[b][i].pan)
   update_delays()
 end
@@ -985,6 +1054,41 @@ function envelope(i)
     softcut.level_slew_time(i+1,1.0)
   end
 end
+
+--[[function filter_slew(i)
+  local difference = math.abs(slew_counter[i].prev_tilt - slew_counter[i].next_tilt)
+  local current_pad = bank[i].id
+  if difference <= .0001 then
+    slew_counter[i]:stop()
+    print("DONE")
+    bank[i][current_pad].tilt = util.round(slew_counter[i].prev_tilt*100)/100
+    tilt_process(i,current_pad)
+    print(bank[i][current_pad].tilt)
+  elseif slew_counter[i].prev_tilt > slew_counter[i].next_tilt then
+    slew_counter[i].prev_tilt = slew_counter[i].prev_tilt - (difference/10)
+    bank[i][current_pad].tilt = slew_counter[i].prev_tilt
+    tilt_process(i,current_pad)
+    print(bank[i][current_pad].tilt)
+  elseif slew_counter[i].prev_tilt < slew_counter[i].next_tilt then
+    slew_counter[i].prev_tilt = slew_counter[i].prev_tilt + (difference/10)
+    bank[i][current_pad].tilt = slew_counter[i].prev_tilt
+    tilt_process(i,current_pad)
+    print(bank[i][current_pad].tilt)
+    --filter_adjust(i,current_pad,slew_counter[i].prev_tilt)
+  end
+end]]--
+
+--[[function filter_adjust(b,i,dry)
+  if bank[b][i].cf_lp <= 1 and bank[b][i].cf_hp == 0 then
+    params:set("filter "..math.floor(tonumber(b)).." lp",math.abs(dry-1)-0.01)
+    params:set("filter "..math.floor(tonumber(b)).." hp",0)
+  elseif bank[b][i].cf_lp <= 0.001 then
+    params:set("filter "..math.floor(tonumber(b)).." lp",0)
+    params:set("filter "..math.floor(tonumber(b)).." hp",math.abs(dry-1)-0.01)
+  end
+  params:set("filter "..math.floor(tonumber(b)).." bp",0)
+  params:set("filter "..math.floor(tonumber(b)).." dry",dry+0.01)
+end]]--
 
 function buff_freeze()
   softcut.recpre_slew_time(1,0.5)

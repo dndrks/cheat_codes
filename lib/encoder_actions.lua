@@ -104,47 +104,9 @@ function encoder_actions.init(n,d)
         end
         params:set("filter "..id.." cutoff", bank[id][bank[id].id].fc)
       elseif bank[id][bank[id].id].filter_type == 4 then
-        if d < 0 and bank[id][bank[id].id].cf_lp < 1 and bank[id][bank[id].id].cf_hp == 0 then
-          bank[id][bank[id].id].cf_lp = util.clamp(bank[id][bank[id].id].cf_lp-(d/100),0,1)
-          bank[id][bank[id].id].cf_dry = util.clamp(bank[id][bank[id].id].cf_dry+(d/100),0,1)
-          bank[id][bank[id].id].cf_exp_dry = (util.linexp(0,1,1,101,bank[id][bank[id].id].cf_dry)-1)/100
-          bank[id][bank[id].id].cf_fc = util.linexp(0,1,12000,10,bank[id][bank[id].id].cf_lp)
-          params:set("filter "..id.." cutoff",bank[id][bank[id].id].cf_fc)
-          params:set("filter "..id.." lp", math.abs(bank[id][bank[id].id].cf_exp_dry-1))
-          if bank[id][bank[id].id].cf_exp_dry < 0.05 then
-            params:set("filter "..id.." dry", 0)
-          else
-            params:set("filter "..id.." dry", bank[id][bank[id].id].cf_exp_dry)
-          end
-        elseif d > 0 and bank[id][bank[id].id].cf_lp <= 1.0 and bank[id][bank[id].id].cf_hp == 0 and bank[id][bank[id].id].cf_dry < 1 then
-          bank[id][bank[id].id].cf_lp = util.clamp(bank[id][bank[id].id].cf_lp-(d/100),0,1)
-          bank[id][bank[id].id].cf_dry = util.clamp(bank[id][bank[id].id].cf_dry+(d/100),0,1)
-          bank[id][bank[id].id].cf_exp_dry = (util.linexp(0,1,1,101,bank[id][bank[id].id].cf_dry)-1)/100
-          bank[id][bank[id].id].cf_fc = util.linexp(0,1,12000,10,bank[id][bank[id].id].cf_lp)
-          params:set("filter "..id.." cutoff",bank[id][bank[id].id].cf_fc)
-          params:set("filter "..id.." lp", math.abs(bank[id][bank[id].id].cf_exp_dry-1))
-          if bank[id][bank[id].id].cf_exp_dry < 0.05 then
-            params:set("filter "..id.." dry", 0)
-          else
-            params:set("filter "..id.." dry", bank[id][bank[id].id].cf_exp_dry)
-          end
-        elseif d > 0 and bank[id][bank[id].id].cf_lp <= 0.001 then
-          bank[id][bank[id].id].cf_hp = util.clamp(bank[id][bank[id].id].cf_hp+(d/100),0,1)
-          bank[id][bank[id].id].cf_fc = util.linexp(0,1,10,12000,bank[id][bank[id].id].cf_hp)
-          bank[id][bank[id].id].cf_dry = util.clamp(bank[id][bank[id].id].cf_dry-(d/100),0,1)
-          bank[id][bank[id].id].cf_exp_dry = (util.linexp(0,1,1,101,bank[id][bank[id].id].cf_dry)-1)/100
-          params:set("filter "..id.." cutoff",bank[id][bank[id].id].cf_fc)
-          params:set("filter "..id.." hp", math.abs(bank[id][bank[id].id].cf_exp_dry-1))
-          params:set("filter "..id.." dry", bank[id][bank[id].id].cf_exp_dry)
-        elseif d < 0 and bank[id][bank[id].id].cf_hp <= 1.0 and bank[id][bank[id].id].cf_lp <= 0.001 then
-          bank[id][bank[id].id].cf_hp = util.clamp(bank[id][bank[id].id].cf_hp+(d/100),0,1)
-          bank[id][bank[id].id].cf_fc = util.linexp(0,1,10,12000,bank[id][bank[id].id].cf_hp)
-          bank[id][bank[id].id].cf_dry = util.clamp(bank[id][bank[id].id].cf_dry-(d/100),0,1)
-          bank[id][bank[id].id].cf_exp_dry = (util.linexp(0,1,1,101,bank[id][bank[id].id].cf_dry)-1)/100
-          params:set("filter "..id.." cutoff",bank[id][bank[id].id].cf_fc)
-          params:set("filter "..id.." hp", math.abs(bank[id][bank[id].id].cf_exp_dry-1))
-          params:set("filter "..id.." dry", bank[id][bank[id].id].cf_exp_dry)
-        end
+        bank[id][bank[id].id].tilt = util.clamp(bank[id][bank[id].id].tilt+(d/100),-1,1)
+        --slew_counter[id].prev_tilt = bank[id][bank[id].id].tilt
+        tilt_process(util.round(id),bank[id].id)
       end
     elseif menu == 6 then
       local line = page.delay_sel
@@ -216,7 +178,7 @@ function encoder_actions.init(n,d)
       softcut.level_slew_time(n+1,1.0)
       softcut.level(n+1,bank[n][bank[n].id].level)
     elseif page.levels_sel == 1 then
-      if k1_hold or grid.alt then
+      if key1_hold or grid.alt == 1 then
         for j = 1,16 do
           local pre_enveloped = bank[n][j].enveloped
           if bank[n][j].enveloped then
@@ -254,7 +216,7 @@ function encoder_actions.init(n,d)
         end
       end
     elseif page.levels_sel == 2 then
-      if k1_hold or grid.alt then
+      if key1_hold or grid.alt == 1 then
         for j = 1,16 do
           if bank[n][j].enveloped then
             bank[n][j].envelope_time = util.clamp(bank[n][j].envelope_time+d/10,0.1,60)
