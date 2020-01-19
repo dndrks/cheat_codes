@@ -226,6 +226,111 @@ function reset_pattern_time(bank)
   end
 end
 
+function copy_entire_pattern(bank)
+  original_pattern = {}
+  original_pattern[bank] = {}
+  original_pattern[bank].time = table.clone(grid_pat[bank].time)
+  original_pattern[bank].event = {}
+  for i = 1,#grid_pat[bank].event do
+    original_pattern[bank].event[i] = {}
+    original_pattern[bank].event[i].id = {}
+    original_pattern[bank].event[i].rate = {}
+    original_pattern[bank].event[i].loop = {}
+    original_pattern[bank].event[i].mode = {}
+    original_pattern[bank].event[i].pause = {}
+    original_pattern[bank].event[i].start_point = {}
+    original_pattern[bank].event[i].clip = {}
+    original_pattern[bank].event[i].end_point = {}
+    original_pattern[bank].event[i].rate_adjusted = {}
+    original_pattern[bank].event[i].y = {}
+    original_pattern[bank].event[i].x = {}
+    original_pattern[bank].event[i].action = {}
+    original_pattern[bank].event[i].i = {}
+    original_pattern[bank].event[i].previous_rate = {}
+    original_pattern[bank].event[i].row = {}
+    original_pattern[bank].event[i].con = {}
+    original_pattern[bank].event[i].bank = {}
+  end
+  for i = 1,#grid_pat[bank].event do
+    original_pattern[bank].event[i].id = grid_pat[bank].event[i].id
+    original_pattern[bank].event[i].rate = grid_pat[bank].event[i].rate
+    original_pattern[bank].event[i].loop = grid_pat[bank].event[i].loop
+    original_pattern[bank].event[i].mode = grid_pat[bank].event[i].mode
+    original_pattern[bank].event[i].pause = grid_pat[bank].event[i].pause
+    original_pattern[bank].event[i].start_point = grid_pat[bank].event[i].start_point
+    original_pattern[bank].event[i].clip = grid_pat[bank].event[i].clip
+    original_pattern[bank].event[i].end_point = grid_pat[bank].event[i].end_point
+    original_pattern[bank].event[i].rate_adjusted = grid_pat[bank].event[i].rate_adjusted
+    original_pattern[bank].event[i].y = grid_pat[bank].event[i].y
+    original_pattern[bank].event[i].x = grid_pat[bank].event[i].x
+    original_pattern[bank].event[i].action = grid_pat[bank].event[i].action
+    original_pattern[bank].event[i].i = grid_pat[bank].event[i].i
+    original_pattern[bank].event[i].previous_rate = grid_pat[bank].event[i].previous_rate
+    original_pattern[bank].event[i].row = grid_pat[bank].event[i].row
+    original_pattern[bank].event[i].con = grid_pat[bank].event[i].con
+    original_pattern[bank].event[i].bank = grid_pat[bank].event[i].bank
+  end
+  original_pattern[bank].metro = {}
+  original_pattern[bank].metro.props = {}
+  original_pattern[bank].metro.props.time = grid_pat[bank].metro.props.time
+  original_pattern[bank].prev_time = grid_pat[bank].prev_time
+  original_pattern[bank].count = grid_pat[bank].count
+end
+
+function paste_entire_pattern(source,destination)
+  grid_pat[destination].time = table.clone(original_pattern[source].time)
+  grid_pat[destination].event = {}
+  for i = 1,#original_pattern[source].event do
+    grid_pat[destination].event[i] = {}
+    grid_pat[destination].event[i].id = {}
+    grid_pat[destination].event[i].rate = {}
+    grid_pat[destination].event[i].loop = {}
+    grid_pat[destination].event[i].mode = {}
+    grid_pat[destination].event[i].pause = {}
+    grid_pat[destination].event[i].start_point = {}
+    grid_pat[destination].event[i].clip = {}
+    grid_pat[destination].event[i].end_point = {}
+    grid_pat[destination].event[i].rate_adjusted = {}
+    grid_pat[destination].event[i].y = {}
+    grid_pat[destination].event[i].x = {}
+    grid_pat[destination].event[i].action = {}
+    grid_pat[destination].event[i].i = {}
+    grid_pat[destination].event[i].previous_rate = {}
+    grid_pat[destination].event[i].row = {}
+    grid_pat[destination].event[i].con = {}
+    grid_pat[destination].event[i].bank = {}
+  end
+  for i = 1,#original_pattern[source].event do
+    grid_pat[destination].event[i].id = original_pattern[source].event[i].id
+    grid_pat[destination].event[i].rate = original_pattern[source].event[i].rate
+    grid_pat[destination].event[i].loop = original_pattern[source].event[i].loop
+    grid_pat[destination].event[i].mode = original_pattern[source].event[i].mode
+    grid_pat[destination].event[i].pause = original_pattern[source].event[i].pause
+    grid_pat[destination].event[i].start_point = original_pattern[source].event[i].start_point
+    grid_pat[destination].event[i].clip = original_pattern[source].event[i].clip
+    grid_pat[destination].event[i].end_point = original_pattern[source].event[i].end_point
+    grid_pat[destination].event[i].rate_adjusted = original_pattern[source].event[i].rate_adjusted
+    grid_pat[destination].event[i].y = original_pattern[source].event[i].y
+    if destination < source then
+      grid_pat[destination].event[i].x = original_pattern[source].event[i].x - (5*(source-destination))
+    elseif destination > source then
+      grid_pat[destination].event[i].x = original_pattern[source].event[i].x + (5*(destination-source))
+    elseif destination == source then
+      grid_pat[destination].event[i].x = original_pattern[source].event[i].x
+    end
+    grid_pat[destination].event[i].action = original_pattern[source].event[i].action
+    --grid_pat[destination].event[i].i = original_pattern[source].event[i].i
+    grid_pat[destination].event[i].i = destination
+    grid_pat[destination].event[i].previous_rate = original_pattern[source].event[i].previous_rate
+    grid_pat[destination].event[i].row = original_pattern[source].event[i].row
+    grid_pat[destination].event[i].con = original_pattern[source].event[i].con
+    grid_pat[destination].event[i].bank = original_pattern[source].event[i].bank
+  end
+  grid_pat[destination].metro.props.time = original_pattern[source].metro.props.time
+  grid_pat[destination].prev_time = original_pattern[source].prev_time
+  grid_pat[destination].count = original_pattern[source].count
+end
+
 function update_pattern_bpm(bank)
   grid_pat[bank].time_factor = 1*(synced_to_bpm/bpm)
 end
@@ -1711,5 +1816,138 @@ function loadstate()
         softcut.position(i+1,bank[i][bank[i].id].start_point)
       end
     end
+  end
+end
+
+function save_pattern(source,slot)
+  local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..slot..".data", "w+")
+  io.output(file)
+  io.write("stored pad pattern: collection "..selected_coll.." + bank "..source.."\n")
+  io.write(original_pattern[source].count .. "\n")
+  for i = 1,original_pattern[source].count do
+    io.write(original_pattern[source].time[i] .. "\n")
+    io.write(original_pattern[source].event[i].id .. "\n")
+    io.write(original_pattern[source].event[i].rate .. "\n")
+    io.write(tostring(original_pattern[source].event[i].loop) .. "\n")
+    io.write(original_pattern[source].event[i].mode .. "\n")
+    io.write(tostring(original_pattern[source].event[i].pause) .. "\n")
+    io.write(original_pattern[source].event[i].start_point .. "\n")
+    io.write(original_pattern[source].event[i].clip .. "\n")
+    io.write(original_pattern[source].event[i].end_point .. "\n")
+    io.write(tostring(original_pattern[source].event[i].rate_adjusted) .. "\n")
+    io.write(original_pattern[source].event[i].y .. "\n")
+    io.write(original_pattern[source].event[i].x .. "\n")
+    io.write(tostring(original_pattern[source].event[i].action) .. "\n")
+    io.write(original_pattern[source].event[i].i .. "\n")
+    if original_pattern[source].event[i].previous_rate ~= nil then
+      io.write(original_pattern[source].event[i].previous_rate .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+    if original_pattern[source].event[i].row ~=nil then
+      io.write(original_pattern[source].event[i].row .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+    if original_pattern[source].event[i].con ~= nil then
+      io.write(original_pattern[source].event[i].con .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+    --if original_pattern[source].event[i].bank ~= nil then
+    if #original_pattern[source].event[i].bank > 0 then
+      io.write(original_pattern[source].event[i].bank .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+  end
+  io.write(original_pattern[source].metro.props.time .. "\n")
+  io.write(original_pattern[source].prev_time .. "\n")
+  io.close(file)
+end
+
+function load_pattern(slot,source,destination)
+  local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..slot..".data", "r")
+  if file then
+    io.input(file)
+    if io.read() == "stored pad pattern: collection "..selected_coll.." + bank "..source then
+      grid_pat[destination].event = {}
+      grid_pat[destination].count = tonumber(io.read())
+      for i = 1,grid_pat[destination].count do
+        grid_pat[destination].time[i] = tonumber(io.read())
+        grid_pat[destination].event[i] = {}
+        grid_pat[destination].event[i].id = {}
+        grid_pat[destination].event[i].rate = {}
+        grid_pat[destination].event[i].loop = {}
+        grid_pat[destination].event[i].mode = {}
+        grid_pat[destination].event[i].pause = {}
+        grid_pat[destination].event[i].start_point = {}
+        grid_pat[destination].event[i].clip = {}
+        grid_pat[destination].event[i].end_point = {}
+        grid_pat[destination].event[i].rate_adjusted = {}
+        grid_pat[destination].event[i].y = {}
+        grid_pat[destination].event[i].x = {}
+        grid_pat[destination].event[i].action = {}
+        grid_pat[destination].event[i].i = {}
+        grid_pat[destination].event[i].previous_rate = {}
+        grid_pat[destination].event[i].row = {}
+        grid_pat[destination].event[i].con = {}
+        grid_pat[destination].event[i].bank = {}
+        grid_pat[destination].event[i].id = tonumber(io.read())
+        grid_pat[destination].event[i].rate = tonumber(io.read())
+        local loop_to_boolean = io.read()
+        if loop_to_boolean == "true" then
+          grid_pat[destination].event[i].loop = true
+        else
+          grid_pat[destination].event[i].loop = false
+        end
+        grid_pat[destination].event[i].mode = tonumber(io.read())
+        local pause_to_boolean = io.read()
+        if pause_to_boolean == "true" then
+          grid_pat[destination].event[i].pause = true
+        else
+          grid_pat[destination].event[i].pause = false
+        end
+        grid_pat[destination].event[i].start_point = tonumber(io.read())
+        grid_pat[destination].event[i].clip = tonumber(io.read())
+        grid_pat[destination].event[i].end_point = tonumber(io.read())
+        local rate_adjusted_to_boolean = io.read()
+        if rate_adjusted_to_boolean == "true" then
+          grid_pat[destination].event[i].rate_adjusted = true
+        else
+          grid_pat[destination].event[i].rate_adjusted = false
+        end
+        grid_pat[destination].event[i].y = tonumber(io.read())
+        local loaded_x = tonumber(io.read())
+        if destination < source then
+          grid_pat[destination].event[i].x = loaded_x - (5*(source-destination))
+        elseif destination > source then
+          grid_pat[destination].event[i].x = loaded_x + (5*(destination-source))
+        elseif destination == source then
+          grid_pat[destination].event[i].x = loaded_x
+        end
+        grid_pat[destination].event[i].action = io.read()
+        grid_pat[destination].event[i].i = destination
+        io.read()
+        grid_pat[destination].event[i].previous_rate = tonumber(io.read())
+        grid_pat[destination].event[i].row = tonumber(io.read())
+        grid_pat[destination].event[i].con = tonumber(io.read())
+        local loaded_bank = tonumber(io.read())
+        if loaded_bank ~= nil then
+          if destination < source then
+            grid_pat[destination].event[i].bank = loaded_bank - (5*(source-destination))
+          elseif destination > source then
+            grid_pat[destination].event[i].bank = loaded_bank + (5*(source-destination))
+          elseif destination == source then
+            grid_pat[destination].event[i].bank = loaded_bank
+          end
+        end
+      end
+      grid_pat[destination].metro.props.time = tonumber(io.read())
+      grid_pat[destination].prev_time = tonumber(io.read())
+    end
+    io.close(file)
+  else
+    print("nofile")
   end
 end
