@@ -1822,7 +1822,7 @@ end
 function save_pattern(source,slot)
   local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..slot..".data", "w+")
   io.output(file)
-  io.write("stored pad pattern: collection "..selected_coll.." + bank "..source.."\n")
+  io.write("stored pad pattern: collection "..selected_coll.." + slot "..slot.."\n")
   io.write(original_pattern[source].count .. "\n")
   for i = 1,original_pattern[source].count do
     io.write(original_pattern[source].time[i] .. "\n")
@@ -1855,7 +1855,7 @@ function save_pattern(source,slot)
       io.write("nil" .. "\n")
     end
     --if original_pattern[source].event[i].bank ~= nil then
-    if #original_pattern[source].event[i].bank > 0 then
+    if original_pattern[source].event[i].bank ~= nil and #original_pattern[source].event[i].bank > 0 then
       io.write(original_pattern[source].event[i].bank .. "\n")
     else
       io.write("nil" .. "\n")
@@ -1866,11 +1866,11 @@ function save_pattern(source,slot)
   io.close(file)
 end
 
-function load_pattern(slot,source,destination)
+function load_pattern(slot,destination)
   local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..slot..".data", "r")
   if file then
     io.input(file)
-    if io.read() == "stored pad pattern: collection "..selected_coll.." + bank "..source then
+    if io.read() == "stored pad pattern: collection "..selected_coll.." + slot "..slot then
       grid_pat[destination].event = {}
       grid_pat[destination].count = tonumber(io.read())
       for i = 1,grid_pat[destination].count do
@@ -1919,6 +1919,9 @@ function load_pattern(slot,source,destination)
         end
         grid_pat[destination].event[i].y = tonumber(io.read())
         local loaded_x = tonumber(io.read())
+        grid_pat[destination].event[i].action = io.read()
+        grid_pat[destination].event[i].i = destination
+        local source = tonumber(io.read())
         if destination < source then
           grid_pat[destination].event[i].x = loaded_x - (5*(source-destination))
         elseif destination > source then
@@ -1926,9 +1929,6 @@ function load_pattern(slot,source,destination)
         elseif destination == source then
           grid_pat[destination].event[i].x = loaded_x
         end
-        grid_pat[destination].event[i].action = io.read()
-        grid_pat[destination].event[i].i = destination
-        io.read()
         grid_pat[destination].event[i].previous_rate = tonumber(io.read())
         grid_pat[destination].event[i].row = tonumber(io.read())
         grid_pat[destination].event[i].con = tonumber(io.read())
