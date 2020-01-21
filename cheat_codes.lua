@@ -59,6 +59,21 @@ function f2()
   params:set("filter 1 cutoff",12000)
 end
 
+pattern_saver = {}
+for i = 1,3 do
+  pattern_saver[i] = metro.init()
+  pattern_saver[i].time = 1
+  pattern_saver[i].count = 1
+  pattern_saver[i].event = function() test_save(i) end
+  pattern_saver[i].source = i
+  pattern_saver[i].save_slot = nil
+  pattern_saver[i].load_slot = 0
+  pattern_saver[i].saved = {}
+  for j = 1,8 do
+    pattern_saver[i].saved[j] = 0
+  end
+end
+
 env_counter = {}
 for i = 1,3 do
   env_counter[i] = metro.init()
@@ -346,13 +361,13 @@ function es_linearize(bank,mode)
       local modes = {grid_pat[bank].time[1], 60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
       for k = 1,#grid_pat[bank].event do
         grid_pat[bank].time[k] = modes[mode]
-        print(modes[mode])
+        --print(modes[mode])
       end
     else
       local modes = {60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
       for k = 1,#grid_pat[bank].event do
         grid_pat[bank].time[k] = modes[math.random(4)]
-        print(modes[mode])
+        --print(modes[mode])
       end
     end
   end
@@ -408,6 +423,7 @@ clk_midi = midi.connect()
 clk_midi.event = function(data) clk:process_midi(data) end
 
 grid.alt = 0
+grid.alt_pp = 0
 
 local function crow_init()
   for i = 1,4 do
@@ -666,6 +682,8 @@ function init()
 
   clk:start()
   
+  grid_page = 0
+  
   page = {}
   page.main_sel = 1
   page.loops_sel = 0
@@ -793,7 +811,7 @@ function init()
   end
   
   arc_pat = {}
-  for i = 1,4 do
+  for i = 1,3 do
     arc_pat[i] = pattern_time.new()
     if i ~=4 then
       arc_pat[i].process = arc_pattern_execute
@@ -829,6 +847,8 @@ function init()
   end
   rec_state_watcher.count = -1
   rec_state_watcher:start()
+  
+  already_saved()
 
 end
 
@@ -1035,9 +1055,9 @@ function tilt_process(b,i)
     bank[b][i].cf_hp = math.abs(bank[b][i].tilt)
     bank[b][i].cf_fc = util.linexp(0,1,10,12000,bank[b][i].cf_hp)
     bank[b][i].cf_dry = 1-bank[b][i].tilt
-    if util.round(bank[b][i].tilt*100) < 50 then
+    if util.round(bank[b][i].tilt*100) < 80 then
       bank[b][i].cf_exp_dry = (util.linexp(0.5,0.69,1,101,bank[b][i].cf_dry)-1)/100
-    elseif util.round(bank[b][i].tilt*100) >= 50 then
+    elseif util.round(bank[b][i].tilt*100) >= 80 then
       bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
     end
     params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
@@ -1344,116 +1364,141 @@ end
 function grid_redraw()
   g:all(0)
   
-  for j = 0,2 do
-    for k = 1,4 do
-      k = k+(5*j)
-      for i = 8,5,-1 do
-        g:led(k,i,3)
-      end
-    end
-  end
-  
-  for j = 0,2 do
-    for k = (5-j),(15-j),5 do
-      for i = (4-j),1,-1 do
-        g:led(k,i,3)
-      end
-    end
-  end
-  
-  for i = 1,3 do
-    if grid_pat[i].led == nil then grid_pat[i].led = 0 end
-    if not clk.externalmidi and not clk.externalcrow then
-      if grid_pat[i].rec == 1 then
-        grid_pat[i].led = (grid_pat[i].led + 1)
-        if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
-          g:led(2+(5*(i-1)),1,(9))
-        elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
-          g:led(2+(5*(i-1)),1,(0))
-          grid_pat[i].led = 0
+  if grid_page == 0 then
+    
+    for j = 0,2 do
+      for k = 1,4 do
+        k = k+(5*j)
+        for i = 8,5,-1 do
+          g:led(k,i,3)
         end
-      elseif grid_pat[i].play == 1 then
-        grid_pat[i].led = 0
-        g:led(2+(5*(i-1)),1,9)
-      elseif grid_pat[i].count > 0 then
-        grid_pat[i].led = 0
-        g:led(2+(5*(i-1)),1,5)
-      else
-        grid_pat[i].led = 0
-        g:led(2+(5*(i-1)),1,3)
       end
-    else
-      if grid_pat[i].rec == 1 then
-        grid_pat[i].led = (grid_pat[i].led + 1)
-        if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
-          g:led(2+(5*(i-1)),1,(9))
-        elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
-          g:led(2+(5*(i-1)),1,(0))
-          grid_pat[i].led = 0
+    end
+    
+    for j = 0,2 do
+      for k = (5-j),(15-j),5 do
+        for i = (4-j),1,-1 do
+          g:led(k,i,3)
         end
-      elseif grid_pat[i].external_start == 1 then
-        grid_pat[i].led = 0
-        g:led(2+(5*(i-1)),1,9)
-      elseif grid_pat[i].count > 0 then
-        grid_pat[i].led = 0
-        g:led(2+(5*(i-1)),1,5)
-      else
-        grid_pat[i].led = 0
-        g:led(2+(5*(i-1)),1,3)
       end
     end
-  end
-  
-  for i = 1,4 do
-    if arc_pat[i].rec == 1 then
-      g:led(16,5-i,15)
-    elseif arc_pat[i].play == 1 then
-      g:led(16,5-i,9)
-    elseif arc_pat[i].count > 0 then
-      g:led(16,5-i,5)
-    else
-      g:led(16,5-i,0)
+    
+    for i = 1,3 do
+      if grid_pat[i].led == nil then grid_pat[i].led = 0 end
+      if not clk.externalmidi and not clk.externalcrow then
+        if grid_pat[i].rec == 1 then
+          grid_pat[i].led = (grid_pat[i].led + 1)
+          if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
+            g:led(2+(5*(i-1)),1,(9))
+          elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
+            g:led(2+(5*(i-1)),1,(0))
+            grid_pat[i].led = 0
+          end
+        elseif grid_pat[i].play == 1 then
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,9)
+        elseif grid_pat[i].count > 0 then
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,5)
+        else
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,3)
+        end
+      else
+        if grid_pat[i].rec == 1 then
+          grid_pat[i].led = (grid_pat[i].led + 1)
+          if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
+            g:led(2+(5*(i-1)),1,(9))
+          elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
+            g:led(2+(5*(i-1)),1,(0))
+            grid_pat[i].led = 0
+          end
+        elseif grid_pat[i].external_start == 1 then
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,9)
+        elseif grid_pat[i].count > 0 then
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,5)
+        else
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,3)
+        end
+      end
     end
-  end
-  
-  for i = 1,3 do
-    g:led(selected[i].x, selected[i].y, 15)
-    if bank[i][bank[i].id].pause == true then
-     g:led(3+(5*(i-1)),1,15)
-     g:led(3+(5*(i-1)),2,15)
-    else
-      g:led(3+(5*(i-1)),1,3)
-      g:led(3+(5*(i-1)),2,3)
+    
+    for i = 1,3 do
+      if arc_pat[i].rec == 1 then
+        g:led(16,5-i,15)
+      elseif arc_pat[i].play == 1 then
+        g:led(16,5-i,9)
+      elseif arc_pat[i].count > 0 then
+        g:led(16,5-i,5)
+      else
+        g:led(16,5-i,0)
+      end
     end
-  end
-  
-  for i,e in pairs(lit) do
-    g:led(e.x, e.y,15)
-  end
-  
-  g:led(16,8,(grid.alt*12)+3)
-  
-  g:led(1,math.abs(bank[1][bank[1].id].clip-5),8)
-  g:led(6,math.abs(bank[2][bank[2].id].clip-5),8)
-  g:led(11,math.abs(bank[3][bank[3].id].clip-5),8)
-  
-  g:led(2,math.abs(bank[1][bank[1].id].mode-5),6)
-  g:led(7,math.abs(bank[2][bank[2].id].mode-5),6)
-  g:led(12,math.abs(bank[3][bank[3].id].mode-5),6)
-  
-  for i = 1,3 do
-    if bank[i][bank[i].id].loop == false then
-      g:led(3+(5*(i-1)),4,2)
-    elseif bank[i][bank[i].id].loop == true then
-      g:led(3+(5*(i-1)),4,4)
+    
+    for i = 1,3 do
+      g:led(selected[i].x, selected[i].y, 15)
+      if bank[i][bank[i].id].pause == true then
+       g:led(3+(5*(i-1)),1,15)
+       g:led(3+(5*(i-1)),2,15)
+      else
+        g:led(3+(5*(i-1)),1,3)
+        g:led(3+(5*(i-1)),2,3)
+      end
     end
-  end
+    
+    for i,e in pairs(lit) do
+      g:led(e.x, e.y,15)
+    end
+    
+    g:led(16,8,(grid.alt*12)+3)
+    
+    g:led(1,math.abs(bank[1][bank[1].id].clip-5),8)
+    g:led(6,math.abs(bank[2][bank[2].id].clip-5),8)
+    g:led(11,math.abs(bank[3][bank[3].id].clip-5),8)
+    
+    g:led(2,math.abs(bank[1][bank[1].id].mode-5),6)
+    g:led(7,math.abs(bank[2][bank[2].id].mode-5),6)
+    g:led(12,math.abs(bank[3][bank[3].id].mode-5),6)
+    
+    for i = 1,3 do
+      if bank[i][bank[i].id].loop == false then
+        g:led(3+(5*(i-1)),4,2)
+      elseif bank[i][bank[i].id].loop == true then
+        g:led(3+(5*(i-1)),4,4)
+      end
+    end
+    
+    if rec.clear == 0 then
+      g:led(16,8-rec.clip,(5*rec.state)+10)
+    elseif rec.clear == 1 then
+      g:led(16,8-rec.clip,3)
+    end
   
-  if rec.clear == 0 then
-    g:led(16,8-rec.clip,(5*rec.state)+10)
-  elseif rec.clear == 1 then
-    g:led(16,8-rec.clip,3)
+  else
+    
+    for i = 1,11,5 do
+      for j = 1,8 do
+        local current = math.floor(i/5)+1
+        g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
+        g:led(i,j,j == 9 - pattern_saver[current].load_slot and 15 or ((5*pattern_saver[current].saved[9-j])+2))
+      end
+    end
+    
+    g:led(16,8,(grid.alt_pp*12)+3)
+        
+    --[[for i = 2,12,5 do
+      for j = 1,8 do
+        local current = math.floor(i/5)+1
+        g:led(i,j,j == 9 - pattern_saver[current].load_slot and 12 or 2)
+      end
+    end]]--
+    
+    
   end
+  g:led(16,1,15*grid_page)
   
   g:refresh()
 end
@@ -1817,6 +1862,43 @@ function loadstate()
       end
     end
   end
+  already_saved()
+end
+
+function test_save(i)
+  if grid.alt_pp == 0 then
+    if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
+      copy_entire_pattern(i)
+      print(pattern_saver[i].source, pattern_saver[i].save_slot)
+      save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
+      pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
+      pattern_saver[i].load_slot = pattern_saver[i].save_slot
+      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,15)
+      g:refresh()
+    else
+      print("no pattern data to save")
+      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,0)
+      g:refresh()
+    end
+  else
+    if pattern_saver[i].saved[pattern_saver[i].save_slot] == 1 then
+      delete_pattern(pattern_saver[i].save_slot+8*(i-1))
+      pattern_saver[i].saved[pattern_saver[i].save_slot] = 0
+      pattern_saver[i].load_slot = 0
+    else
+      print("no pattern data to delete")
+    end
+  end
+end
+
+function test_load(slot,destination)
+  if pattern_saver[destination].saved[slot-((destination-1)*8)] == 1 then
+    if grid_pat[destination].play == 1 then
+      grid_pat[destination]:stop()
+    end
+    load_pattern(slot,destination)
+    grid_pat[destination]:start()
+  end
 end
 
 function save_pattern(source,slot)
@@ -1864,6 +1946,36 @@ function save_pattern(source,slot)
   io.write(original_pattern[source].metro.props.time .. "\n")
   io.write(original_pattern[source].prev_time .. "\n")
   io.close(file)
+  print("saved pattern "..source.." to slot "..slot)
+end
+
+function already_saved()
+  for i = 1,24 do
+    local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..i..".data", "r")
+    if file then
+      io.input(file)
+      if io.read() == "stored pad pattern: collection "..selected_coll.." + slot "..i then
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 1
+      else
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 0
+        os.remove(_path.data .. "cheat_codes/pattern" ..selected_coll.."_"..i..".data")
+      end
+      io.close(file)
+    else
+      local current = math.floor((i-1)/8)+1
+      pattern_saver[current].saved[i-(8*(current-1))] = 0
+    end
+  end
+end
+
+function delete_pattern(slot)
+  local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..slot..".data", "w+")
+  io.output(file)
+  io.write()
+  io.close(file)
+  print("deleted pattern from slot "..slot)
 end
 
 function load_pattern(slot,destination)

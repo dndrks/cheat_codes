@@ -128,7 +128,7 @@ function encoder_actions.init(n,d)
             elseif d < 0 and bank[id][j].tilt < 0 and bank[id][j].tilt > -0.1 then
               bank[id][j].tilt = -0.1
             end
-            print(id, j, bank[id][j].tilt)
+            --print(id, j, bank[id][j].tilt)
             tilt_process(util.round(id),j)
           end
         end

@@ -142,7 +142,7 @@ function main_menu.init()
     screen.level(3)
     screen.text("filters")
     for i = 1,3 do
-      screen.move(16+((i-1)*45),25)
+      screen.move(17+((i-1)*45),25)
       screen.level(page.filtering_sel == i-1 and 15 or 3)
       local filters_to_screen_options = {"a", "b", "c"}
       if key1_hold or grid.alt == 1 then
