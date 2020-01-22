@@ -108,6 +108,8 @@ function grid_actions.init(x,y,z)
           elseif k == 1 then
             zilchmo(1,i)
           end
+          selected_zilchmo_row = k
+          selected_zilchmo_bank = i
         end
       end
     end
