@@ -17,6 +17,7 @@ rightangleslice = include 'lib/zilchmos'
 start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
 rec_head = include 'lib/rec_head'
+easingFunctions = include 'lib/easing'
 
 tau = math.pi * 2
 arc_param = {}
@@ -82,14 +83,23 @@ for i = 1,3 do
   env_counter[i].event = function() envelope(i) end
 end
 
---[[slew_counter = {}
+slew_counter = {}
+
 for i = 1,1 do
   slew_counter[i] = metro.init()
-  slew_counter[i].time = 0.005
+  slew_counter[i].time = 0.01
+  slew_counter[i].count = 100
+  slew_counter[i].current = 0.00
+  slew_counter[i].event = function() easing_slew(i) end
+  slew_counter[i].ease = easingFunctions.inSine
+  slew_counter[i].beginVal = 0
+  slew_counter[i].endVal = 1
+  slew_counter[i].change =  slew_counter[i].endVal - slew_counter[i].beginVal
+  slew_counter[i].duration = (slew_counter[i].count/100)-0.01
+  slew_counter[i].slewedVal = nil
   slew_counter[i].prev_tilt = 0
   slew_counter[i].next_tilt = 0
-  slew_counter[i].event = function() filter_slew(i) end
-end]]--
+end
 
 quantize = 1
 quantize_events = {}
@@ -737,62 +747,55 @@ function init()
       fingers[k][i] = {}
       fingers[k][i].con = {}
     end
-    counter_four[i] = {}
-    counter_four[i].key_up = metro.init()
-    counter_four[i].key_up.time = 0.05
-    counter_four[i].key_up.count = 1
-    counter_four[i].key_up.event = function()
-      local previous_rate = bank[i][bank[i].id].rate
-      zilchmo(4,i)
-      zilchmo_p1 = {}
-      zilchmo_p1.con = fingers[4][i].con
-      zilchmo_p1.row = 4
-      zilchmo_p1.bank = i
-      --zilchmo_pat[1]:watch(zilchmo_p1)
-      --try this
-      grid_p[i] = {}
-      grid_p[i].i = i
-      grid_p[i].action = "zilchmo_4"
-      --new
-      grid_p[i].con = fingers[4][i].con
-      grid_p[i].row = 4
-      grid_p[i].bank = i
-      --/new
-      grid_p[i].id = selected[i].id
-      grid_p[i].x = selected[i].x
-      grid_p[i].y = selected[i].y
-      grid_p[i].previous_rate = previous_rate
-      grid_p[i].rate = previous_rate
-      --
-      grid_p[i].start_point = bank[i][bank[i].id].start_point
-      grid_p[i].end_point = bank[i][bank[i].id].end_point
-      --
-      --grid_p[i].rate = bank[i][bank[i].id].rate
-      --[[if grid_p[i].rate ~= previous_rate then
-        grid_p[i].rate_adjusted = true
-      else
-        grid_p[i].rate_adjusted = false
-      end]]--
-      grid_pat[i]:watch(grid_p[i])
-    end
-    counter_four[i].key_up:stop()
-    counter_three[i] = {}
-    counter_three[i].key_up = metro.init()
-    counter_three[i].key_up.time = 0.05
-    counter_three[i].key_up.count = 1
-    counter_three[i].key_up.event = function()
-      zilchmo(3,i)
-    end
-    counter_three[i].key_up:stop()
-    counter_two[i] = {}
-    counter_two[i].key_up = metro.init()
-    counter_two[i].key_up.time = 0.05
-    counter_two[i].key_up.count = 1
-    counter_two[i].key_up.event = function()
-      zilchmo(2,i)
-    end
-    counter_two[i].key_up:stop()
   end
+  --counter_four= {}
+  counter_four.key_up = metro.init()
+  counter_four.key_up.time = 0.05
+  counter_four.key_up.count = 1
+  counter_four.key_up.event = function()
+    local previous_rate = bank[selected_zilchmo_bank][bank[selected_zilchmo_bank].id].rate
+    zilchmo(4,selected_zilchmo_bank)
+    zilchmo_p1 = {}
+    zilchmo_p1.con = fingers[4][selected_zilchmo_bank].con
+    zilchmo_p1.row = 4
+    zilchmo_p1.bank = selected_zilchmo_bank
+    --zilchmo_pat[1]:watch(zilchmo_p1)
+    --try this
+    grid_p[selected_zilchmo_bank] = {}
+    grid_p[selected_zilchmo_bank].i = selected_zilchmo_bank
+    grid_p[selected_zilchmo_bank].action = "zilchmo_4"
+    --new
+    grid_p[selected_zilchmo_bank].con = fingers[4][selected_zilchmo_bank].con
+    grid_p[selected_zilchmo_bank].row = 4
+    grid_p[selected_zilchmo_bank].bank = selected_zilchmo_bank
+    --/new
+    grid_p[selected_zilchmo_bank].id = selected[selected_zilchmo_bank].id
+    grid_p[selected_zilchmo_bank].x = selected[selected_zilchmo_bank].x
+    grid_p[selected_zilchmo_bank].y = selected[selected_zilchmo_bank].y
+    grid_p[selected_zilchmo_bank].previous_rate = previous_rate
+    grid_p[selected_zilchmo_bank].rate = previous_rate
+    --
+    grid_p[selected_zilchmo_bank].start_point = bank[selected_zilchmo_bank][bank[selected_zilchmo_bank].id].start_point
+    grid_p[selected_zilchmo_bank].end_point = bank[selected_zilchmo_bank][bank[selected_zilchmo_bank].id].end_point
+    grid_pat[selected_zilchmo_bank]:watch(grid_p[selected_zilchmo_bank])
+  end
+  counter_four.key_up:stop()
+  counter_three = {}
+  counter_three.key_up = metro.init()
+  counter_three.key_up.time = 0.05
+  counter_three.key_up.count = 1
+  counter_three.key_up.event = function()
+    zilchmo(3,selected_zilchmo_bank)
+  end
+  counter_three.key_up:stop()
+  counter_two = {}
+  counter_two.key_up = metro.init()
+  counter_two.key_up.time = 0.05
+  counter_two.key_up.count = 1
+  counter_two.key_up.event = function()
+    zilchmo(2,selected_zilchmo_bank)
+  end
+  counter_two.key_up:stop()
   
   --[[grid_pat = {}
   for i = 1,3 do
@@ -1027,61 +1030,6 @@ function reset_all_banks()
   end
 end
 
-function tilt_process(b,i)
-  if util.round(bank[b][i].tilt*100) < 0 then
-    bank[b][i].cf_lp = math.abs(bank[b][i].tilt)
-    bank[b][i].cf_dry = 1+bank[b][i].tilt
-    --bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
-    bank[b][i].cf_fc = util.linexp(0,1,12000,10,bank[b][i].cf_lp)
-    if util.round(bank[b][i].tilt*100) > -20 then
-      bank[b][i].cf_exp_dry = (util.linexp(0.83,0.9,10,101,bank[b][i].cf_dry)-1)/100
-    elseif util.round(bank[b][i].tilt*100) <= -20 then
-      --bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
-    end
-    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
-    params:set("filter "..b.." lp", math.abs(bank[b][i].cf_exp_dry-1))
-    if bank[b][i].cf_exp_dry < 0.20 then
-      params:set("filter "..b.." dry", 0)
-    else
-      params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
-    end
-    if params:get("filter "..b.." hp") ~= 0 then
-      params:set("filter "..b.." hp", 0)
-    end
-    if bank[b][i].cf_hp ~= 0 then
-      bank[b][i].cf_hp = 0
-    end
-  elseif util.round(bank[b][i].tilt*100) > 30 then
-    bank[b][i].cf_hp = math.abs(bank[b][i].tilt)
-    bank[b][i].cf_fc = util.linexp(0,1,10,12000,bank[b][i].cf_hp)
-    bank[b][i].cf_dry = 1-bank[b][i].tilt
-    if util.round(bank[b][i].tilt*100) < 80 then
-      bank[b][i].cf_exp_dry = (util.linexp(0.5,0.69,1,101,bank[b][i].cf_dry)-1)/100
-    elseif util.round(bank[b][i].tilt*100) >= 80 then
-      bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
-    end
-    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
-    params:set("filter "..b.." hp", math.abs(bank[b][i].cf_exp_dry-1))
-    params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
-    if params:get("filter "..b.." lp") ~= 0 then
-      params:set("filter "..b.." lp", 0)
-    end
-    if bank[b][i].cf_lp ~= 0 then
-      bank[b][i].cf_lp = 0
-    end
-  elseif util.round(bank[b][i].tilt*100) == 0 then
-    bank[b][i].cf_fc = 12000
-    bank[b][i].cf_lp = 0
-    bank[b][i].cf_hp = 0
-    bank[b][i].cf_dry = 1
-    bank[b][i].cf_exp_dry = 1
-    params:set("filter "..b.." cutoff",12000)
-    params:set("filter "..b.." lp", 0)
-    params:set("filter "..b.." hp", 0)
-    params:set("filter "..b.." dry", 1)
-  end
-end
-
 function cheat(b,i)
   env_counter[b]:stop()
   if bank[b][i].enveloped then
@@ -1160,9 +1108,16 @@ function cheat(b,i)
   --[[slew_counter[1]:stop()
   slew_counter[1].next_tilt = bank[1][i].tilt
   slew_counter[1]:start()]]--
-  tilt_process(util.round(b),i)
+  if slew_counter[b] ~= nil then
+    slew_counter[b].next_tilt = bank[b][i].tilt
+    slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,500)
+  end
+  --tilt_process(util.round(b),i)
   softcut.pan(b+1,bank[b][i].pan)
   update_delays()
+  if slew_counter[b] ~= nil then
+    slew_counter[b].prev_tilt = bank[b][i].tilt
+  end
 end
 
 function envelope(i)
@@ -1179,6 +1134,93 @@ function envelope(i)
     softcut.level_cut_cut(i+1,5,0)
     softcut.level_cut_cut(i+1,6,0)
     softcut.level_slew_time(i+1,1.0)
+  end
+end
+
+function slew_filter(i,prevVal,nextVal,count)
+  slew_counter[i]:stop()
+  slew_counter[i].current = 0
+  slew_counter[i].count = count
+  slew_counter[i].duration = (slew_counter[i].count/100)-0.01
+  slew_counter[i].beginVal = prevVal
+  slew_counter[i].endVal = nextVal
+  slew_counter[i].change = slew_counter[i].endVal - slew_counter[i].beginVal
+  slew_counter[i]:start()
+end
+
+function easing_slew(i)
+  slew_counter[i].slewedVal = slew_counter[i].ease(slew_counter[i].current,slew_counter[i].beginVal,slew_counter[i].change,slew_counter[i].duration)
+  slew_counter[i].current = slew_counter[i].current + 0.01
+  if slew_counter[i].endVal > slew_counter[i].beginVal then
+    if math.floor(slew_counter[i].slewedVal*10000) >= math.floor(slew_counter[i].endVal*10000) then
+      slew_counter[i].slewedVal = slew_counter[i].endVal
+      slew_counter[i]:stop()
+    end
+  elseif slew_counter[i].endVal < slew_counter[i].beginVal then
+    if math.floor(slew_counter[i].slewedVal*100000) <= math.floor(slew_counter[i].endVal*100000) then
+      slew_counter[i].slewedVal = slew_counter[i].endVal
+      slew_counter[i]:stop()
+    end
+  end
+  --print(slew_counter[i].slewedVal)
+  try_tilt_process(i,bank[i].id,slew_counter[i].slewedVal)
+  if menu == 5 then
+    redraw()
+  end
+end
+
+function try_tilt_process(b,i,t)
+  if util.round(t*100) < 0 then
+    bank[b][i].cf_lp = math.abs(t)
+    bank[b][i].cf_dry = 1+t
+    --bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    bank[b][i].cf_fc = util.linexp(0,1,12000,10,bank[b][i].cf_lp)
+    if util.round(t*100) > -20 then
+      bank[b][i].cf_exp_dry = (util.linexp(0.83,0.9,10,101,bank[b][i].cf_dry)-1)/100
+    elseif util.round(t*100) <= -20 then
+      --bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    end
+    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
+    params:set("filter "..b.." lp", math.abs(bank[b][i].cf_exp_dry-1))
+    if bank[b][i].cf_exp_dry < 0.20 then
+      params:set("filter "..b.." dry", 0)
+    else
+      params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
+    end
+    if params:get("filter "..b.." hp") ~= 0 then
+      params:set("filter "..b.." hp", 0)
+    end
+    if bank[b][i].cf_hp ~= 0 then
+      bank[b][i].cf_hp = 0
+    end
+  elseif util.round(t*100) > 30 then
+    bank[b][i].cf_hp = math.abs(t)
+    bank[b][i].cf_fc = util.linexp(0,1,10,12000,bank[b][i].cf_hp)
+    bank[b][i].cf_dry = 1-t
+    --if util.round(t*100) < 80 then
+    --  bank[b][i].cf_exp_dry = (util.linexp(0.5,0.69,1,101,bank[b][i].cf_dry)-1)/100
+    --elseif util.round(t*100) >= 80 then
+      bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    --end
+    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
+    params:set("filter "..b.." hp", math.abs(bank[b][i].cf_exp_dry-1))
+    params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
+    if params:get("filter "..b.." lp") ~= 0 then
+      params:set("filter "..b.." lp", 0)
+    end
+    if bank[b][i].cf_lp ~= 0 then
+      bank[b][i].cf_lp = 0
+    end
+  elseif util.round(t*100) == 0 then
+    bank[b][i].cf_fc = 12000
+    bank[b][i].cf_lp = 0
+    bank[b][i].cf_hp = 0
+    bank[b][i].cf_dry = 1
+    bank[b][i].cf_exp_dry = 1
+    params:set("filter "..b.." cutoff",12000)
+    params:set("filter "..b.." lp", 0)
+    params:set("filter "..b.." hp", 0)
+    params:set("filter "..b.." dry", 1)
   end
 end
 
@@ -1530,17 +1572,24 @@ function grid_pattern_execute(entry)
   elseif entry.action == "zilchmo_4" then
     if params:get("zilchmo_patterning") == 2 then
       bank[i][entry.id].rate = entry.rate
+      if fingers[entry.row][entry.bank] == nil then
+        fingers[entry.row][entry.bank] = {}
+      end
       fingers[entry.row][entry.bank].con = entry.con
       zilchmo(entry.row,entry.bank)
       if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
         bank[i][bank[i].id].start_point = entry.start_point
         bank[i][bank[i].id].end_point = entry.end_point
-        cheat(i,bank[i].id)
+        --cheat(i,bank[i].id)
+        softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+        softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
       end
       local length = math.floor(math.log10(entry.con)+1)
       for i = 1,length do
-        g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)
-        g:refresh()
+        if grid_page == 0 then
+          g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)
+          g:refresh()
+        end
       end
     end
   end
@@ -1911,12 +1960,24 @@ function save_pattern(source,slot)
     io.write(original_pattern[source].event[i].id .. "\n")
     io.write(original_pattern[source].event[i].rate .. "\n")
     io.write(tostring(original_pattern[source].event[i].loop) .. "\n")
-    io.write(original_pattern[source].event[i].mode .. "\n")
+    if original_pattern[source].event[i].mode ~= nil then
+      io.write(original_pattern[source].event[i].mode .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
     io.write(tostring(original_pattern[source].event[i].pause) .. "\n")
     io.write(original_pattern[source].event[i].start_point .. "\n")
-    io.write(original_pattern[source].event[i].clip .. "\n")
+    if original_pattern[source].event[i].clip ~= nil then
+      io.write(original_pattern[source].event[i].clip .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
     io.write(original_pattern[source].event[i].end_point .. "\n")
-    io.write(tostring(original_pattern[source].event[i].rate_adjusted) .. "\n")
+    if original_pattern[source].event[i].rate_adjusted ~= nil then
+      io.write(tostring(original_pattern[source].event[i].rate_adjusted) .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
     io.write(original_pattern[source].event[i].y .. "\n")
     io.write(original_pattern[source].event[i].x .. "\n")
     io.write(tostring(original_pattern[source].event[i].action) .. "\n")
@@ -1937,7 +1998,7 @@ function save_pattern(source,slot)
       io.write("nil" .. "\n")
     end
     --if original_pattern[source].event[i].bank ~= nil then
-    if original_pattern[source].event[i].bank ~= nil and #original_pattern[source].event[i].bank > 0 then
+    if original_pattern[source].event[i].bank ~= nil and #original_pattern[source].event > 0 then
       io.write(original_pattern[source].event[i].bank .. "\n")
     else
       io.write("nil" .. "\n")
@@ -2043,7 +2104,7 @@ function load_pattern(slot,destination)
         end
         grid_pat[destination].event[i].previous_rate = tonumber(io.read())
         grid_pat[destination].event[i].row = tonumber(io.read())
-        grid_pat[destination].event[i].con = tonumber(io.read())
+        grid_pat[destination].event[i].con = io.read()
         local loaded_bank = tonumber(io.read())
         if loaded_bank ~= nil then
           if destination < source then

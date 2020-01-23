@@ -110,27 +110,30 @@ function encoder_actions.init(n,d)
             bank[id][bank[id].id].tilt = 0.30
           elseif d < 0 and bank[id][bank[id].id].tilt > 0 and bank[id][bank[id].id].tilt < 0.30 then
             bank[id][bank[id].id].tilt = 0
-          elseif d > 0 and bank[id][bank[id].id].tilt < 0 and bank[id][bank[id].id].tilt > -0.1 then
+          elseif d > 0 and bank[id][bank[id].id].tilt < 0 and bank[id][bank[id].id].tilt > -0.05 then
             bank[id][bank[id].id].tilt = 0
-          elseif d < 0 and bank[id][bank[id].id].tilt < 0 and bank[id][bank[id].id].tilt > -0.1 then
-            bank[id][bank[id].id].tilt = -0.1
+          elseif d < 0 and bank[id][bank[id].id].tilt < 0 and bank[id][bank[id].id].tilt > -0.05 then
+            bank[id][bank[id].id].tilt = -0.05
           end
-          tilt_process(util.round(id),bank[id].id)
+          try_tilt_process(util.round(id),bank[id].id,bank[id][bank[id].id].tilt)
         else
           for j = 1,16 do
             bank[id][j].tilt = util.clamp(bank[id][j].tilt+(d/100),-1,1)
-            if d > 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
+            --[[if d > 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
               bank[id][j].tilt = 0.30
             elseif d < 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
               bank[id][j].tilt = 0
-            elseif d > 0 and bank[id][j].tilt < 0 and bank[id][j].tilt > -0.1 then
+            elseif d > 0 and bank[id][j].tilt < 0 and bank[id][j].tilt > -0.05 then
               bank[id][j].tilt = 0
-            elseif d < 0 and bank[id][j].tilt < 0 and bank[id][j].tilt > -0.1 then
-              bank[id][j].tilt = -0.1
-            end
+            elseif d < 0 and bank[id][j].tilt < 0 and bank[id][j].tilt > -0.05 then
+              bank[id][j].tilt = -0.05
+            end]]--
             --print(id, j, bank[id][j].tilt)
-            tilt_process(util.round(id),j)
+            try_tilt_process(util.round(id),j,bank[id][j].tilt)
           end
+        end
+        if slew_counter[id] ~= nil then
+          slew_counter[id].prev_tilt = bank[id][bank[id].id].tilt
         end
       end
     elseif menu == 6 then

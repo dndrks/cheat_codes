@@ -97,14 +97,14 @@ function grid_actions.init(x,y,z)
           end
         elseif z == 0 and x == (k+1)+(5*(i-1)) and y<=k then
           if k == 4 then
-            counter_four[i].key_up:stop()
-            counter_four[i].key_up:start()
+            counter_four.key_up:stop()
+            counter_four.key_up:start()
           elseif k == 3 then
-            counter_three[i].key_up:stop()
-            counter_three[i].key_up:start()
+            counter_three.key_up:stop()
+            counter_three.key_up:start()
           elseif k == 2 then
-            counter_two[i].key_up:stop()
-            counter_two[i].key_up:start()
+            counter_two.key_up:stop()
+            counter_two.key_up:start()
           elseif k == 1 then
             zilchmo(1,i)
           end
