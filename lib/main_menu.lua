@@ -151,27 +151,27 @@ function main_menu.init()
         screen.text_center("("..filters_to_screen_options[i]..")")
       end
       screen.move(17+((i-1)*45),35)
-      if bank[i][bank[i].id].tilt >= -0.1 and bank[i][bank[i].id].tilt <=0.32 then
+      if bank[i][bank[i].id].tilt >= -0.04 and bank[i][bank[i].id].tilt <=0.32 then
         screen.text_center("neutral")
-      elseif bank[i][bank[i].id].tilt < -0.1 then
+      elseif bank[i][bank[i].id].tilt < -0.04 then
         screen.text_center("LP")
       elseif bank[i][bank[i].id].tilt > 0.32 then
         screen.text_center("HP")
       end
       screen.move(17+((i-1)*45),45)
-      if bank[i][bank[i].id].tilt >= -0.1 and bank[i][bank[i].id].tilt <=0.32 then
+      if bank[i][bank[i].id].tilt >= -0.04 and bank[i][bank[i].id].tilt <=0.32 then
         screen.level(3)
         screen.text_center("-")
-      elseif bank[i][bank[i].id].tilt < -0.1 or bank[i][bank[i].id].tilt > 0.32 then
+      elseif bank[i][bank[i].id].tilt < -0.04 or bank[i][bank[i].id].tilt > 0.32 then
         screen.level(page.filtering_sel == i-1 and 15 or 3)
         screen.text_center(string.format("%.0f",bank[i][bank[i].id].cf_fc))
       end
       screen.move(17+((i-1)*45),55)
-      if bank[i][bank[i].id].tilt >= -0.1 and bank[i][bank[i].id].tilt <=0.32 then
+      if bank[i][bank[i].id].tilt >= -0.04 and bank[i][bank[i].id].tilt <=0.32 then
         screen.level(3)
         local q_to_screen = util.linlin(0,2,2,0,bank[i][bank[i].id].q)
         screen.text_center(string.format("%.2f",q_to_screen))
-      elseif bank[i][bank[i].id].tilt < -0.1 or bank[i][bank[i].id].tilt > 0.32 then
+      elseif bank[i][bank[i].id].tilt < -0.04 or bank[i][bank[i].id].tilt > 0.32 then
         local q_to_screen = util.linlin(0,2,2,0,bank[i][bank[i].id].q)
         screen.level(page.filtering_sel == i-1 and 15 or 3)
         screen.text_center(string.format("%.2f",q_to_screen))

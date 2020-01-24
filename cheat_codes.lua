@@ -85,7 +85,7 @@ end
 
 slew_counter = {}
 
-for i = 1,1 do
+for i = 1,3 do
   slew_counter[i] = metro.init()
   slew_counter[i].time = 0.01
   slew_counter[i].count = 100
@@ -95,10 +95,15 @@ for i = 1,1 do
   slew_counter[i].beginVal = 0
   slew_counter[i].endVal = 1
   slew_counter[i].change =  slew_counter[i].endVal - slew_counter[i].beginVal
+  slew_counter[i].beginQ = 0
+  slew_counter[i].endQ = 0
+  slew_counter[i].changeQ = slew_counter[i].endQ - slew_counter[i].beginQ
   slew_counter[i].duration = (slew_counter[i].count/100)-0.01
   slew_counter[i].slewedVal = nil
   slew_counter[i].prev_tilt = 0
   slew_counter[i].next_tilt = 0
+  slew_counter[i].prev_q = 0
+  slew_counter[i].next_q = 0
 end
 
 quantize = 1
@@ -1067,8 +1072,11 @@ function cheat(b,i)
   elseif bank[b][i].rate < 0 then
       softcut.position(b+1,bank[b][i].end_point-0.05)
   end
-  params:set("filter "..math.floor(tonumber(b)).." q",bank[b][i].q)
-  softcut.post_filter_rq(b+1,bank[b][i].q)
+  
+  --KILLING THESE CUZ OF FILTER SLEW
+  --params:set("filter "..math.floor(tonumber(b)).." q",bank[b][i].q)
+  --softcut.post_filter_rq(b+1,bank[b][i].q)
+  
   --[[local filter_type = bank[b][i].filter_type
   if bank[b][i].filter_type == 1 then
     params:set("filter "..math.floor(tonumber(b)).." lp",1)
@@ -1105,19 +1113,28 @@ function cheat(b,i)
     --softcut.post_filter_dry(b+1,bank[b][i].cf_exp_dry)
   end]]--
   -- HERE'S WHERE A FILTER SLEW WOULD GO
-  --[[slew_counter[1]:stop()
-  slew_counter[1].next_tilt = bank[1][i].tilt
-  slew_counter[1]:start()]]--
   if slew_counter[b] ~= nil then
     slew_counter[b].next_tilt = bank[b][i].tilt
-    slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,500)
+    slew_counter[b].next_q = bank[b][i].q
+      if slew_counter[b].slewedVal ~= nil and math.floor(slew_counter[b].slewedVal*10000) ~= math.floor(slew_counter[b].next_tilt*10000) then
+        if math.floor(slew_counter[b].prev_tilt*10000) ~= math.floor(slew_counter[b].slewedVal*10000) then
+          slew_counter[b].interrupted = 1
+          slew_filter(util.round(b),slew_counter[b].slewedVal,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,500)
+        else
+          slew_counter[b].interrupted = 0
+          slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,500)
+        end
+      end
+    --slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,500)
   end
   --tilt_process(util.round(b),i)
   softcut.pan(b+1,bank[b][i].pan)
   update_delays()
   if slew_counter[b] ~= nil then
     slew_counter[b].prev_tilt = bank[b][i].tilt
+    slew_counter[b].prev_q = bank[b][i].q
   end
+  previous_pad = bank[b].id
 end
 
 function envelope(i)
@@ -1137,7 +1154,7 @@ function envelope(i)
   end
 end
 
-function slew_filter(i,prevVal,nextVal,count)
+function slew_filter(i,prevVal,nextVal,prevQ,nextQ,count)
   slew_counter[i]:stop()
   slew_counter[i].current = 0
   slew_counter[i].count = count
@@ -1145,31 +1162,97 @@ function slew_filter(i,prevVal,nextVal,count)
   slew_counter[i].beginVal = prevVal
   slew_counter[i].endVal = nextVal
   slew_counter[i].change = slew_counter[i].endVal - slew_counter[i].beginVal
+  slew_counter[i].beginQ = prevQ
+  slew_counter[i].endQ = nextQ
+  slew_counter[i].changeQ = slew_counter[i].endQ - slew_counter[i].beginQ
   slew_counter[i]:start()
 end
 
 function easing_slew(i)
   slew_counter[i].slewedVal = slew_counter[i].ease(slew_counter[i].current,slew_counter[i].beginVal,slew_counter[i].change,slew_counter[i].duration)
+  slew_counter[i].slewedQ = slew_counter[i].ease(slew_counter[i].current,slew_counter[i].beginQ,slew_counter[i].changeQ,slew_counter[i].duration)
   slew_counter[i].current = slew_counter[i].current + 0.01
-  if slew_counter[i].endVal > slew_counter[i].beginVal then
+  --[[if slew_counter[i].endVal > slew_counter[i].beginVal then
     if math.floor(slew_counter[i].slewedVal*10000) >= math.floor(slew_counter[i].endVal*10000) then
+      slew_counter[i].interrupted = 1
       slew_counter[i].slewedVal = slew_counter[i].endVal
+      slew_counter[i].slewedQ = slew_counter[i].endQ
       slew_counter[i]:stop()
     end
   elseif slew_counter[i].endVal < slew_counter[i].beginVal then
     if math.floor(slew_counter[i].slewedVal*100000) <= math.floor(slew_counter[i].endVal*100000) then
+      slew_counter[i].interrupted = 1
       slew_counter[i].slewedVal = slew_counter[i].endVal
+      slew_counter[i].slewedQ = slew_counter[i].endQ
       slew_counter[i]:stop()
     end
-  end
-  --print(slew_counter[i].slewedVal)
-  try_tilt_process(i,bank[i].id,slew_counter[i].slewedVal)
+  end]]--
+  try_tilt_process(i,bank[i].id,slew_counter[i].slewedVal,slew_counter[i].slewedQ)
   if menu == 5 then
     redraw()
   end
+  --[[if slew_counter[i].slewedVal == bank[i][bank[i].id].tilt then
+    slew_counter[i].interrupted = 0
+  end]]--
 end
 
-function try_tilt_process(b,i,t)
+function try_tilt_process(b,i,t,rq)
+  if util.round(t*100) < 0 then
+    local trill = math.abs(t)
+    bank[b][i].cf_lp = math.abs(t)
+    bank[b][i].cf_dry = 1+t
+    if util.round(t*100) >= -24 then
+      bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    elseif util.round(t*100) <= -24 and util.round(t*100) >= -50 then
+      bank[b][i].cf_exp_dry = (util.linexp(0.4,1,1,101,bank[b][i].cf_dry)-1)/100
+    elseif util.round(t*100) < -50 then
+      bank[b][i].cf_exp_dry = 0
+    end
+    bank[b][i].cf_fc = util.linexp(0,1,16000,10,bank[b][i].cf_lp)
+    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
+    params:set("filter "..b.." lp", math.abs(bank[b][i].cf_exp_dry-1))
+    params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
+    if params:get("filter "..b.." hp") ~= 0 then
+      params:set("filter "..b.." hp", 0)
+    end
+    if bank[b][i].cf_hp ~= 0 then
+      bank[b][i].cf_hp = 0
+    end
+  --elseif util.round(t*100) > 30 then
+  elseif util.round(t*100) > 0 then
+    bank[b][i].cf_hp = math.abs(t)
+    bank[b][i].cf_fc = util.linexp(0,1,10,12000,bank[b][i].cf_hp)
+    bank[b][i].cf_dry = 1-t
+    --if util.round(t*100) < 80 then
+    --  bank[b][i].cf_exp_dry = (util.linexp(0.5,0.69,1,101,bank[b][i].cf_dry)-1)/100
+    --elseif util.round(t*100) >= 80 then
+      bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    --end
+    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
+    params:set("filter "..b.." hp", math.abs(bank[b][i].cf_exp_dry-1))
+    params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
+    if params:get("filter "..b.." lp") ~= 0 then
+      params:set("filter "..b.." lp", 0)
+    end
+    if bank[b][i].cf_lp ~= 0 then
+      bank[b][i].cf_lp = 0
+    end
+  elseif util.round(t*100) == 0 then
+    bank[b][i].cf_fc = 12000
+    bank[b][i].cf_lp = 0
+    bank[b][i].cf_hp = 0
+    bank[b][i].cf_dry = 1
+    bank[b][i].cf_exp_dry = 1
+    params:set("filter "..b.." cutoff",12000)
+    params:set("filter "..b.." lp", 0)
+    params:set("filter "..b.." hp", 0)
+    params:set("filter "..b.." dry", 1)
+  end
+  softcut.post_filter_rq(b+1,rq)
+  --print(rq)
+end
+
+--[[function fuck_try_tilt_process(b,i,t)
   if util.round(t*100) < 0 then
     bank[b][i].cf_lp = math.abs(t)
     bank[b][i].cf_dry = 1+t
@@ -1222,7 +1305,7 @@ function try_tilt_process(b,i,t)
     params:set("filter "..b.." hp", 0)
     params:set("filter "..b.." dry", 1)
   end
-end
+end]]--
 
 --[[function filter_slew(i)
   local difference = math.abs(slew_counter[i].prev_tilt - slew_counter[i].next_tilt)

@@ -105,8 +105,14 @@ function encoder_actions.init(n,d)
         params:set("filter "..id.." cutoff", bank[id][bank[id].id].fc)
       elseif bank[id][bank[id].id].filter_type == 4 then
         if key1_hold or grid.alt == 1 then
+          if slew_counter[id] ~= nil then
+            slew_counter[id].prev_tilt = bank[id][bank[id].id].tilt
+          end
           bank[id][bank[id].id].tilt = util.clamp(bank[id][bank[id].id].tilt+(d/100),-1,1)
-          if d > 0 and bank[id][bank[id].id].tilt > 0 and bank[id][bank[id].id].tilt < 0.30 then
+          if d < 0 and util.round(bank[id][bank[id].id].tilt*100) < 0 and util.round(bank[id][bank[id].id].tilt*100) > -9 then
+            bank[id][bank[id].id].tilt = -0.10
+          end
+          --[[if d > 0 and bank[id][bank[id].id].tilt > 0 and bank[id][bank[id].id].tilt < 0.30 then
             bank[id][bank[id].id].tilt = 0.30
           elseif d < 0 and bank[id][bank[id].id].tilt > 0 and bank[id][bank[id].id].tilt < 0.30 then
             bank[id][bank[id].id].tilt = 0
@@ -114,11 +120,19 @@ function encoder_actions.init(n,d)
             bank[id][bank[id].id].tilt = 0
           elseif d < 0 and bank[id][bank[id].id].tilt < 0 and bank[id][bank[id].id].tilt > -0.05 then
             bank[id][bank[id].id].tilt = -0.05
-          end
-          try_tilt_process(util.round(id),bank[id].id,bank[id][bank[id].id].tilt)
+          end]]--
+          slew_filter(id,slew_counter[id].prev_tilt,bank[id][bank[id].id].tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+          --try_tilt_process(util.round(id),bank[id].id,bank[id][bank[id].id].tilt)
+          --slew_filter(i,prevVal,nextVal,count)
         else
+          if slew_counter[id] ~= nil then
+            slew_counter[id].prev_tilt = bank[id][bank[id].id].tilt
+          end
           for j = 1,16 do
             bank[id][j].tilt = util.clamp(bank[id][j].tilt+(d/100),-1,1)
+            if d < 0 and util.round(bank[id][j].tilt*100) < 0 and util.round(bank[id][j].tilt*100) > -9 then
+              bank[id][j].tilt = -0.10
+            end
             --[[if d > 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
               bank[id][j].tilt = 0.30
             elseif d < 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
@@ -129,11 +143,10 @@ function encoder_actions.init(n,d)
               bank[id][j].tilt = -0.05
             end]]--
             --print(id, j, bank[id][j].tilt)
-            try_tilt_process(util.round(id),j,bank[id][j].tilt)
+            
+            --try_tilt_process(util.round(id),j,bank[id][j].tilt)
           end
-        end
-        if slew_counter[id] ~= nil then
-          slew_counter[id].prev_tilt = bank[id][bank[id].id].tilt
+          slew_filter(id,slew_counter[id].prev_tilt,bank[id][bank[id].id].tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
         end
       end
     elseif menu == 6 then
