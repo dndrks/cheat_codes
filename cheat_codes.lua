@@ -1015,6 +1015,8 @@ function reset_all_banks()
       bank[i][k].fd = 0.0
       bank[i][k].br = 0.0
       bank[i][k].tilt = 0
+      bank[i][k].tilt_ease_type = 1
+      bank[i][k].tilt_ease_time = 50
       bank[i][k].cf_fc = 12000
       bank[i][k].cf_lp = 0
       bank[i][k].cf_hp = 0
@@ -1116,16 +1118,19 @@ function cheat(b,i)
   if slew_counter[b] ~= nil then
     slew_counter[b].next_tilt = bank[b][i].tilt
     slew_counter[b].next_q = bank[b][i].q
+    if bank[b][i].tilt_ease_type == 1 then
       if slew_counter[b].slewedVal ~= nil and math.floor(slew_counter[b].slewedVal*10000) ~= math.floor(slew_counter[b].next_tilt*10000) then
         if math.floor(slew_counter[b].prev_tilt*10000) ~= math.floor(slew_counter[b].slewedVal*10000) then
           slew_counter[b].interrupted = 1
-          slew_filter(util.round(b),slew_counter[b].slewedVal,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,500)
+          slew_filter(util.round(b),slew_counter[b].slewedVal,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
         else
           slew_counter[b].interrupted = 0
-          slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,500)
+          slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
         end
       end
-    --slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,500)
+    elseif bank[b][i].tilt_ease_type == 2 then
+      slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
+    end
   end
   --tilt_process(util.round(b),i)
   softcut.pan(b+1,bank[b][i].pan)
@@ -1187,7 +1192,13 @@ function easing_slew(i)
       slew_counter[i]:stop()
     end
   end]]--
-  try_tilt_process(i,bank[i].id,slew_counter[i].slewedVal,slew_counter[i].slewedQ)
+  if grid.alt == 1 then
+    try_tilt_process(i,bank[i].id,slew_counter[i].slewedVal,slew_counter[i].slewedQ)
+  else
+    for j = 1,16 do
+      try_tilt_process(i,j,slew_counter[i].slewedVal,slew_counter[i].slewedQ)
+    end
+  end
   if menu == 5 then
     redraw()
   end

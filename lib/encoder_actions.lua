@@ -14,7 +14,7 @@ function encoder_actions.init(n,d)
         else
           local current_difference = (bank[id][bank[id].id].end_point - bank[id][bank[id].id].start_point)
           if bank[id][bank[id].id].start_point + current_difference <= (9+(8*(bank[id][bank[id].id].clip-1))) then
-            bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point + d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+            bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point + d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
             bank[id][bank[id].id].end_point = bank[id][bank[id].id].start_point + current_difference
           else
             bank[id][bank[id].id].end_point = (9+(8*(bank[id][bank[id].id].clip-1)))
@@ -73,10 +73,10 @@ function encoder_actions.init(n,d)
     elseif menu == 2 then
       local id = page.loops_sel + 1
       if id ~=4 then
-        if d >= 0 and bank[id][bank[id].id].start_point < (bank[id][bank[id].id].end_point - d/10) then
-          bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
+        if d >= 0 and bank[id][bank[id].id].start_point < (bank[id][bank[id].id].end_point - d/loop_enc_resolution) then
+          bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
         elseif d < 0 then
-          bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
+          bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
         end
         softcut.loop_start(id+1, bank[id][bank[id].id].start_point)
       elseif id == 4 then
@@ -144,7 +144,6 @@ function encoder_actions.init(n,d)
             end]]--
             --print(id, j, bank[id][j].tilt)
             
-            --try_tilt_process(util.round(id),j,bank[id][j].tilt)
           end
           slew_filter(id,slew_counter[id].prev_tilt,bank[id][bank[id].id].tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
         end
@@ -168,10 +167,10 @@ function encoder_actions.init(n,d)
     if menu == 2 then
       local id = page.loops_sel + 1
       if id ~= 4 then
-        if d <= 0 and bank[id][bank[id].id].start_point < bank[id][bank[id].id].end_point + d/10 then
-          bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+        if d <= 0 and bank[id][bank[id].id].start_point < bank[id][bank[id].id].end_point + d/loop_enc_resolution then
+          bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
         elseif d > 0 then
-          bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/10,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+          bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
         end
         softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
       elseif id == 4 then

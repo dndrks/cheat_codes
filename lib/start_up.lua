@@ -112,6 +112,15 @@ function start_up.init()
     params:add{type = "trigger", id = "save_buffer"..i, name = "save live buffer "..i, action = function() save_sample(i) end}
   end
   
+  params:add_option("loop_enc_resolution", "loop encoder resolution", {"0.1","0.01"}, 1)
+  params:set_action("loop_enc_resolution", function(x)
+    if x == 1 then
+      loop_enc_resolution = 10
+    elseif x == 2 then
+      loop_enc_resolution = 100
+    end
+  end)
+  
   params:add_separator()
   
   params:add{type = "trigger", id = "midi_notify", name = "for midi mapping:"}
