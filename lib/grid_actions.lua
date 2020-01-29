@@ -380,18 +380,71 @@ function grid_actions.init(x,y,z)
       for j = 1,8 do
         if z == 1 and x == i and y == j then
           local current = math.floor(x/5)+1
-          pattern_saver[current].source = math.floor(x/5)+1
-          pattern_saver[current].save_slot = 9-y
-          pattern_saver[current]:start()
-        elseif z == 0 and x == i and y == j then
-          local current = math.floor(x/5)+1
-          pattern_saver[math.floor(x/5)+1]:stop()
-          if grid.alt_pp == 0 then
+          if step_seq[current].held == 0 then
+            pattern_saver[current].source = math.floor(x/5)+1
+            pattern_saver[current].save_slot = 9-y
+            pattern_saver[current]:start()
+          else
+            --if there's a pattern saved there...
             if pattern_saver[current].saved[9-y] == 1 then
-              pattern_saver[current].load_slot = 9-y
-              test_load((9-y)+(8*(current-1)),current)
+              if grid.alt_pp == 0 then
+                step_seq[current][step_seq[current].held].assigned_to = 9-y
+              end
             end
           end
+        elseif z == 0 and x == i and y == j then
+          local current = math.floor(x/5)+1
+          if step_seq[current].held == 0 then
+            pattern_saver[math.floor(x/5)+1]:stop()
+            if grid.alt_pp == 0 then
+              if pattern_saver[current].saved[9-y] == 1 then
+                pattern_saver[current].load_slot = 9-y
+                test_load((9-y)+(8*(current-1)),current)
+              end
+            end
+          end
+        end
+      end
+    end
+    
+    for i = 2,12,5 do
+      for j = 1,8 do
+        if z == 1 and x == i and y == j then
+          local current = math.floor(x/5)+1
+          step_seq[current].meta_duration = 9-y
+        end
+      end
+    end
+    
+    for i = 3,13,5 do
+      for j = 1,8 do
+        if z == 1 and x == i and y == j then
+          local current = math.floor(x/5)+1
+          step_seq[current].held = 9-y
+          if grid.alt_pp == 1 then
+            step_seq[current][step_seq[current].held].assigned_to = 0
+          end
+        elseif z == 0 and x == i and y == j then
+          local current = math.floor(x/5)+1
+          step_seq[current].held = 0
+        elseif z == 1 and x == i+1 and y == j then
+          local current = math.floor(x/5)+1
+          step_seq[current].held = (9-y)+8
+          if grid.alt_pp == 1 then
+            step_seq[current][step_seq[current].held].assigned_to = 0
+          end
+        elseif z == 0 and x == i+1 and y == j then
+          local current = math.floor(x/5)+1
+          step_seq[current].held = 0
+        end
+      end
+    end
+    
+    for i = 5,15,5 do
+      for j = 1,8 do
+        if z == 1 and x == i and y == j then
+          local current = x/5
+          step_seq[current][step_seq[current].current_step].meta_meta_duration = 9-y
         end
       end
     end

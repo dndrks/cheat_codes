@@ -488,7 +488,6 @@ function init()
   
   clock_counting = 0
   
-  --JUST A TEST CAN REMOVE
   grid_pat = {}
   for i = 1,3 do
     grid_pat[i] = pattern_time.new()
@@ -504,7 +503,28 @@ function init()
     g_p_q[i].sub_step = 1
     g_p_q[i].current_step = 1
   end
-  ---^
+  
+  step_seq = {}
+  for i = 1,3 do
+    step_seq[i] = {}
+    step_seq[i].current_step = 1
+    step_seq[i].current_pat = nil
+    step_seq[i].rate = 1
+    step_seq[i].start_point = 1
+    step_seq[i].end_point = 16
+    step_seq[i].length = (step_seq[i].end_point - step_seq[i].start_point) + 1
+    step_seq[i].meta_step = 1
+    step_seq[i].meta_duration = 4
+    step_seq[i].meta_meta_step = 1
+    step_seq[i].held = 0
+    for j = 1,16 do
+      step_seq[i][j] = {}
+      step_seq[i][j].meta_meta_duration = 4
+      step_seq[i][j].assigned = 0 --necessary?
+      step_seq[i][j].assigned_to = 0
+    end
+    step_seq[i].meta_meta_duration = 4
+  end
   
   function testing_clocks(bank)
     local current = g_p_q[bank].current_step
@@ -540,6 +560,7 @@ function init()
   
   clk.on_step = function()
     update_tempo()
+    step_sequence()
     if clk.externalmidi then
       for i = 1,3 do
         if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
@@ -979,6 +1000,21 @@ end
 
 function rec_count()
   rec_time = rec_time + 0.01
+end
+
+function step_sequence()
+  for i = 1,3 do
+    step_seq[i].meta_step = step_seq[i].meta_step + 1
+    if step_seq[i].meta_step > step_seq[i].meta_duration then step_seq[i].meta_step = 1 end
+    if step_seq[i].meta_step == 1 then
+      step_seq[i].meta_meta_step = step_seq[i].meta_meta_step + 1
+      if step_seq[i].meta_meta_step > step_seq[i][step_seq[i].current_step].meta_meta_duration then step_seq[i].meta_meta_step = 1 end
+      if step_seq[i].meta_meta_step == 1 then
+        step_seq[i].current_step = step_seq[i].current_step + 1
+        if step_seq[i].current_step > step_seq[i].length then step_seq[i].current_step = 1 end
+      end
+    end
+  end
 end
 
 function reset_all_banks()
@@ -1623,15 +1659,34 @@ function grid_redraw()
       end
     end
     
-    g:led(16,8,(grid.alt_pp*12)+3)
-        
-    --[[for i = 2,12,5 do
-      for j = 1,8 do
-        local current = math.floor(i/5)+1
-        g:led(i,j,j == 9 - pattern_saver[current].load_slot and 12 or 2)
+    for i = 1,3 do
+      for j = 1,16 do
+        if step_seq[i][j].assigned_to ~= 0 then
+          if j < 9 then
+            g:led((i*5)-2,9-j,6)
+          elseif j >= 9 then
+            g:led((i*5)-1,17-j,6)
+          end
+        end
       end
-    end]]--
+      if step_seq[i].current_step < 9 then
+        g:led((i*5)-2,9-step_seq[i].current_step,15)
+      elseif step_seq[i].current_step >=9 then
+        g:led((i*5)-1,9-(step_seq[i].current_step-8),15)
+      end
+    end
     
+    for i = 1,3 do
+      g:led((i*5)-3, 9-step_seq[i].meta_duration,4)
+      g:led((i*5)-3, 9-step_seq[i].meta_step,6)
+    end
+    
+    for i = 1,3 do
+      g:led((i*5), 9-step_seq[i][step_seq[i].current_step].meta_meta_duration,4)
+      g:led((i*5), 9-step_seq[i].meta_meta_step,6)
+    end
+    
+    g:led(16,8,(grid.alt_pp*12)+3)
     
   end
   g:led(16,1,15*grid_page)
