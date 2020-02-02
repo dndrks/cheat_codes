@@ -515,7 +515,7 @@ function init()
     step_seq[i].end_point = 16
     step_seq[i].length = (step_seq[i].end_point - step_seq[i].start_point) + 1
     step_seq[i].meta_step = 1
-    step_seq[i].meta_duration = 4
+    step_seq[i].meta_duration = 1
     step_seq[i].meta_meta_step = 1
     step_seq[i].held = 0
     for j = 1,16 do
@@ -701,7 +701,6 @@ function init()
     clk_midi.event = function(data) clk:process_midi(data) redraw() end
   end}
   
-  --params:set_action("bpm", function() update_tempo() end)
   params:add_option("quantize_pads", "quantize 4x4 pads?", { "no", "yes" })
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "quantize pattern button?", { "no", "yes" })
@@ -824,13 +823,6 @@ function init()
   end
   counter_two.key_up:stop()
   
-  --[[grid_pat = {}
-  for i = 1,3 do
-    grid_pat[i] = pattern_time.new()
-    grid_pat[i].process = grid_pattern_execute
-    grid_pat[i].external_start = 0
-  end]]--
-  
   g_p_q = {}
   for i = 1,3 do
     g_p_q[i] = {}
@@ -892,32 +884,6 @@ phase = function(n, x)
   if menu == 2 then
     redraw()
   end
-  --[[if rec.state == 1 then
-    for i = 2,4 do
-      if bank[i-1][bank[i-1].id].mode == 1 then
-        local squiggle = tonumber(poll_position_new[i])
-        local other_squiggle = tonumber(poll_position_new[1])
-        if squiggle ~= nil and other_squiggle ~= nil then
-          if math.floor(((squiggle*100)+0.5))/100 == math.floor(((other_squiggle*100)+0.5))/100 then
-            softcut.level_slew_time(i,0.01)
-            softcut.level(i,0.04)
-          else
-            if not bank[i-1][bank[i-1].id].enveloped then
-              softcut.level_slew_time(i,1.0)
-              softcut.level(i,bank[i-1][bank[i-1].id].level)
-            end
-          end
-        end
-      end
-    end
-  elseif rec.state == 0 then
-    for i = 2,4 do
-      if not bank[i-1][bank[i-1].id].enveloped then
-        softcut.level_slew_time(i,0.01)
-        softcut.level(i,bank[i-1][bank[i-1].id].level)
-      end
-    end
-  end]]--
 end
 
 local tap = 0
@@ -988,9 +954,6 @@ function random_clock_resolution(bank)
 end
 
 function slice()
-  --local t = params:get("bpm")
-  --local d = params:get("quant_div")
-  --local interval = (60/t) / d
   for i = 1,3 do
     for j = 1,16 do
       bank[i][j].start_point = 1+((8/16)*(j-1))
@@ -1005,8 +968,6 @@ end
 
 function step_sequence()
   for i = 1,3 do
-    --if there's an entry then
-    --end
     if step_seq[i].active == 1 then
       step_seq[i].meta_step = step_seq[i].meta_step + 1
       if step_seq[i].meta_step > step_seq[i].meta_duration then step_seq[i].meta_step = 1 end
@@ -1021,7 +982,6 @@ function step_sequence()
             pattern_saver[i].load_slot = step_seq[i][current].assigned_to
             test_load(step_seq[i][current].assigned_to+((i-1)*8),i)
           end
-          --if step_seq[i].current_step > step_seq[i].length then step_seq[i].current_step = 1 end
         end
       end
     end
@@ -1090,8 +1050,6 @@ function cheat(b,i)
   if bank[b][i].enveloped then
     env_counter[b].butt = bank[b][i].level
     softcut.level(b+1,bank[b][i].level)
-    --softcut.level_cut_cut(b+1,5,bank[b][i].left_delay_level)
-    --softcut.level_cut_cut(b+1,6,bank[b][i].right_delay_level)
     softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
     softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
     env_counter[b].time = (bank[b][i].envelope_time/(bank[b][i].level/0.05))
@@ -1115,54 +1073,12 @@ function cheat(b,i)
   else
     softcut.loop(b+1,1)
   end
-  --softcut.fade_time(b+1,0.1)
   softcut.fade_time(b+1,0.01)
   if bank[b][i].rate > 0 then
       softcut.position(b+1,bank[b][i].start_point+0.05)
   elseif bank[b][i].rate < 0 then
       softcut.position(b+1,bank[b][i].end_point-0.05)
   end
-  
-  --KILLING THESE CUZ OF FILTER SLEW
-  --params:set("filter "..math.floor(tonumber(b)).." q",bank[b][i].q)
-  --softcut.post_filter_rq(b+1,bank[b][i].q)
-  
-  --[[local filter_type = bank[b][i].filter_type
-  if bank[b][i].filter_type == 1 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",1)
-    params:set("filter "..math.floor(tonumber(b)).." hp",0)
-    params:set("filter "..math.floor(tonumber(b)).." bp",0)
-    params:set("filter "..math.floor(tonumber(b)).." dry",0)
-  elseif bank[b][i].filter_type == 2 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",0)
-    params:set("filter "..math.floor(tonumber(b)).." hp",1)
-    params:set("filter "..math.floor(tonumber(b)).." bp",0)
-    params:set("filter "..math.floor(tonumber(b)).." dry",0)
-  elseif bank[b][i].filter_type == 3 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",0)
-    params:set("filter "..math.floor(tonumber(b)).." hp",0)
-    params:set("filter "..math.floor(tonumber(b)).." bp",1)
-    params:set("filter "..math.floor(tonumber(b)).." dry",0)
-  elseif bank[b][i].filter_type == 4 then
-    if bank[b][i].cf_lp <= 1 and bank[b][i].cf_hp == 0 then
-      params:set("filter "..math.floor(tonumber(b)).." lp",math.abs(bank[b][i].cf_exp_dry-1))
-      params:set("filter "..math.floor(tonumber(b)).." hp",0)
-    elseif bank[b][i].cf_lp <= 0.001 then
-      params:set("filter "..math.floor(tonumber(b)).." lp",0)
-      params:set("filter "..math.floor(tonumber(b)).." hp",math.abs(bank[b][i].cf_exp_dry-1))
-    end
-    params:set("filter "..math.floor(tonumber(b)).." bp",0)
-    params:set("filter "..math.floor(tonumber(b)).." dry",bank[b][i].cf_exp_dry)
-  end
-  if bank[b][i].filter_type ~=4 then
-    softcut.post_filter_fc(b+1,bank[b][i].fc)
-    softcut.post_filter_dry(b+1,bank[b][i].fd)
-  else
-    --softcut.post_filter_fc(b+1,bank[b][i].fc)
-    params:set("filter "..math.floor(tonumber(b)).." cutoff", bank[b][i].fc)
-    --softcut.post_filter_dry(b+1,bank[b][i].cf_exp_dry)
-  end]]--
-  -- HERE'S WHERE A FILTER SLEW WOULD GO
   if slew_counter[b] ~= nil then
     slew_counter[b].next_tilt = bank[b][i].tilt
     slew_counter[b].next_q = bank[b][i].q
@@ -1180,7 +1096,6 @@ function cheat(b,i)
       slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
     end
   end
-  --tilt_process(util.round(b),i)
   softcut.pan(b+1,bank[b][i].pan)
   update_delays()
   if slew_counter[b] ~= nil then
@@ -1225,21 +1140,6 @@ function easing_slew(i)
   slew_counter[i].slewedVal = slew_counter[i].ease(slew_counter[i].current,slew_counter[i].beginVal,slew_counter[i].change,slew_counter[i].duration)
   slew_counter[i].slewedQ = slew_counter[i].ease(slew_counter[i].current,slew_counter[i].beginQ,slew_counter[i].changeQ,slew_counter[i].duration)
   slew_counter[i].current = slew_counter[i].current + 0.01
-  --[[if slew_counter[i].endVal > slew_counter[i].beginVal then
-    if math.floor(slew_counter[i].slewedVal*10000) >= math.floor(slew_counter[i].endVal*10000) then
-      slew_counter[i].interrupted = 1
-      slew_counter[i].slewedVal = slew_counter[i].endVal
-      slew_counter[i].slewedQ = slew_counter[i].endQ
-      slew_counter[i]:stop()
-    end
-  elseif slew_counter[i].endVal < slew_counter[i].beginVal then
-    if math.floor(slew_counter[i].slewedVal*100000) <= math.floor(slew_counter[i].endVal*100000) then
-      slew_counter[i].interrupted = 1
-      slew_counter[i].slewedVal = slew_counter[i].endVal
-      slew_counter[i].slewedQ = slew_counter[i].endQ
-      slew_counter[i]:stop()
-    end
-  end]]--
   if grid.alt == 1 then
     try_tilt_process(i,bank[i].id,slew_counter[i].slewedVal,slew_counter[i].slewedQ)
   else
@@ -1250,9 +1150,6 @@ function easing_slew(i)
   if menu == 5 then
     redraw()
   end
-  --[[if slew_counter[i].slewedVal == bank[i][bank[i].id].tilt then
-    slew_counter[i].interrupted = 0
-  end]]--
 end
 
 function try_tilt_process(b,i,t,rq)
@@ -1277,16 +1174,11 @@ function try_tilt_process(b,i,t,rq)
     if bank[b][i].cf_hp ~= 0 then
       bank[b][i].cf_hp = 0
     end
-  --elseif util.round(t*100) > 30 then
   elseif util.round(t*100) > 0 then
     bank[b][i].cf_hp = math.abs(t)
     bank[b][i].cf_fc = util.linexp(0,1,10,12000,bank[b][i].cf_hp)
     bank[b][i].cf_dry = 1-t
-    --if util.round(t*100) < 80 then
-    --  bank[b][i].cf_exp_dry = (util.linexp(0.5,0.69,1,101,bank[b][i].cf_dry)-1)/100
-    --elseif util.round(t*100) >= 80 then
-      bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
-    --end
+    bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
     params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
     params:set("filter "..b.." hp", math.abs(bank[b][i].cf_exp_dry-1))
     params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
@@ -1308,98 +1200,7 @@ function try_tilt_process(b,i,t,rq)
     params:set("filter "..b.." dry", 1)
   end
   softcut.post_filter_rq(b+1,rq)
-  --print(rq)
 end
-
---[[function fuck_try_tilt_process(b,i,t)
-  if util.round(t*100) < 0 then
-    bank[b][i].cf_lp = math.abs(t)
-    bank[b][i].cf_dry = 1+t
-    --bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
-    bank[b][i].cf_fc = util.linexp(0,1,12000,10,bank[b][i].cf_lp)
-    if util.round(t*100) > -20 then
-      bank[b][i].cf_exp_dry = (util.linexp(0.83,0.9,10,101,bank[b][i].cf_dry)-1)/100
-    elseif util.round(t*100) <= -20 then
-      --bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
-    end
-    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
-    params:set("filter "..b.." lp", math.abs(bank[b][i].cf_exp_dry-1))
-    if bank[b][i].cf_exp_dry < 0.20 then
-      params:set("filter "..b.." dry", 0)
-    else
-      params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
-    end
-    if params:get("filter "..b.." hp") ~= 0 then
-      params:set("filter "..b.." hp", 0)
-    end
-    if bank[b][i].cf_hp ~= 0 then
-      bank[b][i].cf_hp = 0
-    end
-  elseif util.round(t*100) > 30 then
-    bank[b][i].cf_hp = math.abs(t)
-    bank[b][i].cf_fc = util.linexp(0,1,10,12000,bank[b][i].cf_hp)
-    bank[b][i].cf_dry = 1-t
-    --if util.round(t*100) < 80 then
-    --  bank[b][i].cf_exp_dry = (util.linexp(0.5,0.69,1,101,bank[b][i].cf_dry)-1)/100
-    --elseif util.round(t*100) >= 80 then
-      bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
-    --end
-    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
-    params:set("filter "..b.." hp", math.abs(bank[b][i].cf_exp_dry-1))
-    params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
-    if params:get("filter "..b.." lp") ~= 0 then
-      params:set("filter "..b.." lp", 0)
-    end
-    if bank[b][i].cf_lp ~= 0 then
-      bank[b][i].cf_lp = 0
-    end
-  elseif util.round(t*100) == 0 then
-    bank[b][i].cf_fc = 12000
-    bank[b][i].cf_lp = 0
-    bank[b][i].cf_hp = 0
-    bank[b][i].cf_dry = 1
-    bank[b][i].cf_exp_dry = 1
-    params:set("filter "..b.." cutoff",12000)
-    params:set("filter "..b.." lp", 0)
-    params:set("filter "..b.." hp", 0)
-    params:set("filter "..b.." dry", 1)
-  end
-end]]--
-
---[[function filter_slew(i)
-  local difference = math.abs(slew_counter[i].prev_tilt - slew_counter[i].next_tilt)
-  local current_pad = bank[i].id
-  if difference <= .0001 then
-    slew_counter[i]:stop()
-    print("DONE")
-    bank[i][current_pad].tilt = util.round(slew_counter[i].prev_tilt*100)/100
-    tilt_process(i,current_pad)
-    print(bank[i][current_pad].tilt)
-  elseif slew_counter[i].prev_tilt > slew_counter[i].next_tilt then
-    slew_counter[i].prev_tilt = slew_counter[i].prev_tilt - (difference/10)
-    bank[i][current_pad].tilt = slew_counter[i].prev_tilt
-    tilt_process(i,current_pad)
-    print(bank[i][current_pad].tilt)
-  elseif slew_counter[i].prev_tilt < slew_counter[i].next_tilt then
-    slew_counter[i].prev_tilt = slew_counter[i].prev_tilt + (difference/10)
-    bank[i][current_pad].tilt = slew_counter[i].prev_tilt
-    tilt_process(i,current_pad)
-    print(bank[i][current_pad].tilt)
-    --filter_adjust(i,current_pad,slew_counter[i].prev_tilt)
-  end
-end]]--
-
---[[function filter_adjust(b,i,dry)
-  if bank[b][i].cf_lp <= 1 and bank[b][i].cf_hp == 0 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",math.abs(dry-1)-0.01)
-    params:set("filter "..math.floor(tonumber(b)).." hp",0)
-  elseif bank[b][i].cf_lp <= 0.001 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",0)
-    params:set("filter "..math.floor(tonumber(b)).." hp",math.abs(dry-1)-0.01)
-  end
-  params:set("filter "..math.floor(tonumber(b)).." bp",0)
-  params:set("filter "..math.floor(tonumber(b)).." dry",dry+0.01)
-end]]--
 
 function buff_freeze()
   softcut.recpre_slew_time(1,0.5)
@@ -1712,6 +1513,7 @@ function grid_redraw()
         g:led((i*5), 9-step_seq[i].meta_meta_step,2)
         g:led((i*5), 9-step_seq[i][step_seq[i].held].meta_meta_duration,4)
       end
+      g:led(16,8-i,step_seq[i].active*8)
     end
     
     g:led(16,8,(grid.alt_pp*12)+3)
@@ -1812,8 +1614,8 @@ function zilchmo(k,i)
   redraw()
 end
 
-function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n)
-  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l,m,n}) do
+function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q)
+  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q}) do
     clipboard[k] = v
   end
 end
@@ -1834,6 +1636,9 @@ function clipboard_paste(i)
   bank[i][d].fifth = clipboard[12]
   bank[i][d].enveloped = clipboard[13]
   bank[i][d].envelope_time = clipboard[14]
+  bank[i][d].tilt = clipboard[15]
+  bank[i][d].tilt_ease_time = clipboard[16]
+  bank[i][d].tilt_ease_type = clipboard[17]
   redraw()
   if bank[i][d].loop == true then
     cheat(i,d)

@@ -57,7 +57,10 @@ function grid_actions.init(x,y,z)
               bank[i][bank[i].id].q,
               bank[i][bank[i].id].fifth,
               bank[i][bank[i].id].enveloped,
-              bank[i][bank[i].id].envelope_time
+              bank[i][bank[i].id].envelope_time,
+              bank[i][bank[i].id].tilt,
+              bank[i][bank[i].id].tilt_ease_time,
+              bank[i][bank[i].id].tilt_ease_type
               )
           else
             selected[i].x = x
@@ -454,23 +457,23 @@ function grid_actions.init(x,y,z)
       end
     end
     
+    for i = 7,5,-1 do
+      if x == 16 and y == i and z == 1 then
+        if grid.alt_pp == 1 then
+          step_seq[8-i].current_step = step_seq[8-i].start_point
+          step_seq[8-i].meta_step = 1
+          step_seq[8-i].meta_meta_step = 1
+        else
+          step_seq[8-i].active = (step_seq[8-i].active + 1)%2
+        end
+      end
+    end
+    
     if x == 16 and y == 8 then
       grid.alt_pp = z
       redraw()
       grid_redraw()
     end
-    
-    --[[for i = 2,12,5 do
-      for j = 1,8 do
-        if z == 1 and x == i and y == j then
-          local current = math.floor(x/5)+1
-          if pattern_saver[current].saved[9-y] == 1 then
-            pattern_saver[current].load_slot = 9-y
-            test_load((9-y)+(8*(current-1)),current)
-          end
-        end
-      end
-    end]]--
   
   end
   

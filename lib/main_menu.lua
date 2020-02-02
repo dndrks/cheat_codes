@@ -149,7 +149,7 @@ function main_menu.init()
     
     for i = 1,3 do
       screen.move(17+((i-1)*45),25)
-      screen.level(page.filtering_sel == i-1 and 15 or 3)
+      screen.level(15)
       local filters_to_screen_options = {"a", "b", "c"}
       if key1_hold or grid.alt == 1 then
         screen.text_center(filters_to_screen_options[i]..""..bank[i].id)
@@ -158,6 +158,7 @@ function main_menu.init()
       end
       screen.move(17+((i-1)*45),35)
       
+      screen.level(page.filtering_sel+1 == 1 and 15 or 3)
       if slew_counter[i].slewedVal ~= nil then
         if slew_counter[i].slewedVal >= -0.04 and slew_counter[i].slewedVal <=0.04 then
         screen.text_center(".....|.....")
@@ -187,10 +188,15 @@ function main_menu.init()
           end
         end
       end
-      screen.move(17+((i-1)*45),55)
-      screen.level(page.filtering_sel == i-1 and 15 or 3)
+      screen.move(17+((i-1)*45),45)
+      screen.level(page.filtering_sel+1 == 2 and 15 or 3)
       local ease_time_to_screen = bank[i][bank[i].id].tilt_ease_time
-      screen.text_center("t: "..string.format("%.2f",ease_time_to_screen/100).."s")
+      screen.text_center(string.format("%.2f",ease_time_to_screen/100).."s")
+      screen.move(17+((i-1)*45),55)
+      screen.level(page.filtering_sel+1 == 3 and 15 or 3)
+      local ease_type_to_screen = bank[i][bank[i].id].tilt_ease_type
+      local ease_types = {"cont","jumpy"}
+      screen.text_center(ease_types[ease_type_to_screen])
     end
     screen.level(3)
     screen.move(0,64)

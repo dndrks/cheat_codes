@@ -68,7 +68,11 @@ function start_up.init()
   
   params:add{id="live_rec_feedback", name="live rec feedback", type="control", 
   controlspec=controlspec.new(0,1.0,'lin',0,0.25,""),
-  action=function(x)softcut.pre_level(1,x) end}
+  action=function(x)
+    if rec.state == 1 then
+      softcut.pre_level(1,x)
+    end
+  end}
 
   params:add_option("rec_loop", "live rec behavior", {"loop","1-shot"}, 1)
   params:set_action("rec_loop",

@@ -4,7 +4,6 @@ function encoder_actions.init(n,d)
   if n == 1 then
     if menu == 2 then
       local id = page.loops_sel + 1
-      --if key1_hold or grid.alt == 1 then
       if id ~= 4 then
         if key1_hold then
           bank[id].id = util.clamp(bank[id].id + d,1,16)
@@ -35,9 +34,6 @@ function encoder_actions.init(n,d)
         softcut.loop_start(1,rec.start_point)
         softcut.loop_end(1,rec.end_point)
       end
-    elseif menu == 5 then
-      local id = page.filtering_sel + 1
-      
     end
   end
   if n == 2 then
@@ -59,79 +55,6 @@ function encoder_actions.init(n,d)
           rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
         end
         softcut.loop_start(1, rec.start_point)
-      end
-    elseif menu == 5 then
-      local id = page.filtering_sel + 1
-      if bank[id][bank[id].id].filter_type ~= 4 then
-        if key1_hold or grid.alt == 1 then
-          for j = 1,16 do
-            bank[id][j].fc = util.explin(10,12000,10,12000,bank[id][j].fc)
-            bank[id][j].fc = util.clamp(bank[id][j].fc+(d*100), 10, 12000)
-            bank[id][j].fc = util.linexp(10,12000,10,12000,bank[id][j].fc)
-            --bank[id][j].fc = util.clamp(bank[id][j].fc+(d*100), 10, 12000)
-          end
-        else
-          bank[id][bank[id].id].fc = util.explin(10,12000,10,12000,bank[id][bank[id].id].fc)
-          bank[id][bank[id].id].fc = util.clamp(bank[id][bank[id].id].fc+(d*100), 10, 12000)
-          bank[id][bank[id].id].fc = util.linexp(10,12000,10,12000,bank[id][bank[id].id].fc)
-        end
-        params:set("filter "..id.." cutoff", bank[id][bank[id].id].fc)
-      elseif bank[id][bank[id].id].filter_type == 4 then
-        if key1_hold or grid.alt == 1 then
-          if slew_counter[id] ~= nil then
-            slew_counter[id].prev_tilt = bank[id][bank[id].id].tilt
-          end
-          bank[id][bank[id].id].tilt = util.clamp(bank[id][bank[id].id].tilt+(d/100),-1,1)
-          if d < 0 then
-            if util.round(bank[id][bank[id].id].tilt*100) < 0 and util.round(bank[id][bank[id].id].tilt*100) > -9 then
-              bank[id][bank[id].id].tilt = -0.10
-            elseif util.round(bank[id][bank[id].id].tilt*100) > 0 and util.round(bank[id][bank[id].id].tilt*100) < 32 then
-              bank[id][bank[id].id].tilt = 0.0
-            end
-          elseif d > 0 and util.round(bank[id][bank[id].id].tilt*100) > 0 and util.round(bank[id][bank[id].id].tilt*100) < 32 then
-            bank[id][bank[id].id].tilt = 0.32
-          end
-          --[[if d > 0 and bank[id][bank[id].id].tilt > 0 and bank[id][bank[id].id].tilt < 0.30 then
-            bank[id][bank[id].id].tilt = 0.30
-          elseif d < 0 and bank[id][bank[id].id].tilt > 0 and bank[id][bank[id].id].tilt < 0.30 then
-            bank[id][bank[id].id].tilt = 0
-          elseif d > 0 and bank[id][bank[id].id].tilt < 0 and bank[id][bank[id].id].tilt > -0.05 then
-            bank[id][bank[id].id].tilt = 0
-          elseif d < 0 and bank[id][bank[id].id].tilt < 0 and bank[id][bank[id].id].tilt > -0.05 then
-            bank[id][bank[id].id].tilt = -0.05
-          end]]--
-          slew_filter(id,slew_counter[id].prev_tilt,bank[id][bank[id].id].tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
-          --try_tilt_process(util.round(id),bank[id].id,bank[id][bank[id].id].tilt)
-          --slew_filter(i,prevVal,nextVal,count)
-        else
-          if slew_counter[id] ~= nil then
-            slew_counter[id].prev_tilt = bank[id][bank[id].id].tilt
-          end
-          for j = 1,16 do
-            bank[id][j].tilt = util.clamp(bank[id][j].tilt+(d/100),-1,1)
-            if d < 0 then
-              if util.round(bank[id][j].tilt*100) < 0 and util.round(bank[id][j].tilt*100) > -9 then
-                bank[id][j].tilt = -0.10
-              elseif util.round(bank[id][j].tilt*100) > 0 and util.round(bank[id][j].tilt*100) < 32 then
-                bank[id][j].tilt = 0.0
-              end
-            elseif d > 0 and util.round(bank[id][j].tilt*100) > 0 and util.round(bank[id][j].tilt*100) < 32 then
-              bank[id][j].tilt = 0.32
-            end
-            --[[if d > 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
-              bank[id][j].tilt = 0.30
-            elseif d < 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
-              bank[id][j].tilt = 0
-            elseif d > 0 and bank[id][j].tilt < 0 and bank[id][j].tilt > -0.05 then
-              bank[id][j].tilt = 0
-            elseif d < 0 and bank[id][j].tilt < 0 and bank[id][j].tilt > -0.05 then
-              bank[id][j].tilt = -0.05
-            end]]--
-            --print(id, j, bank[id][j].tilt)
-            
-          end
-          slew_filter(id,slew_counter[id].prev_tilt,bank[id][bank[id].id].tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
-        end
       end
     elseif menu == 6 then
       local line = page.delay_sel
@@ -166,16 +89,6 @@ function encoder_actions.init(n,d)
         end
         softcut.loop_end(1, rec.end_point)
       end
-    elseif menu == 5 then
-      local id = page.filtering_sel + 1
-      if key1_hold or grid.alt == 1 then
-        bank[id][bank[id].id].tilt_ease_time = util.clamp(bank[id][bank[id].id].tilt_ease_time+(d/1), 5, 15000)
-      else
-        for j = 1,16 do
-          bank[id][j].tilt_ease_time = util.clamp(bank[id][j].tilt_ease_time+(d/1), 5, 15000)
-        end
-      end
-      --params:set("filter "..id.." q", bank[id][bank[id].id].q)
     elseif menu == 6 then
       local line = page.delay_sel
       if line == 0 then
@@ -263,6 +176,61 @@ function encoder_actions.init(n,d)
       bank[n][bank[n].id].pan = util.clamp(bank[n][bank[n].id].pan+d/10,-1,1)
     end
     softcut.pan(n+1, bank[n][bank[n].id].pan)
+  elseif menu == 5 then
+    local filt_page = page.filtering_sel + 1
+    if filt_page == 1 then
+      if bank[n][bank[n].id].filter_type == 4 then
+        if key1_hold or grid.alt == 1 then
+          if slew_counter[n] ~= nil then
+            slew_counter[n].prev_tilt = bank[n][bank[n].id].tilt
+          end
+          bank[n][bank[n].id].tilt = util.clamp(bank[n][bank[n].id].tilt+(d/100),-1,1)
+          if d < 0 then
+            if util.round(bank[n][bank[n].id].tilt*100) < 0 and util.round(bank[n][bank[n].id].tilt*100) > -9 then
+              bank[n][bank[n].id].tilt = -0.10
+            elseif util.round(bank[n][bank[n].id].tilt*100) > 0 and util.round(bank[n][bank[n].id].tilt*100) < 32 then
+              bank[n][bank[n].id].tilt = 0.0
+            end
+          elseif d > 0 and util.round(bank[n][bank[n].id].tilt*100) > 0 and util.round(bank[n][bank[n].id].tilt*100) < 32 then
+            bank[n][bank[n].id].tilt = 0.32
+          end
+          slew_filter(n,slew_counter[n].prev_tilt,bank[n][bank[n].id].tilt,bank[n][bank[n].id].q,bank[n][bank[n].id].q,15)
+        else
+          if slew_counter[n] ~= nil then
+            slew_counter[n].prev_tilt = bank[n][bank[n].id].tilt
+          end
+          for j = 1,16 do
+            bank[n][j].tilt = util.clamp(bank[n][j].tilt+(d/100),-1,1)
+            if d < 0 then
+              if util.round(bank[n][j].tilt*100) < 0 and util.round(bank[n][j].tilt*100) > -9 then
+                bank[n][j].tilt = -0.10
+              elseif util.round(bank[n][j].tilt*100) > 0 and util.round(bank[n][j].tilt*100) < 32 then
+                bank[n][j].tilt = 0.0
+              end
+            elseif d > 0 and util.round(bank[n][j].tilt*100) > 0 and util.round(bank[n][j].tilt*100) < 32 then
+              bank[n][j].tilt = 0.32
+            end
+          end
+          slew_filter(n,slew_counter[n].prev_tilt,bank[n][bank[n].id].tilt,bank[n][bank[n].id].q,bank[n][bank[n].id].q,15)
+        end
+      end
+    elseif filt_page == 2 then
+      if key1_hold or grid.alt == 1 then
+        bank[n][bank[n].id].tilt_ease_time = util.clamp(bank[n][bank[n].id].tilt_ease_time+(d/1), 5, 15000)
+      else
+        for j = 1,16 do
+          bank[n][j].tilt_ease_time = util.clamp(bank[n][j].tilt_ease_time+(d/1), 5, 15000)
+        end
+      end
+    elseif filt_page == 3 then
+      if key1_hold or grid.alt == 1 then
+        bank[n][bank[n].id].tilt_ease_type = util.clamp(bank[n][bank[n].id].tilt_ease_type+d, 1, 2)
+      else
+        for j = 1,16 do
+          bank[n][j].tilt_ease_type = util.clamp(bank[n][j].tilt_ease_type+d, 1, 2)
+        end
+      end
+    end
   end
   redraw()
 end
