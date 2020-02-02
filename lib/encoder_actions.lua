@@ -37,34 +37,7 @@ function encoder_actions.init(n,d)
       end
     elseif menu == 5 then
       local id = page.filtering_sel + 1
-      if key1_hold or grid.alt == 1 then
-        for j = 1,16 do
-          bank[id][j].filter_type = util.clamp(bank[id][j].filter_type+d,1,3)
-        end
-      else
-        bank[id][bank[id].id].filter_type = util.clamp(bank[id][bank[id].id].filter_type+d,1,3)
-      end
-      if bank[id][bank[id].id].filter_type == 1 then
-        params:set("filter "..math.floor(tonumber(id)).." lp",1)
-        params:set("filter "..math.floor(tonumber(id)).." hp",0)
-        params:set("filter "..math.floor(tonumber(id)).." bp",0)
-        params:set("filter "..math.floor(tonumber(id)).." dry",0)
-      elseif bank[id][bank[id].id].filter_type == 2 then
-        params:set("filter "..math.floor(tonumber(id)).." lp",0)
-        params:set("filter "..math.floor(tonumber(id)).." hp",1)
-        params:set("filter "..math.floor(tonumber(id)).." bp",0)
-        params:set("filter "..math.floor(tonumber(id)).." dry",0)
-      elseif bank[id][bank[id].id].filter_type == 3 then
-        params:set("filter "..math.floor(tonumber(id)).." lp",0)
-        params:set("filter "..math.floor(tonumber(id)).." hp",0)
-        params:set("filter "..math.floor(tonumber(id)).." bp",1)
-        params:set("filter "..math.floor(tonumber(id)).." dry",0)
-      elseif bank[id][bank[id].id].filter_type == 4 then
-        params:set("filter "..math.floor(tonumber(id)).." lp",0)
-        params:set("filter "..math.floor(tonumber(id)).." hp",0)
-        params:set("filter "..math.floor(tonumber(id)).." bp",0)
-        params:set("filter "..math.floor(tonumber(id)).." dry",1)
-      end
+      
     end
   end
   if n == 2 then
@@ -109,8 +82,12 @@ function encoder_actions.init(n,d)
             slew_counter[id].prev_tilt = bank[id][bank[id].id].tilt
           end
           bank[id][bank[id].id].tilt = util.clamp(bank[id][bank[id].id].tilt+(d/100),-1,1)
-          if d < 0 and util.round(bank[id][bank[id].id].tilt*100) < 0 and util.round(bank[id][bank[id].id].tilt*100) > -9 then
-            bank[id][bank[id].id].tilt = -0.10
+          if d < 0 then
+            if util.round(bank[id][bank[id].id].tilt*100) < 0 and util.round(bank[id][bank[id].id].tilt*100) > -9 then
+              bank[id][bank[id].id].tilt = -0.10
+            elseif util.round(bank[id][bank[id].id].tilt*100) > 0 and util.round(bank[id][bank[id].id].tilt*100) < 32 then
+              bank[id][bank[id].id].tilt = 0.0
+            end
           elseif d > 0 and util.round(bank[id][bank[id].id].tilt*100) > 0 and util.round(bank[id][bank[id].id].tilt*100) < 32 then
             bank[id][bank[id].id].tilt = 0.32
           end
@@ -192,13 +169,13 @@ function encoder_actions.init(n,d)
     elseif menu == 5 then
       local id = page.filtering_sel + 1
       if key1_hold or grid.alt == 1 then
-        bank[id][bank[id].id].q = util.clamp(bank[id][bank[id].id].q-(d/100), 0, 8)
+        bank[id][bank[id].id].tilt_ease_time = util.clamp(bank[id][bank[id].id].tilt_ease_time+(d/1), 5, 15000)
       else
         for j = 1,16 do
-          bank[id][j].q = util.clamp(bank[id][j].q-(d/100), 0, 2)
+          bank[id][j].tilt_ease_time = util.clamp(bank[id][j].tilt_ease_time+(d/1), 5, 15000)
         end
       end
-      params:set("filter "..id.." q", bank[id][bank[id].id].q)
+      --params:set("filter "..id.." q", bank[id][bank[id].id].q)
     elseif menu == 6 then
       local line = page.delay_sel
       if line == 0 then

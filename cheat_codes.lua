@@ -507,6 +507,7 @@ function init()
   step_seq = {}
   for i = 1,3 do
     step_seq[i] = {}
+    step_seq[i].active = 1
     step_seq[i].current_step = 1
     step_seq[i].current_pat = nil
     step_seq[i].rate = 1
@@ -1006,20 +1007,22 @@ function step_sequence()
   for i = 1,3 do
     --if there's an entry then
     --end
-    step_seq[i].meta_step = step_seq[i].meta_step + 1
-    if step_seq[i].meta_step > step_seq[i].meta_duration then step_seq[i].meta_step = 1 end
-    if step_seq[i].meta_step == 1 then
-      step_seq[i].meta_meta_step = step_seq[i].meta_meta_step + 1
-      if step_seq[i].meta_meta_step > step_seq[i][step_seq[i].current_step].meta_meta_duration then step_seq[i].meta_meta_step = 1 end
-      if step_seq[i].meta_meta_step == 1 then
-        step_seq[i].current_step = step_seq[i].current_step + 1
-        if step_seq[i].current_step > step_seq[i].length then step_seq[i].current_step = 1 end
-        current = step_seq[i].current_step
-        if step_seq[i][current].assigned_to ~= 0 then
-          pattern_saver[i].load_slot = step_seq[i][current].assigned_to
-          test_load(step_seq[i][current].assigned_to+((i-1)*8),i)
+    if step_seq[i].active == 1 then
+      step_seq[i].meta_step = step_seq[i].meta_step + 1
+      if step_seq[i].meta_step > step_seq[i].meta_duration then step_seq[i].meta_step = 1 end
+      if step_seq[i].meta_step == 1 then
+        step_seq[i].meta_meta_step = step_seq[i].meta_meta_step + 1
+        if step_seq[i].meta_meta_step > step_seq[i][step_seq[i].current_step].meta_meta_duration then step_seq[i].meta_meta_step = 1 end
+        if step_seq[i].meta_meta_step == 1 then
+          step_seq[i].current_step = step_seq[i].current_step + 1
+          if step_seq[i].current_step > step_seq[i].length then step_seq[i].current_step = 1 end
+          current = step_seq[i].current_step
+          if step_seq[i][current].assigned_to ~= 0 then
+            pattern_saver[i].load_slot = step_seq[i][current].assigned_to
+            test_load(step_seq[i][current].assigned_to+((i-1)*8),i)
+          end
+          --if step_seq[i].current_step > step_seq[i].length then step_seq[i].current_step = 1 end
         end
-        --if step_seq[i].current_step > step_seq[i].length then step_seq[i].current_step = 1 end
       end
     end
   end
@@ -1783,7 +1786,7 @@ function arc_pattern_execute(entry)
     softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
   else
     -- DO SOMETHING WITH TILT
-    
+    slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
   end
   redraw()
 end
@@ -1886,7 +1889,7 @@ arc_redraw = function()
         a:led(i,49,15)
         a:led(i,50,10)
         a:led(i,51,5)
-      elseif tilt_to_led >= -0.04 and tilt_to_led <=0.32 then
+      elseif tilt_to_led >= -0.04 and tilt_to_led <=0.20 then
         a:led(i,47,5)
         a:led(i,48,10)
         a:led(i,49,15)
@@ -1894,8 +1897,8 @@ arc_redraw = function()
         a:led(i,51,5)
       elseif tilt_to_led < -0.04 then
         a:segment(i, tau*(1/4), util.linlin(-1, 1, (tau*(1/4))+0.1, tau*1.249999, tilt_to_led), 15)
-      elseif tilt_to_led > 0.32 then
-        a:segment(i, util.linlin(-1, 1, (tau*(1/4)), tau*1.24, tilt_to_led-0.32), tau*(1/4), 15)
+      elseif tilt_to_led > 0.20 then
+        a:segment(i, util.linlin(-1, 1, (tau*(1/4)), (tau*1.24)+0.4, tilt_to_led-0.1), tau*(1/4)+0.1, 15)
       end
       
     end
@@ -1986,6 +1989,17 @@ function savestate()
   io.write(rec.clip .. "\n")
   io.write(rec.start_point .. "\n")
   io.write(rec.end_point .. "\n")
+  for i = 1,3 do
+    io.write(step_seq[i].active .. "\n")
+    io.write(step_seq[i].meta_duration .. "\n")
+    for k = 1,16 do
+      io.write(step_seq[i][k].meta_meta_duration .. "\n")
+      io.write(step_seq[i][k].assigned_to .. "\n")
+      io.write(bank[i][k].tilt .. "\n")
+      io.write(bank[i][k].tilt_ease_time .. "\n")
+      io.write(bank[i][k].tilt_ease_type .. "\n")
+    end
+  end
   io.close(file)
 end
 
@@ -2085,6 +2099,17 @@ function loadstate()
       softcut.loop_start(1,rec.start_point)
       softcut.loop_end(1,rec.end_point)
       softcut.position(1,rec.start_point)
+      for i = 1,3 do
+        step_seq[i].active = tonumber(io.read())
+        step_seq[i].meta_duration = tonumber(io.read())
+        for k = 1,16 do
+          step_seq[i][k].meta_meta_duration = tonumber(io.read())
+          step_seq[i][k].assigned_to = tonumber(io.read())
+          bank[i][k].tilt = tonumber(io.read())
+          bank[i][k].tilt_ease_time = tonumber(io.read())
+          bank[i][k].tilt_ease_type = tonumber(io.read())
+        end
+      end
     end
     io.close(file)
     for i = 1,3 do

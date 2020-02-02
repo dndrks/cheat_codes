@@ -68,7 +68,7 @@ function start_up.init()
   
   params:add{id="live_rec_feedback", name="live rec feedback", type="control", 
   controlspec=controlspec.new(0,1.0,'lin',0,0.25,""),
-  action=function(x) softcut.pre_level(1,x) end}
+  action=function(x)softcut.pre_level(1,x) end}
 
   params:add_option("rec_loop", "live rec behavior", {"loop","1-shot"}, 1)
   params:set_action("rec_loop",
@@ -163,8 +163,13 @@ function start_up.init()
     local banks = {"(a)", "(b)", "(c)"}
     params:add_control("filter "..i.." cutoff", "filter "..banks[i].." cutoff", controlspec.new(10,12000,'lin',1,12000,"Hz"))
     params:set_action("filter "..i.." cutoff", function(x) softcut.post_filter_fc(i+1,x) bank[i][bank[i].id].fc = x end)
-    params:add_control("filter "..i.." q", "filter "..banks[i].." q", controlspec.new(0.0005, 8.0, 'exp', 0, 2.0, ""))
-    params:set_action("filter "..i.." q", function(x) softcut.post_filter_rq(i+1,x) bank[i][bank[i].id].q = x end)
+    params:add_control("filter "..i.." q", "filter "..banks[i].." q", controlspec.new(0.0005, 8.0, 'exp', 0, 0.32, ""))
+    params:set_action("filter "..i.." q", function(x)
+      softcut.post_filter_rq(i+1,x)
+      for j = 1,16 do
+        bank[i][j].q = x
+      end
+    end)
     params:add_control("filter "..i.." lp", "filter "..banks[i].." lp", controlspec.new(0, 1, 'lin', 0, 1, ""))
     params:set_action("filter "..i.." lp", function(x) softcut.post_filter_lp(i+1,x) bank[i][bank[i].id].lp = x end)
     params:add_control("filter "..i.." hp", "filter "..banks[i].." hp", controlspec.new(0, 1, 'lin', 0, 0, ""))

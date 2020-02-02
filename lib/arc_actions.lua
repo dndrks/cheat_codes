@@ -68,8 +68,12 @@ function arc_actions.init(n,d)
       --bank[a_c][bank[a_c].id].tilt = util.clamp(bank[a_c][bank[a_c].id].tilt+(d/10000),-1,1)
       bank[a_c][bank[a_c].id].tilt = util.clamp(bank[a_c][bank[a_c].id].tilt+(d/1000),-1,1)
       bank[a_c][bank[a_c].id].tilt = util.linexp(-1,1,1,3,bank[a_c][bank[a_c].id].tilt)-2
-      if d < 0 and util.round(bank[a_c][bank[a_c].id].tilt*100) < 0 and util.round(bank[a_c][bank[a_c].id].tilt*100) > -9 then
-        bank[a_c][bank[a_c].id].tilt = -0.10
+      if d < 0 then
+        if util.round(bank[a_c][bank[a_c].id].tilt*100) < 0 and util.round(bank[a_c][bank[a_c].id].tilt*100) > -9 then
+          bank[a_c][bank[a_c].id].tilt = -0.10
+        elseif util.round(bank[a_c][bank[a_c].id].tilt*100) > 0 and util.round(bank[a_c][bank[a_c].id].tilt*100) < 20 then
+          bank[a_c][bank[a_c].id].tilt = 0.0
+        end
       end
       slew_filter(a_c,slew_counter[a_c].prev_tilt,bank[a_c][bank[a_c].id].tilt,bank[a_c][bank[a_c].id].q,bank[a_c][bank[a_c].id].q,15)
     else
@@ -81,8 +85,12 @@ function arc_actions.init(n,d)
         bank[a_c][j].tilt = util.explin(1,3,-1,1,bank[a_c][j].tilt+2)
         bank[a_c][j].tilt = util.clamp(bank[a_c][j].tilt+(d/1000),-1,1)
         bank[a_c][j].tilt = util.linexp(-1,1,1,3,bank[a_c][j].tilt)-2
-        if d < 0 and util.round(bank[a_c][j].tilt*100) < 0 and util.round(bank[a_c][j].tilt*100) > -9 then
-          bank[a_c][j].tilt = -0.10
+        if d < 0 then
+          if util.round(bank[a_c][j].tilt*100) < -1 and util.round(bank[a_c][j].tilt*100) > -9 then
+            bank[a_c][j].tilt = -0.10
+          elseif util.round(bank[a_c][j].tilt*100) > 0 and util.round(bank[a_c][j].tilt*100) < 20 then
+            bank[a_c][j].tilt = 0.0
+          end
         end
       end
       slew_filter(a_c,slew_counter[a_c].prev_tilt,bank[a_c][bank[a_c].id].tilt,bank[a_c][bank[a_c].id].q,bank[a_c][bank[a_c].id].q,15)
@@ -108,6 +116,7 @@ function arc_actions.init(n,d)
     local id = arc_control[n]
     arc_p[n].start_point = bank[id][bank[id].id].start_point - (8*(bank[id][bank[id].id].clip-1))
     arc_p[n].end_point = bank[id][bank[id].id].end_point - (8*(bank[id][bank[id].id].clip-1))
+    arc_p[n].prev_tilt = slew_counter[id].prev_tilt
     arc_p[n].tilt = bank[id][bank[id].id].tilt
     arc_pat[n]:watch(arc_p[n])
   end
