@@ -52,8 +52,13 @@ function main_menu.init()
     end
     screen.level(page.loops_sel == 3 and 15 or 3)
     local recording_playhead = util.linlin(1,9,15,120,(poll_position_new[1] - (8*(rec.clip-1))))
-    screen.move(recording_playhead,64)
-    screen.text(".")
+    if rec.state == 1 then
+      screen.move(recording_playhead,64)
+      screen.text(".")
+    elseif rec.state == 0 then
+      screen.move(recording_playhead,67)
+      screen.text_center("||")
+    end
     local recording_start = util.linlin(1,9,15,120,(rec.start_point - (8*(rec.clip-1))))
     screen.move(recording_start,66)
     screen.text("|")
@@ -141,7 +146,99 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("filters")
+    
     for i = 1,3 do
+      screen.move(17+((i-1)*45),25)
+      screen.level(page.filtering_sel == i-1 and 15 or 3)
+      local filters_to_screen_options = {"a", "b", "c"}
+      if key1_hold or grid.alt == 1 then
+        screen.text_center(filters_to_screen_options[i]..""..bank[i].id)
+      else
+        screen.text_center("("..filters_to_screen_options[i]..")")
+      end
+      screen.move(17+((i-1)*45),35)
+      
+      if slew_counter[i].slewedVal ~= nil then
+        if slew_counter[i].slewedVal >= -0.04 and slew_counter[i].slewedVal <=0.04 then
+        screen.text_center(".....|.....")
+        elseif slew_counter[i].slewedVal < -0.04 then
+          if slew_counter[i].slewedVal > -0.2 then
+            screen.text_center("....||.....")
+          elseif slew_counter[i].slewedVal > -0.4 then
+            screen.text_center("...|||.....")
+          elseif slew_counter[i].slewedVal > -0.6 then
+            screen.text_center("..||||.....")
+          elseif slew_counter[i].slewedVal > -0.8 then
+            screen.text_center(".|||||.....")
+          elseif slew_counter[i].slewedVal >= -1.01 then
+            screen.text_center("||||||.....")
+          end
+        elseif slew_counter[i].slewedVal > 0 then
+          if slew_counter[i].slewedVal < 0.4 then
+            screen.text_center(".....||....")
+          elseif slew_counter[i].slewedVal < 0.6 then
+            screen.text_center(".....|||...")
+          elseif slew_counter[i].slewedVal < 0.8 then
+            screen.text_center(".....||||..")
+          elseif slew_counter[i].slewedVal < 0.9 then
+            screen.text_center(".....|||||.")
+          elseif slew_counter[i].slewedVal <= 1.01 then
+            screen.text_center(".....||||||")
+          end
+        end
+      end
+        
+        
+      
+      --[[if bank[i][bank[i].id].tilt >= -0.04 and bank[i][bank[i].id].tilt <=0.04 then
+        screen.text_center(".....|.....")
+      elseif bank[i][bank[i].id].tilt < -0.04 then
+        if bank[i][bank[i].id].tilt > -0.2 then
+          screen.text_center("....||.....")
+        elseif bank[i][bank[i].id].tilt > -0.4 then
+          screen.text_center("...|||.....")
+        elseif bank[i][bank[i].id].tilt > -0.6 then
+          screen.text_center("..||||.....")
+        elseif bank[i][bank[i].id].tilt > -0.8 then
+          screen.text_center(".|||||.....")
+        elseif bank[i][bank[i].id].tilt >= -1.0 then
+          screen.text_center("||||||.....")
+        end
+      elseif bank[i][bank[i].id].tilt > 0 then
+        if bank[i][bank[i].id].tilt < 0.4 then
+          screen.text_center(".....||....")
+        elseif bank[i][bank[i].id].tilt < 0.6 then
+          screen.text_center(".....|||...")
+        elseif bank[i][bank[i].id].tilt < 0.8 then
+          screen.text_center(".....||||..")
+        elseif bank[i][bank[i].id].tilt < 0.9 then
+          screen.text_center(".....|||||.")
+        elseif bank[i][bank[i].id].tilt <= 1.0 then
+          screen.text_center(".....||||||")
+        end
+      end]]--
+      
+      --[[screen.move(17+((i-1)*45),45)
+      if bank[i][bank[i].id].tilt >= -0.04 and bank[i][bank[i].id].tilt <=0.32 then
+        screen.level(3)
+        screen.text_center("-")
+      elseif bank[i][bank[i].id].tilt < -0.04 or bank[i][bank[i].id].tilt > 0.32 then
+        screen.level(page.filtering_sel == i-1 and 15 or 3)
+        screen.text_center(string.format("%.0f",bank[i][bank[i].id].cf_fc))
+      end]]--
+      screen.move(17+((i-1)*45),55)
+      if bank[i][bank[i].id].tilt >= -0.04 and bank[i][bank[i].id].tilt <=0.32 then
+        screen.level(3)
+        local q_to_screen = util.linlin(0,2,2,0,bank[i][bank[i].id].q)
+        screen.text_center(string.format("%.2f",q_to_screen))
+      elseif bank[i][bank[i].id].tilt < -0.04 or bank[i][bank[i].id].tilt > 0.32 then
+        local q_to_screen = util.linlin(0,2,2,0,bank[i][bank[i].id].q)
+        screen.level(page.filtering_sel == i-1 and 15 or 3)
+        screen.text_center(string.format("%.2f",q_to_screen))
+      end
+    end
+    
+    --[[for i = 1,3 do
       screen.move(17+((i-1)*45),25)
       screen.level(page.filtering_sel == i-1 and 15 or 3)
       local filters_to_screen_options = {"a", "b", "c"}
@@ -161,10 +258,19 @@ function main_menu.init()
       screen.move(17+((i-1)*45),45)
       if bank[i][bank[i].id].tilt >= -0.04 and bank[i][bank[i].id].tilt <=0.32 then
         screen.level(3)
-        screen.text_center("-")
+        screen.rect(12+((i-1)*45),40,10,10)
+        screen.stroke()
       elseif bank[i][bank[i].id].tilt < -0.04 or bank[i][bank[i].id].tilt > 0.32 then
-        screen.level(page.filtering_sel == i-1 and 15 or 3)
-        screen.text_center(string.format("%.0f",bank[i][bank[i].id].cf_fc))
+        if bank[i][bank[i].id].tilt < -0.04 then
+          screen.level(math.floor(util.linlin(10,10000,15,0,bank[i][bank[i].id].cf_fc)+0.5))
+          screen.circle(17+((i-1)*45),45,5.5)
+          screen.stroke()
+        elseif bank[i][bank[i].id].tilt > 0.32 then
+          screen.level(math.floor(util.linlin(10,10000,15,0,bank[i][bank[i].id].cf_fc)+0.5))
+          screen.line(17+((i-1)*45),19+((i-1)*40))
+          --screen.line(19+((i-1)*40),21+((i-1)*45))
+          screen.stroke()
+        end
       end
       screen.move(17+((i-1)*45),55)
       if bank[i][bank[i].id].tilt >= -0.04 and bank[i][bank[i].id].tilt <=0.32 then
@@ -176,7 +282,7 @@ function main_menu.init()
         screen.level(page.filtering_sel == i-1 and 15 or 3)
         screen.text_center(string.format("%.2f",q_to_screen))
       end
-    end
+    end]]--
     screen.level(3)
     screen.move(0,64)
     screen.text("...")

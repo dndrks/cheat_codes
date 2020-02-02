@@ -111,6 +111,8 @@ function encoder_actions.init(n,d)
           bank[id][bank[id].id].tilt = util.clamp(bank[id][bank[id].id].tilt+(d/100),-1,1)
           if d < 0 and util.round(bank[id][bank[id].id].tilt*100) < 0 and util.round(bank[id][bank[id].id].tilt*100) > -9 then
             bank[id][bank[id].id].tilt = -0.10
+          elseif d > 0 and util.round(bank[id][bank[id].id].tilt*100) > 0 and util.round(bank[id][bank[id].id].tilt*100) < 32 then
+            bank[id][bank[id].id].tilt = 0.32
           end
           --[[if d > 0 and bank[id][bank[id].id].tilt > 0 and bank[id][bank[id].id].tilt < 0.30 then
             bank[id][bank[id].id].tilt = 0.30
@@ -130,8 +132,14 @@ function encoder_actions.init(n,d)
           end
           for j = 1,16 do
             bank[id][j].tilt = util.clamp(bank[id][j].tilt+(d/100),-1,1)
-            if d < 0 and util.round(bank[id][j].tilt*100) < 0 and util.round(bank[id][j].tilt*100) > -9 then
-              bank[id][j].tilt = -0.10
+            if d < 0 then
+              if util.round(bank[id][j].tilt*100) < 0 and util.round(bank[id][j].tilt*100) > -9 then
+                bank[id][j].tilt = -0.10
+              elseif util.round(bank[id][j].tilt*100) > 0 and util.round(bank[id][j].tilt*100) < 32 then
+                bank[id][j].tilt = 0.0
+              end
+            elseif d > 0 and util.round(bank[id][j].tilt*100) > 0 and util.round(bank[id][j].tilt*100) < 32 then
+              bank[id][j].tilt = 0.32
             end
             --[[if d > 0 and bank[id][j].tilt > 0 and bank[id][j].tilt < 0.30 then
               bank[id][j].tilt = 0.30

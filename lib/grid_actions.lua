@@ -3,6 +3,7 @@ grid_actions = {}
 function grid_actions.init(x,y,z)
   
   if grid_page == 0 then
+    
     for i = 1,3 do
       if z == 1 and x > 0 + (5*(i-1)) and x <= 4 + (5*(i-1)) and y >=5 then
         if grid.alt == 0 then
@@ -444,7 +445,11 @@ function grid_actions.init(x,y,z)
       for j = 1,8 do
         if z == 1 and x == i and y == j then
           local current = x/5
-          step_seq[current][step_seq[current].current_step].meta_meta_duration = 9-y
+          if step_seq[current].held == 0 then
+            step_seq[current][step_seq[current].current_step].meta_meta_duration = 9-y
+          else
+            step_seq[current][step_seq[current].held].meta_meta_duration = 9-y
+          end
         end
       end
     end

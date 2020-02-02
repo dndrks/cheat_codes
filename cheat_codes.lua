@@ -99,7 +99,7 @@ for i = 1,3 do
   slew_counter[i].endQ = 0
   slew_counter[i].changeQ = slew_counter[i].endQ - slew_counter[i].beginQ
   slew_counter[i].duration = (slew_counter[i].count/100)-0.01
-  slew_counter[i].slewedVal = nil
+  slew_counter[i].slewedVal = 0
   slew_counter[i].prev_tilt = 0
   slew_counter[i].next_tilt = 0
   slew_counter[i].prev_q = 0
@@ -1004,6 +1004,8 @@ end
 
 function step_sequence()
   for i = 1,3 do
+    --if there's an entry then
+    --end
     step_seq[i].meta_step = step_seq[i].meta_step + 1
     if step_seq[i].meta_step > step_seq[i].meta_duration then step_seq[i].meta_step = 1 end
     if step_seq[i].meta_step == 1 then
@@ -1012,6 +1014,12 @@ function step_sequence()
       if step_seq[i].meta_meta_step == 1 then
         step_seq[i].current_step = step_seq[i].current_step + 1
         if step_seq[i].current_step > step_seq[i].length then step_seq[i].current_step = 1 end
+        current = step_seq[i].current_step
+        if step_seq[i][current].assigned_to ~= 0 then
+          pattern_saver[i].load_slot = step_seq[i][current].assigned_to
+          test_load(step_seq[i][current].assigned_to+((i-1)*8),i)
+        end
+        --if step_seq[i].current_step > step_seq[i].length then step_seq[i].current_step = 1 end
       end
     end
   end
@@ -1023,6 +1031,7 @@ function reset_all_banks()
     bank[i] = {}
     bank[i].id = 1
     bank[i].ext_clock = 1
+    bank[i].param_latch = 0
     for k = 1,16 do
       bank[i][k] = {}
       bank[i][k].clip = 1
@@ -1644,7 +1653,7 @@ function grid_redraw()
     end
     
     if rec.clear == 0 then
-      g:led(16,8-rec.clip,(5*rec.state)+10)
+      g:led(16,8-rec.clip,(10*rec.state)+3)
     elseif rec.clear == 1 then
       g:led(16,8-rec.clip,3)
     end
@@ -1654,8 +1663,13 @@ function grid_redraw()
     for i = 1,11,5 do
       for j = 1,8 do
         local current = math.floor(i/5)+1
-        g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
-        g:led(i,j,j == 9 - pattern_saver[current].load_slot and 15 or ((5*pattern_saver[current].saved[9-j])+2))
+        if step_seq[current].held == 0 then
+          g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
+          g:led(i,j,j == 9 - pattern_saver[current].load_slot and 15 or ((5*pattern_saver[current].saved[9-j])+2))
+        else
+          g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
+          g:led(i,j,j == 9 - step_seq[current][step_seq[current].held].assigned_to and 15 or ((5*pattern_saver[current].saved[9-j])+2))
+        end
       end
     end
     
@@ -1663,9 +1677,9 @@ function grid_redraw()
       for j = 1,16 do
         if step_seq[i][j].assigned_to ~= 0 then
           if j < 9 then
-            g:led((i*5)-2,9-j,6)
+            g:led((i*5)-2,9-j,4)
           elseif j >= 9 then
-            g:led((i*5)-1,17-j,6)
+            g:led((i*5)-1,17-j,4)
           end
         end
       end
@@ -1673,6 +1687,11 @@ function grid_redraw()
         g:led((i*5)-2,9-step_seq[i].current_step,15)
       elseif step_seq[i].current_step >=9 then
         g:led((i*5)-1,9-(step_seq[i].current_step-8),15)
+      end
+      if step_seq[i].held < 9 then
+        g:led((i*5)-2,9-step_seq[i].held,9)
+      elseif step_seq[i].held >= 9 then
+        g:led((i*5)-1,9-(step_seq[i].held-8),9)
       end
     end
     
@@ -1682,8 +1701,14 @@ function grid_redraw()
     end
     
     for i = 1,3 do
-      g:led((i*5), 9-step_seq[i][step_seq[i].current_step].meta_meta_duration,4)
-      g:led((i*5), 9-step_seq[i].meta_meta_step,6)
+      if step_seq[i].held == 0 then
+        g:led((i*5), 9-step_seq[i][step_seq[i].current_step].meta_meta_duration,4)
+        g:led((i*5), 9-step_seq[i].meta_meta_step,6)
+      else
+        --g:led((i*5), 9-step_seq[i][step_seq[i].current_step].meta_meta_duration,2)
+        g:led((i*5), 9-step_seq[i].meta_meta_step,2)
+        g:led((i*5), 9-step_seq[i][step_seq[i].held].meta_meta_duration,4)
+      end
     end
     
     g:led(16,8,(grid.alt_pp*12)+3)
@@ -1757,8 +1782,8 @@ function arc_pattern_execute(entry)
     softcut.loop_start(id+1, (entry.start_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
     softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
   else
-    bank[id][bank[id].id].fc = entry.fc
-    softcut.post_filter_fc(id+1,entry.fc)
+    -- DO SOMETHING WITH TILT
+    
   end
   redraw()
 end
@@ -1852,16 +1877,27 @@ arc_redraw = function()
       a:led(i,(math.floor(util.linlin(0,8,1,64,start_to_led)))+16,8)
     end
     if arc_param[i] == 4 then
-      local fc_to_led = bank[arc_control[i]][bank[arc_control[i]].id].fc
-      if bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 1 then
-        a:segment(i, tau*(1/4), util.linlin(1, 12000, (tau*(1/4))+0.1, tau*1.249999, fc_to_led), 15)
-      elseif bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 2 then
-        a:segment(i, util.linlin(1, 12000, (tau*(1/4)), tau*1.24, fc_to_led), tau*(1/4), 15)
-      elseif bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 3 then
-        a:segment(i, util.linlin(10, 12000, (tau*(1/4)), tau*1.20, fc_to_led), util.linlin(10, 12000, (tau*(1/4))+0.3, tau*1.249999, fc_to_led), 15)
-      elseif bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 4 then
-        --NEED STUFF
+      --local tilt_to_led = bank[arc_control[i]][bank[arc_control[i]].id].tilt
+      local tilt_to_led = slew_counter[i].slewedVal
+      if tilt_to_led == nil then
+        tilt_to_led = bank[i][bank[i].id].tilt
+        a:led(i,47,5)
+        a:led(i,48,10)
+        a:led(i,49,15)
+        a:led(i,50,10)
+        a:led(i,51,5)
+      elseif tilt_to_led >= -0.04 and tilt_to_led <=0.32 then
+        a:led(i,47,5)
+        a:led(i,48,10)
+        a:led(i,49,15)
+        a:led(i,50,10)
+        a:led(i,51,5)
+      elseif tilt_to_led < -0.04 then
+        a:segment(i, tau*(1/4), util.linlin(-1, 1, (tau*(1/4))+0.1, tau*1.249999, tilt_to_led), 15)
+      elseif tilt_to_led > 0.32 then
+        a:segment(i, util.linlin(-1, 1, (tau*(1/4)), tau*1.24, tilt_to_led-0.32), tau*(1/4), 15)
       end
+      
     end
   end
   
