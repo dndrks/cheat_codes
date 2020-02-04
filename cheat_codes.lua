@@ -250,6 +250,57 @@ function sync_pattern_to_bpm(bank, resolution)
   end
 end
 
+function adjust_times(bank, multiplier)
+  if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
+    local total_time = 0
+    --synced_to_bpm = bpm
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("before total: "..total_time)
+    if old_pat_time == nil then
+      old_pat_time = table.clone(grid_pat[bank].time)
+    else
+      reset_pattern_time(bank)
+    end
+    for k = 1,grid_pat[bank].count do
+      --print("before quant: "..grid_pat[bank].time[k])
+      grid_pat[bank].time[k] = multiplier * grid_pat[bank].time[k]
+    end
+    total_time = 0
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("after total: "..total_time)
+    midi_clock_linearize(bank)
+  end
+end
+
+function snap_to_bars(bank,bar_count)
+  if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
+    local total_time = 0
+    --synced_to_bpm = bpm
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("before total: "..total_time)
+    if old_pat_time == nil then
+      old_pat_time = table.clone(grid_pat[bank].time)
+    end
+    local bar_time = (((60/bpm)*4)*bar_count)/total_time
+    for k = 1,grid_pat[bank].count do
+      --print("before quant: "..grid_pat[bank].time[k])
+      grid_pat[bank].time[k] = grid_pat[bank].time[k] * bar_time
+    end
+    total_time = 0
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("after total: "..total_time)
+    midi_clock_linearize(bank)
+  end
+end
+
 function reset_pattern_time(bank)
   if old_pat_time ~= nil then
     grid_pat[bank].time = table.clone(old_pat_time)
@@ -1794,6 +1845,7 @@ function savestate()
   io.write(rec.clip .. "\n")
   io.write(rec.start_point .. "\n")
   io.write(rec.end_point .. "\n")
+  io.write("v1.1.1.1.1.1.1.1".."\n")
   for i = 1,3 do
     io.write(step_seq[i].active .. "\n")
     io.write(step_seq[i].meta_duration .. "\n")
@@ -1904,6 +1956,8 @@ function loadstate()
       softcut.loop_start(1,rec.start_point)
       softcut.loop_end(1,rec.end_point)
       softcut.position(1,rec.start_point)
+    end
+    if io.read() == "v1.1.1.1.1.1.1.1" then
       for i = 1,3 do
         step_seq[i].active = tonumber(io.read())
         step_seq[i].meta_duration = tonumber(io.read())
