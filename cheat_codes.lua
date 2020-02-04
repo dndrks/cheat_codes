@@ -493,7 +493,7 @@ grid.alt_pp = 0
 
 local function crow_init()
   for i = 1,4 do
-    crow.output[i].action = "{to(5,0),to(0,0.25)}"
+    crow.output[i].action = "{to(5,0),to(0,0.05)}"
     print("output["..i.."] initialized")
   end
 end
@@ -625,98 +625,11 @@ function init()
           grid_pat_q_clock(i)
         end
       end
-      --
-      --[[if go ~= nil and grid_pat[1].count > 0 then
-        g_p_q[1].sub_step = grid_pat[1].step
-        for i = 1,g_p_q[1].clicks[grid_pat[1].step] do
-          for j = 1,#g_p_q[1].event[grid_pat[1].step] do
-            if g_p_q[1].event[grid_pat[1].step][j] == "something" then
-              --grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
-              print("+++")
-            else
-              print("---")
-            end
-          end
-        end
-        if grid_pat[1].step == grid_pat[1].count then
-          grid_pat[1].step = 0
-        end
-        grid_pat[1].step = grid_pat[1].step + 1
-      end
-      ]]--
-    --otherwise:
-    --[[
-      for i = 1,3 do
-        if bank[i][bank[i].id].clock_resolution == 1 and bank[i].ext_clock == 1 then
-          if gogogo ~= nil and grid_pat[i].count > 0 then
-            grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
-            if grid_pat[i].step == grid_pat[i].count then
-              grid_pat[i].step = 0
-            end
-            grid_pat[i].step = grid_pat[i].step + 1
-          end
-        elseif (clk.step+1)%bank[i][bank[i].id].clock_resolution == 1 and bank[i].ext_clock == 1 then
-          if gogogo ~= nil and grid_pat[i].count > 0 then
-            grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
-            --print(grid_pat[i].step)
-            if grid_pat[i].step == grid_pat[i].count then
-              grid_pat[i].step = 0
-            end
-            grid_pat[i].step = grid_pat[i].step + 1
-          end
-        end
-        if (clk.step+1)%4 then
-          for i = 1,3 do
-            cheat_q_clock(i)
-            grid_pat_q_clock(i)
-          end
-        end
-      end]]--
+    end
+    if clk.crow_send then
+      crow.output[4]()
     end
   end
-        
-      --[[if clock_resolution == 1 then
-        for i = 1,3 do
-          --if grid_pat[i].count > 0 and grid_pat[i].rec == 0 and grid_pat[i].play ~= 1 then
-          if gogogo ~= nil and grid_pat[i].count > 0 then
-            grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
-            if grid_pat[i].step == grid_pat[i].count then
-              grid_pat[i].step = 0
-            end
-            grid_pat[i].step = grid_pat[i].step + 1
-          end
-        end
-      elseif (clk.step+1)%clock_resolution == 1 then
-        for i = 1,3 do
-          --if grid_pat[i].count > 0 and grid_pat[i].rec == 0 and grid_pat[i].play ~= 1 then
-          if gogogo ~= nil and grid_pat[i].count > 0 then
-            grid_pattern_execute(grid_pat[i].event[grid_pat[i].step])
-            --print(grid_pat[i].step)
-            if grid_pat[i].step == grid_pat[i].count then
-              grid_pat[i].step = 0
-            end
-            grid_pat[i].step = grid_pat[i].step + 1
-          end
-        end
-        for i = 1,3 do
-          cheat_q_clock(i)
-          grid_pat_q_clock(i)
-        end
-      end
-      if (clk.step+1)%clock_resolution == 1 then
-        prebpm = params:get("bpm")
-        local etap1 = util.time()
-        edelta = etap1 - etap
-        etap = etap1
-        local tap_tempo = math.floor(60/edelta)
-        bpm = tap_tempo
-        update_delays()
-        if math.abs(prebpm - bpm) > 1 then
-          params:set("bpm",tap_tempo)
-        end
-      end
-    end
-  end]]--
   
   clk.on_select_internal = function()
     clk:start()
@@ -1154,6 +1067,7 @@ function cheat(b,i)
     slew_counter[b].prev_q = bank[b][i].q
   end
   previous_pad = bank[b].id
+  crow.output[b]()
 end
 
 function envelope(i)

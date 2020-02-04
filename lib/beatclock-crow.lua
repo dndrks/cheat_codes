@@ -140,6 +140,8 @@ function BeatClockCrow:add_clock_params()
   params:set_action("bpm", function(x) self:bpm_change(x) end)
   params:add_option("clock_out", "midi clock out?", { "no", "yes" }, self.send or 2 and 1)
   params:set_action("clock_out", function(x) if x == 1 then self.send = false else self.send = true end end)
+  params:add_option("crow_clock_out", "crow clock out (4)?", { "no", "yes" }, self.crow_send or 2 and 1)
+  params:set_action("crow_clock_out", function(x) if x == 1 then self.crow_send = false else self.crow_send = true end end)
   params:add{type = "trigger", id = "tap_tempo", name = "tap tempo", action =
     function()
       local tap1 = util.time()
