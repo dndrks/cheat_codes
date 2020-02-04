@@ -692,6 +692,13 @@ function init()
   page.filtering_sel = 0
   page.arc_sel = 0
   page.delay_sel = 0
+  page.time_sel = 1
+  page.time_page = {}
+  page.time_page_sel = {}
+  for i = 1,5 do
+    page.time_page[i] = 1
+    page.time_page_sel[i] = 1
+  end
   
   delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
   delay = {}
@@ -959,6 +966,8 @@ function reset_all_banks()
     bank[i].id = 1
     bank[i].ext_clock = 1
     bank[i].param_latch = 0
+    bank[i].crow_execute = 1
+    bank[i].snap_to_bars = 1
     for k = 1,16 do
       bank[i][k] = {}
       bank[i][k].clip = 1
@@ -1225,7 +1234,7 @@ function key(n,z)
 if screen_focus == 1 then
   if n == 3 and z == 1 then
     if menu == 1 then
-      for i = 1,6 do
+      for i = 1,7 do
         if page.main_sel == i then
           menu = i+1
         end
@@ -1242,9 +1251,23 @@ if screen_focus == 1 then
     elseif menu == 6 then
       local delay_nav = (page.delay_sel+1)%5
       page.delay_sel = delay_nav
+    elseif menu == 7 then
+      local time_nav = page.time_sel
+      local id = time_nav-1
+      if time_nav > 1 and time_nav < 5 then
+        if page.time_page_sel[time_nav] == 1 then
+          if quantize == 1 then
+            sync_pattern_to_bpm(id,params:get("quant_div"))
+          elseif quantize == 0 then
+            sync_pattern_to_bpm(id,5)
+          end
+        elseif page.time_page_sel[time_nav] == 2 then
+          snap_to_bars(id,bank[id].snap_to_bars)
+        end
+      end
     end
   elseif n == 2 and z == 1 then
-    if menu == 7 then
+    if menu == 8 then
       help_menu = "welcome"
     end
     menu = 1
@@ -1291,7 +1314,7 @@ function clip_jump(i,s,y,z)
     local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
     bank[i][s].start_point = (((bank[i][s].start_point - old_min) * new_range) / old_range) + new_min
     bank[i][s].end_point = bank[i][s].start_point + current_difference
-    if menu == 7 then
+    if menu == 8 then
       which_bank = i
       help_menu = "buffer jump"
     end

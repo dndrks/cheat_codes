@@ -5,15 +5,17 @@ function main_menu.init()
     screen.move(0,10)
     screen.text("cheat codes")
     screen.move(10,30)
-    for i = 1,6 do
+    for i = 1,7 do
       screen.level(page.main_sel == i and 15 or 3)
       if i < 4 then
         screen.move(10,20+(10*i))
-      elseif i >= 4 then
+      elseif i < 7 then
         screen.move(60,10*(i-1))
+      elseif i == 7 then
+        screen.move(118,64)
       end
-      local selected = {"[ loops ]", "[ levels ]", "[ panning ]", "[ filters ]", "[ delay ]", "[?]"}
-      local unselected = {"loops", "levels", "panning", "filters", "delay", "?"}
+      local selected = {"[ loops ]", "[ levels ]", "[ panning ]", "[ filters ]", "[ delay ]", "[ time ]", "[?]"}
+      local unselected = {"loops", "levels", "panning", "filters", "delay", "time", "?"}
       if page.main_sel == i then
         screen.text(selected[i])
       else
@@ -241,6 +243,43 @@ function main_menu.init()
     screen.move(0,64)
     screen.text("...")
   elseif menu == 7 then
+    screen.move(0,10)
+    screen.level(3)
+    screen.text("time")
+    screen.level(10)
+    screen.move(10,30)
+    screen.line(115,30)
+    screen.stroke()
+    for i = 1,5 do
+      screen.level(page.time_sel == i and 15 or 3)
+      local time_options = {"glb","P1","P2","P3","ALL"}
+      screen.move(10+(23*(i-1)),25)
+      screen.text(time_options[i])
+      local glb_options = {"bpm","clk source","send crow clk?"}
+      local p_options = {"linearize","snap to bars","pad to crow?"}
+      for j = 1,3 do
+        screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
+        screen.move(10,40+(10*(j-1)))
+        if page.time_sel == 1 then
+          screen.text(glb_options[j])
+          local clock_options = {"internal","MIDI","crow"}
+          local fine_options = {params:get("bpm"), clock_options[params:get("clock")],params:get("crow_clock_out") == 2 and "yes" or "no"}
+          screen.move(80,40+(10*(j-1)))
+          screen.text(fine_options[j])
+        elseif page.time_sel < 5 then
+          screen.text(p_options[j])
+          local fine_options = {"[K3]",bank[page.time_sel-1].snap_to_bars.." [+K3]", bank[page.time_sel-1].crow_execute == 1 and "yes" or "no"}
+          screen.move(80,40+(10*(j-1)))
+          screen.text(fine_options[j])
+        elseif page.time_sel == 5 then
+          screen.text(p_options[j])
+          local fine_options = {"[K3]","1 [+K3]", "n/a"}
+          screen.move(80,40+(10*(j-1)))
+          screen.text(fine_options[j])
+        end
+      end
+    end
+  elseif menu == 8 then
     screen.move(0,10)
     screen.level(3)
     screen.text("help")

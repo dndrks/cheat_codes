@@ -12,7 +12,7 @@ function grid_actions.init(x,y,z)
           selected[i].id = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
           bank[i].id = selected[i].id
           which_bank = i
-          if menu == 7 then
+          if menu == 8 then
             help_menu = "banks"
           end
           clipboard = {}
@@ -167,7 +167,7 @@ function grid_actions.init(x,y,z)
               table.insert(grid_pat_quantize_events[i],i)
             end
           end
-          if menu == 7 then
+          if menu == 8 then
             help_menu = "grid patterns"
             which_bank = i
           end
@@ -192,7 +192,7 @@ function grid_actions.init(x,y,z)
         else
           arc_pat[current]:start()
         end
-        if menu == 7 then
+        if menu == 8 then
           help_menu = "arc patterns"
           which_bank = current
         end
@@ -221,7 +221,7 @@ function grid_actions.init(x,y,z)
           end
           softcut.loop(i+1,1)
         end
-        if menu == 7 then
+        if menu == 8 then
           help_menu = "loop"
         end
       end
@@ -230,7 +230,7 @@ function grid_actions.init(x,y,z)
     
     if x == 16 and y == 8 then
       grid.alt = z
-      if menu == 7 then
+      if menu == 8 then
         if grid.alt == 1 then
           help_menu = "alt"
         else
@@ -278,7 +278,7 @@ function grid_actions.init(x,y,z)
           end
           local current = math.sqrt(math.abs(x-3))
           cheat(current,bank[current].id)
-          if menu == 7 then
+          if menu == 8 then
             which_bank = current
             help_menu = "mode"
           end
@@ -335,7 +335,7 @@ function grid_actions.init(x,y,z)
           buff_flush()
         end
         
-        if menu == 7 then
+        if menu == 8 then
           help_menu = "buffer switch"
         end
         buff_key_down = util.time()
@@ -353,7 +353,7 @@ function grid_actions.init(x,y,z)
           if y == i then
             if grid.alt == 0 then
               arc_param[x/5] = 9-y
-              if menu == 7 then
+              if menu == 8 then
                 which_bank = x/5
                 help_menu = "arc params"
               end

@@ -34,11 +34,13 @@ function encoder_actions.init(n,d)
         softcut.loop_start(1,rec.start_point)
         softcut.loop_end(1,rec.end_point)
       end
+    elseif menu == 7 then
+      page.time_sel = util.clamp(page.time_sel+d,1,5)
     end
   end
   if n == 2 then
     if menu == 1 then
-      page.main_sel = util.clamp(page.main_sel+d,1,6)
+      page.main_sel = util.clamp(page.main_sel+d,1,7)
     elseif menu == 2 then
       local id = page.loops_sel + 1
       if id ~=4 then
@@ -69,6 +71,8 @@ function encoder_actions.init(n,d)
       elseif line == 4 then
         params:delta("delay L: global level",d)
       end
+    elseif menu == 7 then
+      page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,3)
     end
   end
   if n == 3 then
@@ -101,6 +105,22 @@ function encoder_actions.init(n,d)
         params:delta("delay R: filter q",d/2)
       elseif line == 4 then
         params:delta("delay R: global level",d)
+      end
+    elseif menu == 7 then
+      if page.time_sel == 1 then
+        if page.time_page_sel[page.time_sel] == 1 then
+          params:delta("bpm",d)
+        elseif page.time_page_sel[page.time_sel] == 2 then
+          params:delta("clock",d)
+        elseif page.time_page_sel[page.time_sel] == 3 then
+          params:delta("crow_clock_out",d)
+        end
+      elseif page.time_sel < 5 then
+        if page.time_page_sel[page.time_sel] == 3 then
+          bank[page.time_sel-1].crow_execute = util.clamp(bank[page.time_sel-1].crow_execute+d,0,1)
+        elseif page.time_page_sel[page.time_sel] == 2 then
+          bank[page.time_sel-1].snap_to_bars = util.clamp(bank[page.time_sel-1].snap_to_bars+d,1,16)
+        end
       end
     end
   end

@@ -3,7 +3,7 @@ zilchmos = {}
 function zilchmos.init(k,i)
 
   which_bank = i
-  if menu == 7 then
+  if menu == 8 then
     help_menu = "zilchmo_"..k
   end
     if fingers[k][i].con == "1" then
