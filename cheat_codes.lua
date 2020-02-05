@@ -457,7 +457,7 @@ function midi_clock_linearize(bank)
   end
   g_p_q[bank].current_step = 1
   g_p_q[bank].sub_step = 1
-  print("midi linearized")
+  --print("midi linearized")
 end
 
 function pattern_timing_to_clock_resolution(i)
@@ -669,9 +669,9 @@ function init()
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "quantize pattern button?", { "no", "yes" })
   params:set_action("quantize_pats", function(x) grid_pat_quantize = x-1 end)
-  params:add_number("quant_div", "pad quant. division", 1, 32, 4)
+  params:add_number("quant_div", "pad quant. division", 1, 5, 4)
   params:set_action("quant_div",function() update_tempo() end)
-  params:add_number("quant_div_pats", "pattern quant. division", 1, 32, 4)
+  params:add_number("quant_div_pats", "pattern quant. division", 1, 5, 4)
   params:set_action("quant_div_pats",function() update_tempo() end)
   params:add_option("lock_pat", "lock pattern rec to bpm?", {"no", "yes"} )
   params:add{type = "trigger", id = "sync_pat", name = "sync patterns to bpm", action = slide_to_tempo}
@@ -1259,13 +1259,21 @@ if screen_focus == 1 then
       local id = time_nav-1
       if time_nav > 1 and time_nav < 5 then
         if page.time_page_sel[time_nav] == 1 then
-          if quantize == 1 then
+          if key1_hold or grid.alt == 1 then
+            for j = 1,3 do
+              sync_pattern_to_bpm(j,params:get("quant_div"))
+            end
+          else
             sync_pattern_to_bpm(id,params:get("quant_div"))
-          elseif quantize == 0 then
-            sync_pattern_to_bpm(id,4)
           end
         elseif page.time_page_sel[time_nav] == 2 then
-          snap_to_bars(id,bank[id].snap_to_bars)
+          if key1_hold or grid.alt == 1 then
+            for j = 1,3 do
+              snap_to_bars(j,bank[j].snap_to_bars)
+            end
+          else
+            snap_to_bars(id,bank[id].snap_to_bars)
+          end
         end
       end
     end
@@ -1949,13 +1957,35 @@ function test_save(i)
   end
 end
 
-function test_load(slot,destination)
+-- trying for external clock sync: restore this one if other copy fails
+--[[function test_load(slot,destination)
   if pattern_saver[destination].saved[slot-((destination-1)*8)] == 1 then
     if grid_pat[destination].play == 1 then
       grid_pat[destination]:stop()
     end
     load_pattern(slot,destination)
     grid_pat[destination]:start()
+  end
+end]]--
+
+function test_load(slot,destination)
+  if pattern_saver[destination].saved[slot-((destination-1)*8)] == 1 then
+    if grid_pat[destination].play == 1 then
+      grid_pat[destination]:stop()
+    elseif grid_pat[destination].external_start == 1 then
+      grid_pat[destination].external_start = 0
+      grid_pat[destination].step = 1
+      g_p_q[destination].current_step = 1
+      g_p_q[destination].sub_step = 1
+    end
+    load_pattern(slot,destination)
+    if not clk.externalmidi and not clk.externalcrow then
+      grid_pat[destination]:start()
+    else
+      if grid_pat[destination].count > 0 then
+        grid_pat[destination].external_start = 1
+      end
+    end
   end
 end
 
@@ -2128,6 +2158,7 @@ function load_pattern(slot,destination)
       grid_pat[destination].metro.props.time = tonumber(io.read())
       grid_pat[destination].prev_time = tonumber(io.read())
     end
+    midi_clock_linearize(destination)
     io.close(file)
   else
     print("nofile")

@@ -121,6 +121,17 @@ function encoder_actions.init(n,d)
         elseif page.time_page_sel[page.time_sel] == 2 then
           bank[page.time_sel-1].snap_to_bars = util.clamp(bank[page.time_sel-1].snap_to_bars+d,1,16)
         end
+      elseif page.time_sel == 5 then
+        if page.time_page_sel[page.time_sel] == 1 then
+          params:delta("lock_pat",d)
+        elseif page.time_page_sel[page.time_sel] == 2 then
+          params:delta("quantize_pads",d)
+          if not clk.externalmidi and not clk.externalcrow then
+            params:delta("quantize_pats",d)
+          end
+        elseif page.time_page_sel[page.time_sel] == 3 then
+          params:delta("quant_div",d)
+        end
       end
     end
   end

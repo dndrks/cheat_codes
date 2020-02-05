@@ -453,6 +453,11 @@ function grid_actions.init(x,y,z)
           else
             step_seq[current][step_seq[current].held].meta_meta_duration = 9-y
           end
+          if grid.alt_pp == 1 then
+            for k = 1,16 do
+              step_seq[current][k].meta_meta_duration = 9-y
+            end
+          end
         end
       end
     end
