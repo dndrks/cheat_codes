@@ -132,7 +132,7 @@ function grid_actions.init(x,y,z)
               if params:get("lock_pat") == 2 and quantize == 1 then
                 sync_pattern_to_bpm(i,params:get("quant_div"))
               elseif params:get("lock_pat") == 2 and quantize == 0 then
-                sync_pattern_to_bpm(i,5)
+                sync_pattern_to_bpm(i,params:get("quant_div"))
               end
               midi_clock_linearize(i)
               if not clk.externalmidi and not clk.externalcrow then

@@ -173,7 +173,7 @@ function grid_pat_q_clock(i)
         if params:get("lock_pat") == 2 and quantize == 1 then
           sync_pattern_to_bpm(i,params:get("quant_div"))
         elseif params:get("lock_pat") == 2 and quantize == 0 then
-          sync_pattern_to_bpm(i,5)
+          sync_pattern_to_bpm(i,4)
         end
         midi_clock_linearize(i)
         if not clk.externalmidi and not clk.externalcrow then
@@ -1076,7 +1076,9 @@ function cheat(b,i)
     slew_counter[b].prev_q = bank[b][i].q
   end
   previous_pad = bank[b].id
-  crow.output[b]()
+  if bank[b].crow_execute == 1 then
+    crow.output[b]()
+  end
 end
 
 function envelope(i)
@@ -1259,7 +1261,7 @@ if screen_focus == 1 then
           if quantize == 1 then
             sync_pattern_to_bpm(id,params:get("quant_div"))
           elseif quantize == 0 then
-            sync_pattern_to_bpm(id,5)
+            sync_pattern_to_bpm(id,4)
           end
         elseif page.time_page_sel[time_nav] == 2 then
           snap_to_bars(id,bank[id].snap_to_bars)
