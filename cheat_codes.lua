@@ -613,7 +613,7 @@ function init()
   clk.on_step = function()
     update_tempo()
     step_sequence()
-    if clk.externalmidi then
+    if clk.externalmidi or clk.externalcrow then
       for i = 1,3 do
         if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
           testing_clocks(i)
@@ -871,10 +871,11 @@ function change()
     delay[i].end_point = delay_time
     softcut.loop_end(i+4,delay[i].end_point)
   end
-  for i = 1,3 do
+  clk.on_step()
+  --[[for i = 1,3 do
     cheat_q_clock(i)
     grid_pat_q_clock(i)
-  end
+  end]]--
 end
 
 function update_tempo()

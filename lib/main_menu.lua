@@ -14,8 +14,8 @@ function main_menu.init()
       elseif i == 7 then
         screen.move(118,64)
       end
-      local selected = {"[ loops ]", "[ levels ]", "[ panning ]", "[ filters ]", "[ delay ]", "[ time ]", "[?]"}
-      local unselected = {"loops", "levels", "panning", "filters", "delay", "time", " ? "}
+      local selected = {"[ loops ]", "[ levels ]", "[ panning ]", "[ filters ]", "[ delay ]", "[ timing ]", "[?]"}
+      local unselected = {"loops", "levels", "panning", "filters", "delay", "timing", " ? "}
       if page.main_sel == i then
         screen.text(selected[i])
       else
@@ -245,42 +245,45 @@ function main_menu.init()
   elseif menu == 7 then
     screen.move(0,10)
     screen.level(3)
-    screen.text("time")
+    screen.text("timing")
     screen.level(10)
-    screen.move(10,30)
-    screen.line(115,30)
+    screen.move(15,30)
+    screen.line(120,30)
     screen.stroke()
     for i = 1,5 do
       screen.level(page.time_sel == i and 15 or 3)
       local time_options = {"clk","P1","P2","P3","ALL"}
-      screen.move(10+(23*(i-1)),25)
+      screen.move(15+(23*(i-1)),25)
       screen.text(time_options[i])
       local glb_options = {"bpm","clk source","send crow clk?"}
       local p_options = {"linearize","snap to bars","pad to crow?"}
       for j = 1,3 do
         screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
-        screen.move(10,40+(10*(j-1)))
+        screen.move(15,40+(10*(j-1)))
         if page.time_sel == 1 then
           screen.text(glb_options[j])
           local clock_options = {"internal","MIDI","crow"}
           local fine_options = {params:get("bpm"), clock_options[params:get("clock")],params:get("crow_clock_out") == 2 and "yes" or "no"}
-          screen.move(80,40+(10*(j-1)))
+          screen.move(85,40+(10*(j-1)))
           screen.text(fine_options[j])
         elseif page.time_sel < 5 then
           screen.text(p_options[j])
           local fine_options = {"[K3]",bank[page.time_sel-1].snap_to_bars.." [+K3]", bank[page.time_sel-1].crow_execute == 1 and "yes" or "no"}
-          screen.move(80,40+(10*(j-1)))
+          screen.move(85,40+(10*(j-1)))
           screen.text(fine_options[j])
         elseif page.time_sel == 5 then
           local all_options = {"linear recording?","quantize pads?","quant resolution"}
           screen.text(all_options[j])
           local quant_div_options = {"1/4","1/8","1/8t","1/16","1/32"}
           local fine_options = {params:get("lock_pat") == 2 and "yes" or "no", params:get("quantize_pads") == 2 and "yes" or "no", quant_div_options[params:get("quant_div")]}
-          screen.move(90,40+(10*(j-1)))
+          screen.move(95,40+(10*(j-1)))
           screen.text(fine_options[j])
         end
       end
     end
+    screen.level(3)
+    screen.move(0,64)
+    screen.text("...")
   elseif menu == 8 then
     screen.move(0,10)
     screen.level(3)
