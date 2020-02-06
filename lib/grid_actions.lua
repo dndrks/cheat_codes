@@ -127,6 +127,8 @@ function grid_actions.init(x,y,z)
               grid_pat[i]:stop()
               grid_pat[i].external_start = 0
               grid_pat[i]:clear()
+              --optional?
+              pattern_saver[i].load_slot = 0
             elseif grid_pat[i].rec == 1 then
               grid_pat[i]:rec_stop()
               if params:get("lock_pat") == 2 and quantize == 1 then
@@ -163,6 +165,8 @@ function grid_actions.init(x,y,z)
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
               grid_pat[i]:clear()
+              --optional?
+              pattern_saver[i].load_slot = 0
             else
               table.insert(grid_pat_quantize_events[i],i)
             end
