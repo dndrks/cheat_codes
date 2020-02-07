@@ -1937,7 +1937,12 @@ function loadstate()
     end
   end
   already_saved()
-  meta_shadow(selected_coll)
+  --maybe?
+  if selected_coll ~= params:get("collection") then
+    meta_shadow(selected_coll)
+  elseif selected_coll == params:get("collection") then
+    cleanup()
+  end
   --selected_coll = 0
 end
 
