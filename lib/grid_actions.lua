@@ -60,7 +60,8 @@ function grid_actions.init(x,y,z)
               bank[i][bank[i].id].envelope_time,
               bank[i][bank[i].id].tilt,
               bank[i][bank[i].id].tilt_ease_time,
-              bank[i][bank[i].id].tilt_ease_type
+              bank[i][bank[i].id].tilt_ease_type,
+              bank[i][bank[i].id].offset
               )
           else
             selected[i].x = x

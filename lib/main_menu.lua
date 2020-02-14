@@ -27,7 +27,7 @@ function main_menu.init()
     screen.level(3)
     screen.text("loops")
     if key1_hold or grid.alt == 1 then
-      if bank[page.loops_sel+1].id == 1 and page.loops_sel < 3 then
+      if page.loops_sel < 3 and bank[page.loops_sel+1].id == 1 then
         screen.move(0,20)
         screen.level(6)
         screen.text("(pad 1 overwrites bank!)")
@@ -44,6 +44,16 @@ function main_menu.init()
         screen.move(55,20+(i*10))
         screen.text("offset: "..string.format("%.0f",((math.log(bank[i][bank[i].id].offset)/math.log(0.5))*-12)).." st")
       end
+      screen.level(page.loops_sel == 3 and 15 or 3)
+      screen.move(0,60)
+      screen.text("L"..rec.clip)
+      screen.move(20,60)
+      screen.text(rec.state == 1 and "recording" or "not recording")
+      screen.move(87,60)
+      screen.level(3)
+      screen.text(string.format("%0.f",util.linlin(rec.start_point-(8*(rec.clip-1)),rec.end_point-(8*(rec.clip-1)),0,100,(poll_position_new[1] - (8*(rec.clip-1))))))
+      screen.move(100,60)
+      screen.text("%")
     else
       screen.line_width(1)
       for i = 1,3 do
@@ -83,6 +93,8 @@ function main_menu.init()
       local recording_end = util.linlin(1,9,15,120,rec.end_point - (8*(rec.clip-1)))
       screen.move(recording_end,66)
       screen.text("|")
+      screen.move(123,64)
+      screen.text(rec.clip)
     end
     screen.level(3)
     screen.move(0,64)

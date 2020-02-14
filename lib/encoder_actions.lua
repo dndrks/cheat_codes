@@ -23,13 +23,21 @@ function encoder_actions.init(n,d)
         softcut.loop_start(id+1,bank[id][bank[id].id].start_point)
         softcut.loop_end(id+1,bank[id][bank[id].id].end_point)
       elseif id == 4 then
-        local current_difference = (rec.end_point - rec.start_point)
-        if rec.start_point + current_difference <= (9+(8*(rec.clip-1))) then
-          rec.start_point = util.clamp(rec.start_point + d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+        if key1_hold or grid.alt == 1 then
+          local pre_adjust = rec.clip
+          local current_difference = (rec.end_point - rec.start_point)
+          rec.clip = util.clamp(rec.clip+d,1,3)
+          rec.start_point = rec.start_point - ((pre_adjust - rec.clip)*8)
           rec.end_point = rec.start_point + current_difference
         else
-          rec.end_point = (9+(8*(rec.clip-1)))
-          rec.start_point = rec.end_point - current_difference
+          local current_difference = (rec.end_point - rec.start_point)
+          if rec.start_point + current_difference <= (9+(8*(rec.clip-1))) then
+            rec.start_point = util.clamp(rec.start_point + d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+            rec.end_point = rec.start_point + current_difference
+          else
+            rec.end_point = (9+(8*(rec.clip-1)))
+            rec.start_point = rec.end_point - current_difference
+          end
         end
         softcut.loop_start(1,rec.start_point)
         softcut.loop_end(1,rec.end_point)
@@ -78,7 +86,19 @@ function encoder_actions.init(n,d)
         end
       elseif id == 4 then
         if key1_hold or grid.alt == 1 then
-        
+          local preadjust = rec.state
+          rec.state = util.clamp(rec.state+d,0,1)
+          if preadjust ~= rec.state then
+            softcut.recpre_slew_time(1,0.5)
+            softcut.level_slew_time(1,0.5)
+            softcut.fade_time(1,0.01)
+            softcut.rec_level(1,rec.state)
+            if rec.state == 1 then
+              softcut.pre_level(1,params:get("live_rec_feedback"))
+            else
+              softcut.pre_level(1,1)
+            end
+          end
         else
           if d >= 0 and rec.start_point < (rec.end_point - d/10) then
             rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))

@@ -1617,8 +1617,8 @@ function zilchmo(k,i)
   redraw()
 end
 
-function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q)
-  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q}) do
+function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r)
+  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r}) do
     clipboard[k] = v
   end
 end
@@ -1642,6 +1642,7 @@ function clipboard_paste(i)
   bank[i][d].tilt = clipboard[15]
   bank[i][d].tilt_ease_time = clipboard[16]
   bank[i][d].tilt_ease_type = clipboard[17]
+  bank[i][d].offset = clipboard[18]
   redraw()
   if bank[i][d].loop == true then
     cheat(i,d)
