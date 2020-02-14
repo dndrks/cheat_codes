@@ -5,7 +5,7 @@ function encoder_actions.init(n,d)
     if menu == 2 then
       local id = page.loops_sel + 1
       if id ~= 4 then
-        if key1_hold then
+        if key1_hold or grid.alt == 1 then
           bank[id].id = util.clamp(bank[id].id + d,1,16)
           selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
           selected[id].y = 8-((bank[id].id-1)%4)
@@ -44,19 +44,49 @@ function encoder_actions.init(n,d)
     elseif menu == 2 then
       local id = page.loops_sel + 1
       if id ~=4 then
-        if d >= 0 and bank[id][bank[id].id].start_point < (bank[id][bank[id].id].end_point - d/loop_enc_resolution) then
-          bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
-        elseif d < 0 then
-          bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
+        if key1_hold or grid.alt == 1 then
+          local pre_adjust = bank[id][bank[id].id].clip
+          local current_difference = (bank[id][bank[id].id].end_point - bank[id][bank[id].id].start_point)
+          if bank[id][bank[id].id].mode == 1 and bank[id][bank[id].id].clip + d > 3 then
+            bank[id][bank[id].id].mode = 2
+            bank[id][bank[id].id].clip = 1
+          elseif bank[id][bank[id].id].mode == 2 and bank[id][bank[id].id].clip + d < 1 then
+            bank[id][bank[id].id].mode = 1
+            bank[id][bank[id].id].clip = 3
+          else
+            bank[id][bank[id].id].clip = util.clamp(bank[id][bank[id].id].clip+d,1,3)
+          end
+          bank[id][bank[id].id].start_point = bank[id][bank[id].id].start_point - ((pre_adjust - bank[id][bank[id].id].clip)*8)
+          bank[id][bank[id].id].end_point = bank[id][bank[id].id].start_point + current_difference
+          print(bank[id][bank[id].id].start_point)
+          cheat(id,bank[id].id)
+          if bank[id].id == 1 then
+            for i = 2,16 do
+              bank[id][i].mode = bank[id][1].mode
+              bank[id][i].clip = bank[id][1].clip
+              bank[id][i].start_point = bank[id][1].start_point
+              bank[id][i].end_point = bank[id][1].end_point
+            end
+          end
+        else
+          if d >= 0 and bank[id][bank[id].id].start_point < (bank[id][bank[id].id].end_point - d/loop_enc_resolution) then
+            bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
+          elseif d < 0 then
+            bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
+          end
+          softcut.loop_start(id+1, bank[id][bank[id].id].start_point)
         end
-        softcut.loop_start(id+1, bank[id][bank[id].id].start_point)
       elseif id == 4 then
-        if d >= 0 and rec.start_point < (rec.end_point - d/10) then
-          rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
-        elseif d < 0 then
-          rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+        if key1_hold or grid.alt == 1 then
+        
+        else
+          if d >= 0 and rec.start_point < (rec.end_point - d/10) then
+            rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+          elseif d < 0 then
+            rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+          end
+          softcut.loop_start(1, rec.start_point)
         end
-        softcut.loop_start(1, rec.start_point)
       end
     elseif menu == 6 then
       local line = page.delay_sel

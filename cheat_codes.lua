@@ -1808,6 +1808,17 @@ function savestate()
       io.write(bank[i][k].tilt_ease_type .. "\n")
     end
   end
+  io.write("the last params".."\n")
+  io.write(params:get("clock_out") .. "\n")
+  io.write(params:get("crow_clock_out") .. "\n")
+  io.write(params:get("midi_device") .. "\n")
+  io.write(params:get("loop_enc_resolution") .."\n")
+  io.write(params:get("clock") .. "\n")
+  io.write(params:get("lock_pat") .. "\n")
+  for i = 1,3 do
+    io.write(bank[i].crow_execute .. "\n")
+    io.write(bank[i].snap_to_bars .. "\n")
+  end
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -1924,6 +1935,18 @@ function loadstate()
           bank[i][k].tilt_ease_time = tonumber(io.read())
           bank[i][k].tilt_ease_type = tonumber(io.read())
         end
+      end
+    end
+    if io.read() == "the last params" then
+      params:set("clock_out",tonumber(io.read()))
+      params:set("crow_clock_out",tonumber(io.read()))
+      params:set("midi_device",tonumber(io.read()))
+      params:set("loop_enc_resolution",tonumber(io.read()))
+      params:set("clock",tonumber(io.read()))
+      params:set("lock_pat",tonumber(io.read()))
+      for i = 1,3 do
+        bank[i].crow_execute = tonumber(io.read())
+        bank[i].snap_to_bars = tonumber(io.read())
       end
     end
     io.close(file)

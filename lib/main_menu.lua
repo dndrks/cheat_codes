@@ -26,47 +26,62 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("loops")
-    screen.line_width(1)
-    for i = 1,3 do
-      screen.move(0,10+(i*15))
-      screen.level(page.loops_sel == i-1 and 15 or 3)
-      local loops_to_screen_options = {"a", "b", "c"}
-      screen.text(loops_to_screen_options[i]..""..bank[i].id)
-      screen.move(15,10+(i*15))
-      screen.line(120,10+(i*15))
-      screen.close()
-      screen.stroke()
+    if key1_hold or grid.alt == 1 then
+      for i = 1,3 do
+        screen.move(0,20+(i*10))
+        screen.level(page.loops_sel == i-1 and 15 or 3)
+        local loops_to_screen_options = {"a", "b", "c"}
+        screen.text(loops_to_screen_options[i]..""..bank[i].id)
+        screen.move(20,20+(i*10))
+        screen.text((bank[i][bank[i].id].mode == 1 and "live" or "clip")..":")
+        screen.move(40,20+(i*10))
+        screen.text(bank[i][bank[i].id].clip)
+        screen.move(90,20+(i*10))
+        screen.text("|")
+      end
+    else
+      screen.line_width(1)
+      for i = 1,3 do
+        screen.move(0,10+(i*15))
+        screen.level(page.loops_sel == i-1 and 15 or 3)
+        local loops_to_screen_options = {"a", "b", "c"}
+        screen.text(loops_to_screen_options[i]..""..bank[i].id)
+        screen.move(15,10+(i*15))
+        screen.line(120,10+(i*15))
+        screen.close()
+        screen.stroke()
+      end
+      for i = 1,3 do
+        screen.level(page.loops_sel == i-1 and 15 or 3)
+        local start_to_screen = util.linlin(1,9,15,120,(bank[i][bank[i].id].start_point - (8*(bank[i][bank[i].id].clip-1))))
+        screen.move(start_to_screen,24+(15*(i-1)))
+        screen.text("|")
+        local end_to_screen = util.linlin(1,9,15,120,bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1)))
+        screen.move(end_to_screen,30+(15*(i-1)))
+        screen.text("|")
+        local current_to_screen = util.linlin(1,9,15,120,(poll_position_new[i+1] - (8*(bank[i][bank[i].id].clip-1))))
+        screen.move(current_to_screen,27+(15*(i-1)))
+        screen.text("|")
+      end
+      screen.level(page.loops_sel == 3 and 15 or 3)
+      local recording_playhead = util.linlin(1,9,15,120,(poll_position_new[1] - (8*(rec.clip-1))))
+      if rec.state == 1 then
+        screen.move(recording_playhead,64)
+        screen.text(".")
+      elseif rec.state == 0 then
+        screen.move(recording_playhead,67)
+        screen.text_center("||")
+      end
+      local recording_start = util.linlin(1,9,15,120,(rec.start_point - (8*(rec.clip-1))))
+      screen.move(recording_start,66)
+      screen.text("|")
+      local recording_end = util.linlin(1,9,15,120,rec.end_point - (8*(rec.clip-1)))
+      screen.move(recording_end,66)
+      screen.text("|")
     end
     screen.level(3)
     screen.move(0,64)
     screen.text("...")
-    for i = 1,3 do
-      screen.level(page.loops_sel == i-1 and 15 or 3)
-      local start_to_screen = util.linlin(1,9,15,120,(bank[i][bank[i].id].start_point - (8*(bank[i][bank[i].id].clip-1))))
-      screen.move(start_to_screen,24+(15*(i-1)))
-      screen.text("|")
-      local end_to_screen = util.linlin(1,9,15,120,bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1)))
-      screen.move(end_to_screen,30+(15*(i-1)))
-      screen.text("|")
-      local current_to_screen = util.linlin(1,9,15,120,(poll_position_new[i+1] - (8*(bank[i][bank[i].id].clip-1))))
-      screen.move(current_to_screen,27+(15*(i-1)))
-      screen.text("|")
-    end
-    screen.level(page.loops_sel == 3 and 15 or 3)
-    local recording_playhead = util.linlin(1,9,15,120,(poll_position_new[1] - (8*(rec.clip-1))))
-    if rec.state == 1 then
-      screen.move(recording_playhead,64)
-      screen.text(".")
-    elseif rec.state == 0 then
-      screen.move(recording_playhead,67)
-      screen.text_center("||")
-    end
-    local recording_start = util.linlin(1,9,15,120,(rec.start_point - (8*(rec.clip-1))))
-    screen.move(recording_start,66)
-    screen.text("|")
-    local recording_end = util.linlin(1,9,15,120,rec.end_point - (8*(rec.clip-1)))
-    screen.move(recording_end,66)
-    screen.text("|")
   elseif menu == 3 then
     screen.move(0,10)
     screen.level(3)
