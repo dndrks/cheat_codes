@@ -109,12 +109,27 @@ function encoder_actions.init(n,d)
     if menu == 2 then
       local id = page.loops_sel + 1
       if id ~= 4 then
-        if d <= 0 and bank[id][bank[id].id].start_point < bank[id][bank[id].id].end_point + d/loop_enc_resolution then
-          bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
-        elseif d > 0 then
-          bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+        if key1_hold or grid.alt == 1 then
+          local current_offset = (math.log(bank[id][bank[id].id].offset)/math.log(0.5))*-12
+          current_offset = util.clamp(current_offset+d,-24,24)
+          if current_offset > -1 and current_offset < 1 then
+            current_offset = 0
+          end
+          bank[id][bank[id].id].offset = math.pow(0.5, -current_offset / 12)
+          cheat(id,bank[id].id)
+          if bank[id].id == 1 then
+            for i = 2,16 do
+              bank[id][i].offset = bank[id][1].offset
+            end
+          end
+        else
+          if d <= 0 and bank[id][bank[id].id].start_point < bank[id][bank[id].id].end_point + d/loop_enc_resolution then
+            bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+          elseif d > 0 then
+            bank[id][bank[id].id].end_point = util.clamp(bank[id][bank[id].id].end_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(9+(8*(bank[id][bank[id].id].clip-1))))
+          end
+          softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
         end
-        softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
       elseif id == 4 then
         if d <= 0 and rec.start_point < rec.end_point + d/10 then
           rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))

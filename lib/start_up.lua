@@ -94,14 +94,16 @@ function start_up.init()
     end
   )
   
-  offset = 0
+  --offset = 0
   params:add_control("offset", "global pitch offset", controlspec.new(-24, 24, 'lin', 1, 0, "st"))
   params:set_action("offset",
     function(value)
-      offset = math.pow(0.5, -value / 12)
       for i=1,3 do
+        for j = 1,16 do
+          bank[i][j].offset = math.pow(0.5, -value / 12)
+        end
         if bank[i][bank[i].id].pause == false then
-          softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
+          softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
         end
       end
     end
@@ -137,7 +139,7 @@ function start_up.init()
     params:set_action("rate "..i, function(x)
       bank[i][bank[i].id].rate = rates[x]
       if bank[i][bank[i].id].pause == false then
-        softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
+        softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
         --softcut.level(i+1,bank[i][bank[i].id].level)
       end
     end)

@@ -27,6 +27,11 @@ function main_menu.init()
     screen.level(3)
     screen.text("loops")
     if key1_hold or grid.alt == 1 then
+      if bank[page.loops_sel+1].id == 1 and page.loops_sel < 3 then
+        screen.move(0,20)
+        screen.level(6)
+        screen.text("(pad 1 overwrites bank!)")
+      end
       for i = 1,3 do
         screen.move(0,20+(i*10))
         screen.level(page.loops_sel == i-1 and 15 or 3)
@@ -36,8 +41,8 @@ function main_menu.init()
         screen.text((bank[i][bank[i].id].mode == 1 and "live" or "clip")..":")
         screen.move(40,20+(i*10))
         screen.text(bank[i][bank[i].id].clip)
-        screen.move(90,20+(i*10))
-        screen.text("|")
+        screen.move(55,20+(i*10))
+        screen.text("offset: "..string.format("%.0f",((math.log(bank[i][bank[i].id].offset)/math.log(0.5))*-12)).." st")
       end
     else
       screen.line_width(1)

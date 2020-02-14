@@ -1011,6 +1011,7 @@ function reset_all_banks()
       bank[i][k].enveloped = false
       bank[i][k].envelope_time = 0.5
       bank[i][k].clock_resolution = 4
+      bank[i][k].offset = 1.0
     end
     cross_filter[i] = {}
     cross_filter[i].fc = 12000
@@ -1041,7 +1042,7 @@ function cheat(b,i)
   softcut.loop_end(b+1,bank[b][i].end_point)
   softcut.buffer(b+1,bank[b][i].mode)
   if bank[b][i].pause == false then
-    softcut.rate(b+1,bank[b][i].rate*offset)
+    softcut.rate(b+1,bank[b][i].rate*bank[b][i].offset)
   else
     softcut.rate(b+1,0)
   end
@@ -1819,6 +1820,11 @@ function savestate()
     io.write(bank[i].crow_execute .. "\n")
     io.write(bank[i].snap_to_bars .. "\n")
   end
+  for i = 1,3 do
+    for j = 1,16 do
+      io.write(bank[i][j].offset .. "\n")
+    end
+  end
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -1947,6 +1953,11 @@ function loadstate()
       for i = 1,3 do
         bank[i].crow_execute = tonumber(io.read())
         bank[i].snap_to_bars = tonumber(io.read())
+      end
+      for i = 1,3 do
+        for j = 1,16 do
+          bank[i][j].offset = tonumber(io.read())
+        end
       end
     end
     io.close(file)
