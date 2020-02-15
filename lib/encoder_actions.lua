@@ -158,12 +158,16 @@ function encoder_actions.init(n,d)
           softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
         end
       elseif id == 4 then
-        if d <= 0 and rec.start_point < rec.end_point + d/10 then
-          rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
-        elseif d > 0 then
-          rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+        if key1_hold or grid.alt == 1 then
+          --nothing yet
+        else
+          if d <= 0 and rec.start_point < rec.end_point + d/10 then
+            rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+          elseif d > 0 then
+            rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+          end
+          softcut.loop_end(1, rec.end_point)
         end
-        softcut.loop_end(1, rec.end_point)
       end
     elseif menu == 6 then
       local line = page.delay_sel
