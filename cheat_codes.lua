@@ -16,7 +16,6 @@ arc_actions = include 'lib/arc_actions'
 rightangleslice = include 'lib/zilchmos'
 start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
-rec_head = include 'lib/rec_head'
 easingFunctions = include 'lib/easing'
 
 tau = math.pi * 2
@@ -491,6 +490,7 @@ clk_midi.event = function(data) clk:process_midi(data) end
 
 grid.alt = 0
 grid.alt_pp = 0
+grid.loop_mod = 0
 
 local function crow_init()
   for i = 1,4 do
@@ -514,9 +514,9 @@ function init()
   rec.loop = 1
   rec.clear = 0
   
+  params:add{type = "trigger", id = "load", name = "load", action = loadstate}
   params:add_number("collection", "collection", 1,100,1)
   --params:set_action("collection", function (x) selected_coll = x end)
-  params:add{type = "trigger", id = "load", name = "load", action = loadstate}
   params:add{type = "trigger", id = "save", name = "save", action = savestate}
   
   params:add_separator()
@@ -527,10 +527,15 @@ function init()
   
   menu = 1
   
-  crow.output[1].action = "{to(5,0),to(0,0.25)}"
-  crow.output[2].action = "{to(5,0),to(0,0.25)}"
-  crow.output[3].action = "{to(5,0),to(0,0.25)}"
-  crow.output[4].action = "{to(5,0),to(0,0.25)}"
+  for i = 1,4 do
+    crow.output[i].action = "{to(5,0),to(0,0.05)}"
+  end
+  crow.count = {}
+  crow.count_execute = {}
+  for i = 1,3 do
+    crow.count[i] = 1
+    crow.count_execute[i] = 1
+  end
 
   screen.line_width(1)
 
@@ -577,6 +582,7 @@ function init()
       step_seq[i][j].assigned_to = 0
     end
     step_seq[i].meta_meta_duration = 4
+    step_seq[i].loop_held = 0
   end
   
   function testing_clocks(bank)
@@ -629,6 +635,15 @@ function init()
     end
     if clk.crow_send then
       crow.output[4]()
+      for i = 1,3 do
+        if bank[i].crow_execute ~= 1 then
+          crow.count[i] = crow.count[i] + 1
+          if crow.count[i] >= crow.count_execute[i] then
+            crow.output[i]()
+            crow.count[i] = 0
+          end
+        end
+      end
     end
   end
   
@@ -719,7 +734,6 @@ function init()
   edit = "all"
   
   start_up.init()
-  rec_head.init()
 
   bank = {}
   reset_all_banks()
@@ -875,10 +889,6 @@ function change()
     softcut.loop_end(i+4,delay[i].end_point)
   end
   clk.on_step()
-  --[[for i = 1,3 do
-    cheat_q_clock(i)
-    grid_pat_q_clock(i)
-  end]]--
 end
 
 function update_tempo()
@@ -951,7 +961,7 @@ function step_sequence()
         if step_seq[i].meta_meta_step > step_seq[i][step_seq[i].current_step].meta_meta_duration then step_seq[i].meta_meta_step = 1 end
         if step_seq[i].meta_meta_step == 1 then
           step_seq[i].current_step = step_seq[i].current_step + 1
-          if step_seq[i].current_step > step_seq[i].length then step_seq[i].current_step = 1 end
+          if step_seq[i].current_step > step_seq[i].end_point then step_seq[i].current_step = step_seq[i].start_point end
           current = step_seq[i].current_step
           if step_seq[i][current].assigned_to ~= 0 then
             pattern_saver[i].load_slot = step_seq[i][current].assigned_to
@@ -1009,7 +1019,7 @@ function reset_all_banks()
       bank[i][k].cf_exp_dry = 1
       bank[i][k].filter_type = 4
       bank[i][k].enveloped = false
-      bank[i][k].envelope_time = 0.5
+      bank[i][k].envelope_time = 3.0
       bank[i][k].clock_resolution = 4
       bank[i][k].offset = 1.0
     end
@@ -1091,8 +1101,8 @@ function envelope(i)
   env_counter[i].butt = env_counter[i].butt - 0.05
   if env_counter[i].butt > 0 then
     softcut.level(i+1,env_counter[i].butt)
-    softcut.level_cut_cut(i+1,5,env_counter[i].butt)
-    softcut.level_cut_cut(i+1,6,env_counter[i].butt)
+    softcut.level_cut_cut(i+1,5,env_counter[i].butt*bank[i][bank[i].id].left_delay_level)
+    softcut.level_cut_cut(i+1,6,env_counter[i].butt*bank[i][bank[i].id].right_delay_level)
   else
     env_counter[i]:stop()
     softcut.level(i+1,0)
@@ -1216,17 +1226,14 @@ function load_sample(file,sample)
   if file ~= "-" then
     local ch, len = audio.file_info(file)
     if len/48000 <=90 then
-      --clip[sample].sample_length = len/48000
       if len/48000 > 8 then
         clip[sample].sample_length = 8
       else
         clip[sample].sample_length = len/48000
       end
     else
-      --clip[sample].sample_length = 90
       clip[sample].sample_length = 8
     end
-    --print(len/48000)
     softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), 8.05, 1, 2)
   end
 end
@@ -1255,13 +1262,14 @@ if screen_focus == 1 then
     elseif menu == 5 then
       local filter_nav = (page.filtering_sel + 1)%3
       page.filtering_sel = filter_nav
-    elseif menu == 6 then
-      local delay_nav = (page.delay_sel+1)%5
-      page.delay_sel = delay_nav
     elseif menu == 7 then
       local time_nav = page.time_sel
       local id = time_nav-1
-      if time_nav > 1 and time_nav < 5 then
+      if time_nav == 1 and page.time_page_sel[time_nav] == 3 then
+        for i = 1,3 do
+          crow.count[i] = crow.count_execute[i]
+        end
+      elseif time_nav > 1 and time_nav < 5 then
         if page.time_page_sel[time_nav] == 1 then
           if key1_hold or grid.alt == 1 then
             for j = 1,3 do
@@ -1467,6 +1475,24 @@ function grid_redraw()
   
   else
     
+    for i = 1,3 do
+      for j = step_seq[i].start_point,step_seq[i].end_point do
+        if j < 9 then
+          g:led((i*5)-2,9-j,2)
+          if grid.loop_mod == 1 then
+            g:led((i*5)-2,9-step_seq[i].start_point,4)
+            g:led((i*5)-2,9-step_seq[i].end_point,4)
+          end
+        elseif j >=9 then
+          g:led((i*5)-1,17-j,2)
+          if grid.loop_mod == 1 then
+            g:led((i*5)-1,17-step_seq[i].start_point,4)
+            g:led((i*5)-1,17-step_seq[i].end_point,4)
+          end
+        end
+      end
+    end
+    
     for i = 1,11,5 do
       for j = 1,8 do
         local current = math.floor(i/5)+1
@@ -1512,7 +1538,6 @@ function grid_redraw()
         g:led((i*5), 9-step_seq[i][step_seq[i].current_step].meta_meta_duration,4)
         g:led((i*5), 9-step_seq[i].meta_meta_step,6)
       else
-        --g:led((i*5), 9-step_seq[i][step_seq[i].current_step].meta_meta_duration,2)
         g:led((i*5), 9-step_seq[i].meta_meta_step,2)
         g:led((i*5), 9-step_seq[i][step_seq[i].held].meta_meta_duration,4)
       end
@@ -1520,6 +1545,11 @@ function grid_redraw()
     end
     
     g:led(16,8,(grid.alt_pp*12)+3)
+    g:led(16,2,(grid.loop_mod*9)+3)
+    
+    if grid.loop_mod == 1 then
+      
+    end  
     
   end
   g:led(16,1,15*grid_page)
@@ -1539,8 +1569,6 @@ function grid_pattern_execute(entry)
     selected[i].y = entry.y
     bank[i].id = selected[i].id
     if params:get("zilchmo_patterning") == 2 then
-      --bank[i][bank[i].id].loop = entry.loop
-      --bank[i][bank[i].id].pause = entry.pause
       bank[i][bank[i].id].mode = entry.mode
       bank[i][bank[i].id].clip = entry.clip
     end
@@ -1562,7 +1590,6 @@ function grid_pattern_execute(entry)
       if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
         bank[i][bank[i].id].start_point = entry.start_point
         bank[i][bank[i].id].end_point = entry.end_point
-        --cheat(i,bank[i].id)
         softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
         softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
       end
@@ -1689,7 +1716,6 @@ arc_redraw = function()
       a:led(i,(math.floor(util.linlin(0,8,1,64,start_to_led)))+16,8)
     end
     if arc_param[i] == 4 then
-      --local tilt_to_led = bank[arc_control[i]][bank[arc_control[i]].id].tilt
       local tilt_to_led = slew_counter[i].slewedVal
       if tilt_to_led == nil then
         tilt_to_led = bank[i][bank[i].id].tilt
@@ -1826,6 +1852,15 @@ function savestate()
       io.write(bank[i][j].offset .. "\n")
     end
   end
+  io.write("crow execute count".."\n")
+  for i = 1,3 do
+    io.write(crow.count_execute[i] .. "\n")
+  end
+  io.write("step seq loop points".."\n")
+  for i = 1,3 do
+    io.write(step_seq[i].start_point .. "\n")
+    io.write(step_seq[i].end_point .. "\n")
+  end
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -1961,6 +1996,18 @@ function loadstate()
         end
       end
     end
+    if io.read() == "crow execute count" then
+      for i = 1,3 do
+        crow.count_execute[i] = tonumber(io.read())
+      end
+    end
+    if io.read() == "step seq loop points" then
+      for i = 1,3 do
+        step_seq[i].start_point = tonumber(io.read())
+        step_seq[i].current_step = step_seq[i].start_point
+        step_seq[i].end_point = tonumber(io.read())
+      end
+    end
     io.close(file)
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
@@ -1978,7 +2025,6 @@ function loadstate()
   elseif selected_coll == params:get("collection") then
     cleanup()
   end
-  --selected_coll = 0
 end
 
 function test_save(i)
@@ -2075,7 +2121,6 @@ function save_pattern(source,slot)
     else
       io.write("nil" .. "\n")
     end
-    --if original_pattern[source].event[i].bank ~= nil then
     if original_pattern[source].event[i].bank ~= nil and #original_pattern[source].event > 0 then
       io.write(original_pattern[source].event[i].bank .. "\n")
     else
@@ -2260,7 +2305,6 @@ function load_pattern(slot,destination)
         grid_pat[destination].event[i].previous_rate = {}
         grid_pat[destination].event[i].row = {}
         grid_pat[destination].event[i].con = {}
-        --grid_pat[destination].event[i].bank = {}
         grid_pat[destination].event[i].bank = nil
         grid_pat[destination].event[i].id = tonumber(io.read())
         grid_pat[destination].event[i].rate = tonumber(io.read())

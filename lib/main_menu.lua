@@ -27,10 +27,10 @@ function main_menu.init()
     screen.level(3)
     screen.text("loops")
     if key1_hold or grid.alt == 1 then
-      if page.loops_sel < 3 and bank[page.loops_sel+1].id == 1 then
+      if page.loops_sel < 3 and bank[page.loops_sel+1].id == 16 then
         screen.move(0,20)
         screen.level(6)
-        screen.text("(pad 1 overwrites bank!)")
+        screen.text("(pad 16 overwrites bank!)")
       end
       for i = 1,3 do
         screen.move(0,20+(i*10))
@@ -38,7 +38,7 @@ function main_menu.init()
         local loops_to_screen_options = {"a", "b", "c"}
         screen.text(loops_to_screen_options[i]..""..bank[i].id)
         screen.move(20,20+(i*10))
-        screen.text((bank[i][bank[i].id].mode == 1 and "live" or "clip")..":")
+        screen.text((bank[i][bank[i].id].mode == 1 and "Live" or "Clip")..":")
         screen.move(40,20+(i*10))
         screen.text(bank[i][bank[i].id].clip)
         screen.move(55,20+(i*10))
@@ -166,10 +166,10 @@ function main_menu.init()
       screen.move(pan_to_screen,35+(10*(i-1)))
       local pan_to_screen_options = {"a", "b", "c"}
       screen.level(15)
-      if grid.alt == 0 then
-        screen.text(pan_to_screen_options[i]..""..bank[i].id)
-      else
+      if key1_hold or grid.alt == 1 then
         screen.text("("..pan_to_screen_options[i]..")")
+      else
+        screen.text(pan_to_screen_options[i]..""..bank[i].id)
       end
     end
     --
@@ -288,7 +288,7 @@ function main_menu.init()
       screen.move(15+(23*(i-1)),25)
       screen.text(time_options[i])
       local glb_options = {"bpm","clk source","send crow clk?"}
-      local p_options = {"linearize","snap to bars","pad to crow?"}
+      local p_options = {"linearize","snap to bars","crow output"}
       for j = 1,3 do
         screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
         screen.move(15,40+(10*(j-1)))
@@ -300,9 +300,14 @@ function main_menu.init()
           screen.text(fine_options[j])
         elseif page.time_sel < 5 then
           screen.text(p_options[j])
-          local fine_options = {"[K3]",bank[page.time_sel-1].snap_to_bars.." [+K3]", bank[page.time_sel-1].crow_execute == 1 and "yes" or "no"}
+          local fine_options = {"[K3]",bank[page.time_sel-1].snap_to_bars.." [+K3]", bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}
           screen.move(85,40+(10*(j-1)))
           screen.text(fine_options[j])
+          if bank[page.time_sel-1].crow_execute ~= 1 then
+            screen.move(102,60)
+            screen.level(page.time_page_sel[page.time_sel] == 4 and 15 or 3)
+            screen.text("(x"..crow.count_execute[page.time_sel-1]..")")
+          end
         elseif page.time_sel == 5 then
           local all_options = {"linear recording?","quantize pads?","quant resolution"}
           screen.text(all_options[j])

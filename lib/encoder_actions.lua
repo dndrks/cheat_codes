@@ -42,6 +42,8 @@ function encoder_actions.init(n,d)
         softcut.loop_start(1,rec.start_point)
         softcut.loop_end(1,rec.end_point)
       end
+    elseif menu == 6 then
+      page.delay_sel = util.clamp(page.delay_sel+d,0,4)
     elseif menu == 7 then
       page.time_sel = util.clamp(page.time_sel+d,1,5)
     end
@@ -66,14 +68,15 @@ function encoder_actions.init(n,d)
           end
           bank[id][bank[id].id].start_point = bank[id][bank[id].id].start_point - ((pre_adjust - bank[id][bank[id].id].clip)*8)
           bank[id][bank[id].id].end_point = bank[id][bank[id].id].start_point + current_difference
-          print(bank[id][bank[id].id].start_point)
           cheat(id,bank[id].id)
-          if bank[id].id == 1 then
-            for i = 2,16 do
-              bank[id][i].mode = bank[id][1].mode
-              bank[id][i].clip = bank[id][1].clip
-              bank[id][i].start_point = bank[id][1].start_point
-              bank[id][i].end_point = bank[id][1].end_point
+          if bank[id].id == 16 then
+            for i = 1,15 do
+              local pre_adjust = bank[id][i].clip
+              bank[id][i].mode = bank[id][16].mode
+              bank[id][i].clip = bank[id][16].clip
+              local current_difference = (bank[id][i].end_point - bank[id][i].start_point)
+              bank[id][i].start_point = bank[id][i].start_point - ((pre_adjust - bank[id][i].clip)*8)
+              bank[id][i].end_point = bank[id][i].start_point + current_difference
             end
           end
         else
@@ -122,7 +125,11 @@ function encoder_actions.init(n,d)
         params:delta("delay L: global level",d)
       end
     elseif menu == 7 then
-      page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,3)
+      if page.time_sel > 1 and page.time_sel < 5 and bank[page.time_sel-1].crow_execute ~= 1 then
+        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,4)
+      else
+        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,3)
+      end
     end
   end
   if n == 3 then
@@ -137,9 +144,9 @@ function encoder_actions.init(n,d)
           end
           bank[id][bank[id].id].offset = math.pow(0.5, -current_offset / 12)
           cheat(id,bank[id].id)
-          if bank[id].id == 1 then
-            for i = 2,16 do
-              bank[id][i].offset = bank[id][1].offset
+          if bank[id].id == 16 then
+            for i = 1,15 do
+              bank[id][i].offset = bank[id][16].offset
             end
           end
         else
@@ -185,6 +192,8 @@ function encoder_actions.init(n,d)
           bank[page.time_sel-1].crow_execute = util.clamp(bank[page.time_sel-1].crow_execute+d,0,1)
         elseif page.time_page_sel[page.time_sel] == 2 then
           bank[page.time_sel-1].snap_to_bars = util.clamp(bank[page.time_sel-1].snap_to_bars+d,1,16)
+        elseif page.time_page_sel[page.time_sel] == 4 and bank[page.time_sel-1].crow_execute ~= 1 then
+          crow.count_execute[page.time_sel-1] = util.clamp(crow.count_execute[page.time_sel-1]+d,1,16)
         end
       elseif page.time_sel == 5 then
         if page.time_page_sel[page.time_sel] == 1 then
@@ -209,8 +218,10 @@ function encoder_actions.init(n,d)
       else
         bank[n][bank[n].id].level = util.clamp(bank[n][bank[n].id].level+d/10,0,2)
       end
-      softcut.level_slew_time(n+1,1.0)
-      softcut.level(n+1,bank[n][bank[n].id].level)
+      if bank[n][bank[n].id].enveloped == false then
+        softcut.level_slew_time(n+1,1.0)
+        softcut.level(n+1,bank[n][bank[n].id].level)
+      end
     elseif page.levels_sel == 1 then
       if key1_hold or grid.alt == 1 then
         for j = 1,16 do
@@ -253,12 +264,16 @@ function encoder_actions.init(n,d)
       if key1_hold or grid.alt == 1 then
         for j = 1,16 do
           if bank[n][j].enveloped then
+            bank[n][j].envelope_time = util.explin(0.1,60,0.1,60,bank[n][j].envelope_time)
             bank[n][j].envelope_time = util.clamp(bank[n][j].envelope_time+d/10,0.1,60)
+            bank[n][j].envelope_time = util.linexp(0.1,60,0.1,60,bank[n][j].envelope_time)
           end
         end
       else
         if bank[n][bank[n].id].enveloped then
+          bank[n][bank[n].id].envelope_time = util.explin(0.1,60,0.1,60,bank[n][bank[n].id].envelope_time)
           bank[n][bank[n].id].envelope_time = util.clamp(bank[n][bank[n].id].envelope_time+d/10,0.1,60)
+          bank[n][bank[n].id].envelope_time = util.linexp(0.1,60,0.1,60,bank[n][bank[n].id].envelope_time)
         end
       end
     end

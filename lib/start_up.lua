@@ -162,29 +162,6 @@ function start_up.init()
       redraw()
       end)
   end
-
-  params:add_separator()
-  
-  for i = 1,3 do
-    local banks = {"(a)", "(b)", "(c)"}
-    params:add_control("filter "..i.." cutoff", "filter "..banks[i].." cutoff", controlspec.new(10,12000,'lin',1,12000,"Hz"))
-    params:set_action("filter "..i.." cutoff", function(x) softcut.post_filter_fc(i+1,x) bank[i][bank[i].id].fc = x end)
-    params:add_control("filter "..i.." q", "filter "..banks[i].." q", controlspec.new(0.0005, 8.0, 'exp', 0, 0.32, ""))
-    params:set_action("filter "..i.." q", function(x)
-      softcut.post_filter_rq(i+1,x)
-      for j = 1,16 do
-        bank[i][j].q = x
-      end
-    end)
-    params:add_control("filter "..i.." lp", "filter "..banks[i].." lp", controlspec.new(0, 1, 'lin', 0, 1, ""))
-    params:set_action("filter "..i.." lp", function(x) softcut.post_filter_lp(i+1,x) bank[i][bank[i].id].lp = x end)
-    params:add_control("filter "..i.." hp", "filter "..banks[i].." hp", controlspec.new(0, 1, 'lin', 0, 0, ""))
-    params:set_action("filter "..i.." hp", function(x) softcut.post_filter_hp(i+1,x) bank[i][bank[i].id].hp = x end)
-    params:add_control("filter "..i.." bp", "filter "..banks[i].." bp", controlspec.new(0, 1, 'lin', 0, 0, ""))
-    params:set_action("filter "..i.." bp", function(x) softcut.post_filter_bp(i+1,x) bank[i][bank[i].id].bp = x end)
-    params:add_control("filter "..i.." dry", "filter "..banks[i].." dry", controlspec.new(0, 1, 'lin', 0, 0, ""))
-    params:set_action("filter "..i.." dry", function(x) softcut.post_filter_dry(i+1,x) bank[i][bank[i].id].fd = x end)
-  end
   
   params:add_separator()
   
@@ -216,10 +193,24 @@ function start_up.init()
   
   for i = 1,3 do
     local banks = {"a","b","c"}
-    params:add_control("delay L: ("..banks[i]..") send", "delay L: ("..banks[i]..") send", controlspec.new(0,1,'lin',0,1,""))
-    params:set_action("delay L: ("..banks[i]..") send", function(x) softcut.level_cut_cut(i+1,5,x) for j = 1,16 do bank[i][j].left_delay_level = x end end)
-    params:add_control("delay R: ("..banks[i]..") send", "delay R: ("..banks[i]..") send", controlspec.new(0,1,'lin',0,1,""))
-    params:set_action("delay R: ("..banks[i]..") send", function(x) softcut.level_cut_cut(i+1,6,x) for j = 1,16 do bank[i][j].right_delay_level = x end end)
+    params:add_control("delay L: ("..banks[i]..") send", "delay L: ("..banks[i]..") send", controlspec.new(0,1,'lin',1,1,""))
+    params:set_action("delay L: ("..banks[i]..") send", function(x)
+      if bank[i][bank[i].id].enveloped == false then
+        softcut.level_cut_cut(i+1,5,x)
+      end
+      for j = 1,16 do
+        bank[i][j].left_delay_level = x
+      end
+    end)
+    params:add_control("delay R: ("..banks[i]..") send", "delay R: ("..banks[i]..") send", controlspec.new(0,1,'lin',1,1,""))
+    params:set_action("delay R: ("..banks[i]..") send", function(x)
+      if bank[i][bank[i].id].enveloped == false then
+        softcut.level_cut_cut(i+1,6,x)
+      end
+      for j = 1,16 do
+        bank[i][j].right_delay_level = x
+      end
+    end)
   end
   
   params:add_separator()
@@ -239,6 +230,32 @@ function start_up.init()
     params:add_control("delay "..sides[i-3]..": filter dry", "delay "..sides[i-3]..": filter dry", controlspec.new(0, 1, 'lin', 0, 0, ""))
     params:set_action("delay "..sides[i-3]..": filter dry", function(x) softcut.post_filter_dry(i+1,x) end)
   end
+  
+  params:add_separator()
+  
+  params:add{type = "trigger", id = "ignore", name = "ignore, data only:"}
+  
+  for i = 1,3 do
+    local banks = {"(a)", "(b)", "(c)"}
+    params:add_control("filter "..i.." cutoff", "filter "..banks[i].." cutoff", controlspec.new(10,12000,'lin',1,12000,"Hz"))
+    params:set_action("filter "..i.." cutoff", function(x) softcut.post_filter_fc(i+1,x) bank[i][bank[i].id].fc = x end)
+    params:add_control("filter "..i.." q", "filter "..banks[i].." q", controlspec.new(0.0005, 8.0, 'exp', 0, 0.32, ""))
+    params:set_action("filter "..i.." q", function(x)
+      softcut.post_filter_rq(i+1,x)
+      for j = 1,16 do
+        bank[i][j].q = x
+      end
+    end)
+    params:add_control("filter "..i.." lp", "filter "..banks[i].." lp", controlspec.new(0, 1, 'lin', 0, 1, ""))
+    params:set_action("filter "..i.." lp", function(x) softcut.post_filter_lp(i+1,x) bank[i][bank[i].id].lp = x end)
+    params:add_control("filter "..i.." hp", "filter "..banks[i].." hp", controlspec.new(0, 1, 'lin', 0, 0, ""))
+    params:set_action("filter "..i.." hp", function(x) softcut.post_filter_hp(i+1,x) bank[i][bank[i].id].hp = x end)
+    params:add_control("filter "..i.." bp", "filter "..banks[i].." bp", controlspec.new(0, 1, 'lin', 0, 0, ""))
+    params:set_action("filter "..i.." bp", function(x) softcut.post_filter_bp(i+1,x) bank[i][bank[i].id].bp = x end)
+    params:add_control("filter "..i.." dry", "filter "..banks[i].." dry", controlspec.new(0, 1, 'lin', 0, 0, ""))
+    params:set_action("filter "..i.." dry", function(x) softcut.post_filter_dry(i+1,x) bank[i][bank[i].id].fd = x end)
+  end
+  
 end
 
 return start_up
