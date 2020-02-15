@@ -306,7 +306,7 @@ function main_menu.init()
           if bank[page.time_sel-1].crow_execute ~= 1 then
             screen.move(102,60)
             screen.level(page.time_page_sel[page.time_sel] == 4 and 15 or 3)
-            screen.text("(x"..crow.count_execute[page.time_sel-1]..")")
+            screen.text("(/"..crow.count_execute[page.time_sel-1]..")")
           end
         elseif page.time_sel == 5 then
           local all_options = {"linear recording?","quantize pads?","quant resolution"}
