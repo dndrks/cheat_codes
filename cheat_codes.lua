@@ -681,18 +681,18 @@ function init()
     clk_midi.event = function(data) clk:process_midi(data) redraw() end
   end}
   
-  params:add_option("quantize_pads", "quantize 4x4 pads?", { "no", "yes" })
-  params:set_action("quantize_pads", function(x) quantize = x-1 end)
-  params:add_option("quantize_pats", "quantize pattern button?", { "no", "yes" })
-  params:set_action("quantize_pats", function(x) grid_pat_quantize = x-1 end)
-  params:add_number("quant_div", "pad quant. division", 1, 5, 4)
-  params:set_action("quant_div",function() update_tempo() end)
-  params:add_number("quant_div_pats", "pattern quant. division", 1, 5, 4)
-  params:set_action("quant_div_pats",function() update_tempo() end)
-  params:add_option("lock_pat", "lock pattern rec to bpm?", {"no", "yes"} )
-  params:add{type = "trigger", id = "sync_pat", name = "sync patterns to bpm", action = slide_to_tempo}
   params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
   params:set_action("zilchmo_patterning", function() end)
+  params:add_option("quantize_pads", "ignore", { "no", "yes" })
+  params:set_action("quantize_pads", function(x) quantize = x-1 end)
+  params:add_option("quantize_pats", "ignore", { "no", "yes" })
+  params:set_action("quantize_pats", function(x) grid_pat_quantize = x-1 end)
+  params:add_number("quant_div", "ignore", 1, 5, 4)
+  params:set_action("quant_div",function() update_tempo() end)
+  params:add_number("quant_div_pats", "ignore", 1, 5, 4)
+  params:set_action("quant_div_pats",function() update_tempo() end)
+  params:add_option("lock_pat", "ignore", {"no", "yes"} )
+  params:add{type = "trigger", id = "sync_pat", name = "ignore", action = slide_to_tempo}
 
   params:default()
 
@@ -1048,6 +1048,9 @@ function cheat(b,i)
     softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
     softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
   end
+  if bank[b][i].end_point == 9 or bank[b][i].end_point == 17 or bank[b][i].end_point == 25 then
+    bank[b][i].end_point = bank[b][i].end_point-0.01
+  end
   softcut.loop_start(b+1,bank[b][i].start_point)
   softcut.loop_end(b+1,bank[b][i].end_point)
   softcut.buffer(b+1,bank[b][i].mode)
@@ -1207,7 +1210,7 @@ function buff_freeze()
 end
 
 function buff_flush()
-  softcut.buffer_clear_region(rec.start_point, rec.end_point)
+  softcut.buffer_clear_region(rec.start_point, rec.end_point-0.01)
   rec.state = 0
   rec.clear = 1
   softcut.rec_level(1,0)
@@ -1265,7 +1268,15 @@ if screen_focus == 1 then
     elseif menu == 7 then
       local time_nav = page.time_sel
       local id = time_nav-1
-      if time_nav == 1 and page.time_page_sel[time_nav] == 3 then
+      if time_nav == 1 and page.time_page_sel[time_nav] == 1 then
+        local tap1 = util.time()
+        deltatap = tap1 - tap
+        tap = tap1
+        local tap_tempo = 60/deltatap
+        if tap_tempo >=20 then
+          params:set("bpm",math.floor(tap_tempo+0.5))
+        end
+      elseif time_nav == 1 and page.time_page_sel[time_nav] == 3 then
         for i = 1,3 do
           crow.count[i] = crow.count_execute[i]
         end
@@ -1861,6 +1872,8 @@ function savestate()
     io.write(step_seq[i].start_point .. "\n")
     io.write(step_seq[i].end_point .. "\n")
   end
+  io.write("Live buffer max".."\n")
+  io.write(params:get"live_buff_rate" .. "\n")
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -1963,7 +1976,7 @@ function loadstate()
       rec.start_point = tonumber(io.read())
       rec.end_point = tonumber(io.read())
       softcut.loop_start(1,rec.start_point)
-      softcut.loop_end(1,rec.end_point)
+      softcut.loop_end(1,rec.end_point-0.01)
       softcut.position(1,rec.start_point)
     end
     if io.read() == "v1.1.1.1.1.1.1.1" then
@@ -2007,6 +2020,9 @@ function loadstate()
         step_seq[i].current_step = step_seq[i].start_point
         step_seq[i].end_point = tonumber(io.read())
       end
+    end
+    if io.read() == "Live buffer max" then
+      params:set("live_buff_rate",tonumber(io.read()))
     end
     io.close(file)
     for i = 1,3 do

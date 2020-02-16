@@ -40,7 +40,7 @@ function encoder_actions.init(n,d)
           end
         end
         softcut.loop_start(1,rec.start_point)
-        softcut.loop_end(1,rec.end_point)
+        softcut.loop_end(1,rec.end_point-0.01)
       end
     elseif menu == 6 then
       page.delay_sel = util.clamp(page.delay_sel+d,0,4)
@@ -138,7 +138,7 @@ function encoder_actions.init(n,d)
       if id ~= 4 then
         if key1_hold or grid.alt == 1 then
           local current_offset = (math.log(bank[id][bank[id].id].offset)/math.log(0.5))*-12
-          current_offset = util.clamp(current_offset+d,-24,24)
+          current_offset = util.clamp(current_offset+d,-36,24)
           if current_offset > -1 and current_offset < 1 then
             current_offset = 0
           end
@@ -159,14 +159,14 @@ function encoder_actions.init(n,d)
         end
       elseif id == 4 then
         if key1_hold or grid.alt == 1 then
-          --nothing yet
+          params:delta("live_buff_rate",d)
         else
           if d <= 0 and rec.start_point < rec.end_point + d/10 then
             rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           elseif d > 0 then
             rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           end
-          softcut.loop_end(1, rec.end_point)
+          softcut.loop_end(1, rec.end_point-0.01)
         end
       end
     elseif menu == 6 then

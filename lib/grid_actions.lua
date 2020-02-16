@@ -327,7 +327,7 @@ function grid_actions.init(x,y,z)
         end
         
         softcut.loop_start(1,rec.start_point)
-        softcut.loop_end(1,rec.end_point)
+        softcut.loop_end(1,rec.end_point-0.01)
         if rec.loop == 1 then
           if old_clip ~= rec.clip then rec.state = 0 end
           --if rec.state == 0 then rec.state = 1

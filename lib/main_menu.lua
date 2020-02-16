@@ -26,7 +26,7 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("loops")
-    if key1_hold or grid.alt == 1 then
+    if key1_hold then
       if page.loops_sel < 3 and bank[page.loops_sel+1].id == 16 then
         screen.move(0,20)
         screen.level(6)
@@ -49,11 +49,12 @@ function main_menu.init()
       screen.text("L"..rec.clip)
       screen.move(20,60)
       screen.text(rec.state == 1 and "recording" or "not recording")
-      screen.move(87,60)
+      screen.move(88,60)
+      local rate_options = {"8 s","16 s","32 s"}
+      screen.text(rate_options[params:get"live_buff_rate"])
+      screen.move(111,60)
       screen.level(3)
-      screen.text(string.format("%0.f",util.linlin(rec.start_point-(8*(rec.clip-1)),rec.end_point-(8*(rec.clip-1)),0,100,(poll_position_new[1] - (8*(rec.clip-1))))))
-      screen.move(100,60)
-      screen.text("%")
+      screen.text(string.format("%0.f",util.linlin(rec.start_point-(8*(rec.clip-1)),rec.end_point-(8*(rec.clip-1)),0,100,(poll_position_new[1] - (8*(rec.clip-1))))).."%")
     else
       screen.line_width(1)
       for i = 1,3 do
