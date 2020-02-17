@@ -7,7 +7,8 @@
 -- for in-app instruction manual
 -- -------------------------------
 
-local pattern_time = require 'pattern_time'
+--local pattern_time = require 'pattern_time'
+local pattern_time = include 'lib/cc_pattern_time'
 fileselect = require 'fileselect'
 help_menus = include 'lib/help_menus'
 main_menu = include 'lib/main_menu'
@@ -580,6 +581,7 @@ function init()
       step_seq[i][j].meta_meta_duration = 4
       step_seq[i][j].assigned = 0 --necessary?
       step_seq[i][j].assigned_to = 0
+      step_seq[i][j].loop_pattern = 1
     end
     step_seq[i].meta_meta_duration = 4
     step_seq[i].loop_held = 0
@@ -966,6 +968,7 @@ function step_sequence()
           if step_seq[i][current].assigned_to ~= 0 then
             pattern_saver[i].load_slot = step_seq[i][current].assigned_to
             test_load(step_seq[i][current].assigned_to+((i-1)*8),i)
+            grid_pat[i].loop = step_seq[i][current].loop_pattern
           end
         end
       end
@@ -1552,7 +1555,11 @@ function grid_redraw()
         g:led((i*5), 9-step_seq[i].meta_meta_step,2)
         g:led((i*5), 9-step_seq[i][step_seq[i].held].meta_meta_duration,4)
       end
-      g:led(16,8-i,step_seq[i].active*8)
+      if step_seq[i].held == 0 then
+        g:led(16,8-i,(step_seq[i].active*6)+2)
+      else
+        g:led(16,8-i,step_seq[i][step_seq[i].held].loop_pattern*4)
+      end
     end
     
     g:led(16,8,(grid.alt_pp*12)+3)
@@ -1874,6 +1881,12 @@ function savestate()
   end
   io.write("Live buffer max".."\n")
   io.write(params:get"live_buff_rate" .. "\n")
+  io.write("loop Pattern per step".."\n")
+  for i = 1,3 do
+    for k = 1,16 do
+      io.write(step_seq[i][k].loop_pattern.."\n")
+    end
+  end
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -2024,6 +2037,13 @@ function loadstate()
     if io.read() == "Live buffer max" then
       params:set("live_buff_rate",tonumber(io.read()))
     end
+    if io.read() == "loop Pattern per step" then
+      for i = 1,3 do
+        for k = 1,16 do
+          step_seq[i][k].loop_pattern = tonumber(io.read())
+        end
+      end
+    end
     io.close(file)
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
@@ -2035,6 +2055,11 @@ function loadstate()
     end
   end
   already_saved()
+  for i = 1,3 do
+    if step_seq[i].active == 1 and step_seq[i][step_seq[i].current_step].assigned_to ~= 0 then
+      test_load(step_seq[i][step_seq[i].current_step].assigned_to+((i-1)*8),i)
+    end
+  end
   --maybe?
   if selected_coll ~= params:get("collection") then
     meta_shadow(selected_coll)
@@ -2390,7 +2415,7 @@ function cleanup()
       shadow_to_play(selected_coll,j+(8*(i-1)))
     end
   end
-  print(selected_coll)
+  --print(selected_coll)
   for i = 1,24 do
     local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..i..".data", "r")
     if file then

@@ -389,28 +389,30 @@ function grid_actions.init(x,y,z)
     
       for i = 1,11,5 do
         for j = 1,8 do
-          if z == 1 and x == i and y == j then
+          if x == i and y == j then
             local current = math.floor(x/5)+1
-            if step_seq[current].held == 0 then
-              pattern_saver[current].source = math.floor(x/5)+1
-              pattern_saver[current].save_slot = 9-y
-              pattern_saver[current]:start()
-            else
-              --if there's a pattern saved there...
-              if pattern_saver[current].saved[9-y] == 1 then
-                if grid.alt_pp == 0 then
-                  step_seq[current][step_seq[current].held].assigned_to = 9-y
+            if z == 1 then
+              saved_already = pattern_saver[current].saved[9-y]
+              if step_seq[current].held == 0 then
+                pattern_saver[current].source = math.floor(x/5)+1
+                pattern_saver[current].save_slot = 9-y
+                pattern_saver[current]:start()
+              else
+                --if there's a pattern saved there...
+                if pattern_saver[current].saved[9-y] == 1 then
+                  if grid.alt_pp == 0 then
+                    step_seq[current][step_seq[current].held].assigned_to = 9-y
+                  end
                 end
               end
-            end
-          elseif z == 0 and x == i and y == j then
-            local current = math.floor(x/5)+1
-            if step_seq[current].held == 0 then
-              pattern_saver[math.floor(x/5)+1]:stop()
-              if grid.alt_pp == 0 then
-                if pattern_saver[current].saved[9-y] == 1 then
-                  pattern_saver[current].load_slot = 9-y
-                  test_load((9-y)+(8*(current-1)),current)
+            elseif z == 0 then
+              if step_seq[current].held == 0 then
+                pattern_saver[math.floor(x/5)+1]:stop()
+                if grid.alt_pp == 0 and saved_already == 1 then
+                  if pattern_saver[current].saved[9-y] == 1 then
+                    pattern_saver[current].load_slot = 9-y
+                    test_load((9-y)+(8*(current-1)),current)
+                  end
                 end
               end
             end
@@ -471,12 +473,19 @@ function grid_actions.init(x,y,z)
       
       for i = 7,5,-1 do
         if x == 16 and y == i and z == 1 then
-          if grid.alt_pp == 1 then
-            step_seq[8-i].current_step = step_seq[8-i].start_point
-            step_seq[8-i].meta_step = 1
-            step_seq[8-i].meta_meta_step = 1
+          if step_seq[8-i].held == 0 then
+            if grid.alt_pp == 1 then
+              step_seq[8-i].current_step = step_seq[8-i].start_point
+              step_seq[8-i].meta_step = 1
+              step_seq[8-i].meta_meta_step = 1
+              if step_seq[8-i].active == 1 and step_seq[8-i][step_seq[8-i].current_step].assigned_to ~= 0 then
+                test_load(step_seq[8-i][step_seq[8-i].current_step].assigned_to+(((8-i)-1)*8),8-i)
+              end
+            else
+              step_seq[8-i].active = (step_seq[8-i].active + 1)%2
+            end
           else
-            step_seq[8-i].active = (step_seq[8-i].active + 1)%2
+            step_seq[8-i][step_seq[8-i].held].loop_pattern = (step_seq[8-i][step_seq[8-i].held].loop_pattern + 1)%2
           end
         end
       end
