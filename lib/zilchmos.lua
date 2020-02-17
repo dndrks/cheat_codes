@@ -3,7 +3,7 @@ zilchmos = {}
 function zilchmos.init(k,i)
 
   which_bank = i
-  if menu == 7 then
+  if menu == 8 then
     help_menu = "zilchmo_"..k
   end
     if fingers[k][i].con == "1" then
@@ -165,7 +165,7 @@ function zilchmos.init(k,i)
           else
             cheat(i,bank[i].id)
           end
-          softcut.rate(i+1,bank[i][bank[i].id].rate*offset)
+          softcut.rate(i+1,bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
         end
       end
     end
@@ -265,7 +265,7 @@ function zilchmos.init(k,i)
         params:set("rate "..i,13-current)]]--
       end
       if bank[i][bank[i].id].pause == false then
-        softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
+        softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
       end
     end
     if fingers[k][i].con == "124" then
@@ -291,7 +291,7 @@ function zilchmos.init(k,i)
         end
       end
       if bank[i][bank[i].id].pause == false then
-        softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
+        softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
         --softcut.level(i+1,bank[i][bank[i].id].level)
         -- WILL THIS WORK??
       end
@@ -319,7 +319,7 @@ function zilchmos.init(k,i)
         end
       end
       if bank[i][bank[i].id].pause == false then
-        softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
+        softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
         --softcut.level(i+1,bank[i][bank[i].id].level)
         -- WILL THIS WORK??
       end
@@ -386,7 +386,7 @@ function zilchmos.init(k,i)
         end
       end
       if bank[i][bank[i].id].pause == false then
-        softcut.rate(i+1, bank[i][bank[i].id].rate*offset)
+        softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
       end
     end
 

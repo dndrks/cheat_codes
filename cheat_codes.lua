@@ -7,7 +7,8 @@
 -- for in-app instruction manual
 -- -------------------------------
 
-local pattern_time = require 'pattern_time'
+--local pattern_time = require 'pattern_time'
+local pattern_time = include 'lib/cc_pattern_time'
 fileselect = require 'fileselect'
 help_menus = include 'lib/help_menus'
 main_menu = include 'lib/main_menu'
@@ -16,7 +17,7 @@ arc_actions = include 'lib/arc_actions'
 rightangleslice = include 'lib/zilchmos'
 start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
-rec_head = include 'lib/rec_head'
+easingFunctions = include 'lib/easing'
 
 tau = math.pi * 2
 arc_param = {}
@@ -59,12 +60,50 @@ function f2()
   params:set("filter 1 cutoff",12000)
 end
 
+pattern_saver = {}
+for i = 1,3 do
+  pattern_saver[i] = metro.init()
+  pattern_saver[i].time = 1
+  pattern_saver[i].count = 1
+  pattern_saver[i].event = function() test_save(i) end
+  pattern_saver[i].source = i
+  pattern_saver[i].save_slot = nil
+  pattern_saver[i].load_slot = 0
+  pattern_saver[i].saved = {}
+  for j = 1,8 do
+    pattern_saver[i].saved[j] = 0
+  end
+end
+
 env_counter = {}
 for i = 1,3 do
   env_counter[i] = metro.init()
   env_counter[i].time = 0.01
   env_counter[i].butt = 1
   env_counter[i].event = function() envelope(i) end
+end
+
+slew_counter = {}
+
+for i = 1,3 do
+  slew_counter[i] = metro.init()
+  slew_counter[i].time = 0.01
+  slew_counter[i].count = 100
+  slew_counter[i].current = 0.00
+  slew_counter[i].event = function() easing_slew(i) end
+  slew_counter[i].ease = easingFunctions.inSine
+  slew_counter[i].beginVal = 0
+  slew_counter[i].endVal = 1
+  slew_counter[i].change =  slew_counter[i].endVal - slew_counter[i].beginVal
+  slew_counter[i].beginQ = 0
+  slew_counter[i].endQ = 0
+  slew_counter[i].changeQ = slew_counter[i].endQ - slew_counter[i].beginQ
+  slew_counter[i].duration = (slew_counter[i].count/100)-0.01
+  slew_counter[i].slewedVal = 0
+  slew_counter[i].prev_tilt = 0
+  slew_counter[i].next_tilt = 0
+  slew_counter[i].prev_q = 0
+  slew_counter[i].next_q = 0
 end
 
 quantize = 1
@@ -127,16 +166,38 @@ function grid_pat_q_clock(i)
       if grid.alt == 1 then
         grid_pat[i]:rec_stop()
         grid_pat[i]:stop()
+        grid_pat[i].external_start = 0
         grid_pat[i]:clear()
       elseif grid_pat[i].rec == 1 then
         grid_pat[i]:rec_stop()
-        grid_pat[i]:start()
+        if params:get("lock_pat") == 2 and quantize == 1 then
+          sync_pattern_to_bpm(i,params:get("quant_div"))
+        elseif params:get("lock_pat") == 2 and quantize == 0 then
+          sync_pattern_to_bpm(i,4)
+        end
+        midi_clock_linearize(i)
+        if not clk.externalmidi and not clk.externalcrow then
+          grid_pat[i]:start()
+        else
+          if grid_pat[i].count > 0 then
+            grid_pat[i].external_start = 1
+          end
+        end
       elseif grid_pat[i].count == 0 then
         grid_pat[i]:rec_start()
       elseif grid_pat[i].play == 1 then
         grid_pat[i]:stop()
+      elseif grid_pat[i].external_start == 1 then
+        grid_pat[i].external_start = 0
+        grid_pat[i].step = 1
+        g_p_q[i].current_step = 1
+        g_p_q[i].sub_step = 1
       else
-        grid_pat[i]:start()
+        if not clk.externalmidi and not clk.externalcrow then
+          grid_pat[i]:start()
+        else
+          grid_pat[i].external_start = 1
+        end
       end
     end
     grid_pat_quantize_events[i] = {}
@@ -153,38 +214,203 @@ function linearize_grid_pat(bank, mode, resolution)
     local eighth_note = (60 / bpm)/2
     local eighth_triplet_note = (60 / bpm) / 3
     local sixteenth_note = (60 / bpm) / 4
-    local resolutions = {quarter_note, eighth_note, eighth_triplet_note, sixteenth_note}
+    local thirtysecond_note = (60 / bpm) / 8
+    local resolutions = {quarter_note, eighth_note, eighth_triplet_note, sixteenth_note, thirtysecond_note}
     for k = 1,grid_pat[bank].count do
-      print("before quant: "..grid_pat[bank].time[k])
+      --print("before quant: "..grid_pat[bank].time[k])
       grid_pat[bank].time[k] = resolutions[resolution] * math.floor((grid_pat[bank].time[k] / resolutions[resolution]) + 0.5)
       if grid_pat[bank].time[k] == 0 then
-        grid_pat[bank].time[k] = resolutions[resolution]
+        if quantize == 1 then
+          grid_pat[bank].time[k] = 0
+        elseif quantize == 0 then
+          grid_pat[bank].time[k] = resolutions[resolution]
+        end
       end
-      print("after quant: "..grid_pat[bank].time[k])
+      --print("after quant: "..grid_pat[bank].time[k])
     end
   end
 end
 
 function sync_pattern_to_bpm(bank, resolution)
-  local total_time = 0
-  synced_to_bpm = bpm
-  for i = 1,#grid_pat[bank].event do
-    total_time = total_time + grid_pat[bank].time[i]
+  if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
+    local total_time = 0
+    synced_to_bpm = bpm
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("before total: "..total_time)
+    old_pat_time = table.clone(grid_pat[bank].time)
+    linearize_grid_pat(bank, "quantize", resolution)
+    total_time = 0
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("after total: "..total_time)
+    midi_clock_linearize(bank)
   end
-  print("before total: "..total_time)
-  old_pat_time = table.clone(grid_pat[bank].time)
-  linearize_grid_pat(bank, "quantize", resolution)
-  total_time = 0
-  for i = 1,#grid_pat[bank].event do
-    total_time = total_time + grid_pat[bank].time[i]
+end
+
+function adjust_times(bank, multiplier)
+  if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
+    local total_time = 0
+    --synced_to_bpm = bpm
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("before total: "..total_time)
+    if old_pat_time == nil then
+      old_pat_time = table.clone(grid_pat[bank].time)
+    else
+      reset_pattern_time(bank)
+    end
+    for k = 1,grid_pat[bank].count do
+      --print("before quant: "..grid_pat[bank].time[k])
+      grid_pat[bank].time[k] = multiplier * grid_pat[bank].time[k]
+    end
+    total_time = 0
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("after total: "..total_time)
+    midi_clock_linearize(bank)
   end
-  print("after total: "..total_time)
+end
+
+function snap_to_bars(bank,bar_count)
+  if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
+    local total_time = 0
+    --synced_to_bpm = bpm
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("before total: "..total_time)
+    if old_pat_time == nil then
+      old_pat_time = table.clone(grid_pat[bank].time)
+    end
+    local bar_time = (((60/bpm)*4)*bar_count)/total_time
+    for k = 1,grid_pat[bank].count do
+      --print("before quant: "..grid_pat[bank].time[k])
+      grid_pat[bank].time[k] = grid_pat[bank].time[k] * bar_time
+    end
+    total_time = 0
+    for i = 1,#grid_pat[bank].event do
+      total_time = total_time + grid_pat[bank].time[i]
+    end
+    print("after total: "..total_time)
+    midi_clock_linearize(bank)
+  end
 end
 
 function reset_pattern_time(bank)
   if old_pat_time ~= nil then
     grid_pat[bank].time = table.clone(old_pat_time)
   end
+end
+
+function copy_entire_pattern(bank)
+  original_pattern = {}
+  original_pattern[bank] = {}
+  original_pattern[bank].time = table.clone(grid_pat[bank].time)
+  original_pattern[bank].event = {}
+  for i = 1,#grid_pat[bank].event do
+    original_pattern[bank].event[i] = {}
+    original_pattern[bank].event[i].id = {}
+    original_pattern[bank].event[i].rate = {}
+    original_pattern[bank].event[i].loop = {}
+    original_pattern[bank].event[i].mode = {}
+    original_pattern[bank].event[i].pause = {}
+    original_pattern[bank].event[i].start_point = {}
+    original_pattern[bank].event[i].clip = {}
+    original_pattern[bank].event[i].end_point = {}
+    original_pattern[bank].event[i].rate_adjusted = {}
+    original_pattern[bank].event[i].y = {}
+    original_pattern[bank].event[i].x = {}
+    original_pattern[bank].event[i].action = {}
+    original_pattern[bank].event[i].i = {}
+    original_pattern[bank].event[i].previous_rate = {}
+    original_pattern[bank].event[i].row = {}
+    original_pattern[bank].event[i].con = {}
+    --original_pattern[bank].event[i].bank = {}
+    original_pattern[bank].event[i].bank = nil
+  end
+  for i = 1,#grid_pat[bank].event do
+    original_pattern[bank].event[i].id = grid_pat[bank].event[i].id
+    original_pattern[bank].event[i].rate = grid_pat[bank].event[i].rate
+    original_pattern[bank].event[i].loop = grid_pat[bank].event[i].loop
+    original_pattern[bank].event[i].mode = grid_pat[bank].event[i].mode
+    original_pattern[bank].event[i].pause = grid_pat[bank].event[i].pause
+    original_pattern[bank].event[i].start_point = grid_pat[bank].event[i].start_point
+    original_pattern[bank].event[i].clip = grid_pat[bank].event[i].clip
+    original_pattern[bank].event[i].end_point = grid_pat[bank].event[i].end_point
+    original_pattern[bank].event[i].rate_adjusted = grid_pat[bank].event[i].rate_adjusted
+    original_pattern[bank].event[i].y = grid_pat[bank].event[i].y
+    original_pattern[bank].event[i].x = grid_pat[bank].event[i].x
+    original_pattern[bank].event[i].action = grid_pat[bank].event[i].action
+    original_pattern[bank].event[i].i = grid_pat[bank].event[i].i
+    original_pattern[bank].event[i].previous_rate = grid_pat[bank].event[i].previous_rate
+    original_pattern[bank].event[i].row = grid_pat[bank].event[i].row
+    original_pattern[bank].event[i].con = grid_pat[bank].event[i].con
+    original_pattern[bank].event[i].bank = grid_pat[bank].event[i].bank
+  end
+  original_pattern[bank].metro = {}
+  original_pattern[bank].metro.props = {}
+  original_pattern[bank].metro.props.time = grid_pat[bank].metro.props.time
+  original_pattern[bank].prev_time = grid_pat[bank].prev_time
+  original_pattern[bank].count = grid_pat[bank].count
+end
+
+function paste_entire_pattern(source,destination)
+  grid_pat[destination].time = table.clone(original_pattern[source].time)
+  grid_pat[destination].event = {}
+  for i = 1,#original_pattern[source].event do
+    grid_pat[destination].event[i] = {}
+    grid_pat[destination].event[i].id = {}
+    grid_pat[destination].event[i].rate = {}
+    grid_pat[destination].event[i].loop = {}
+    grid_pat[destination].event[i].mode = {}
+    grid_pat[destination].event[i].pause = {}
+    grid_pat[destination].event[i].start_point = {}
+    grid_pat[destination].event[i].clip = {}
+    grid_pat[destination].event[i].end_point = {}
+    grid_pat[destination].event[i].rate_adjusted = {}
+    grid_pat[destination].event[i].y = {}
+    grid_pat[destination].event[i].x = {}
+    grid_pat[destination].event[i].action = {}
+    grid_pat[destination].event[i].i = {}
+    grid_pat[destination].event[i].previous_rate = {}
+    grid_pat[destination].event[i].row = {}
+    grid_pat[destination].event[i].con = {}
+    grid_pat[destination].event[i].bank = {}
+  end
+  for i = 1,#original_pattern[source].event do
+    grid_pat[destination].event[i].id = original_pattern[source].event[i].id
+    grid_pat[destination].event[i].rate = original_pattern[source].event[i].rate
+    grid_pat[destination].event[i].loop = original_pattern[source].event[i].loop
+    grid_pat[destination].event[i].mode = original_pattern[source].event[i].mode
+    grid_pat[destination].event[i].pause = original_pattern[source].event[i].pause
+    grid_pat[destination].event[i].start_point = original_pattern[source].event[i].start_point
+    grid_pat[destination].event[i].clip = original_pattern[source].event[i].clip
+    grid_pat[destination].event[i].end_point = original_pattern[source].event[i].end_point
+    grid_pat[destination].event[i].rate_adjusted = original_pattern[source].event[i].rate_adjusted
+    grid_pat[destination].event[i].y = original_pattern[source].event[i].y
+    if destination < source then
+      grid_pat[destination].event[i].x = original_pattern[source].event[i].x - (5*(source-destination))
+    elseif destination > source then
+      grid_pat[destination].event[i].x = original_pattern[source].event[i].x + (5*(destination-source))
+    elseif destination == source then
+      grid_pat[destination].event[i].x = original_pattern[source].event[i].x
+    end
+    grid_pat[destination].event[i].action = original_pattern[source].event[i].action
+    --grid_pat[destination].event[i].i = original_pattern[source].event[i].i
+    grid_pat[destination].event[i].i = destination
+    grid_pat[destination].event[i].previous_rate = original_pattern[source].event[i].previous_rate
+    grid_pat[destination].event[i].row = original_pattern[source].event[i].row
+    grid_pat[destination].event[i].con = original_pattern[source].event[i].con
+    grid_pat[destination].event[i].bank = original_pattern[source].event[i].bank
+  end
+  grid_pat[destination].metro.props.time = original_pattern[source].metro.props.time
+  grid_pat[destination].prev_time = original_pattern[source].prev_time
+  grid_pat[destination].count = original_pattern[source].count
 end
 
 function update_pattern_bpm(bank)
@@ -198,11 +424,59 @@ end
 function es_linearize(bank,mode)
   -- modes: standard linearization, quarter, eighth, eighth triplet, sixteenth, random
   if #grid_pat[bank].event > 1 then
-    local modes = {grid_pat[bank].time[1], 60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
-    for k = 1,#grid_pat[bank].event do
-      grid_pat[bank].time[k] = modes[mode]
+    if mode <= 5 then
+      local modes = {grid_pat[bank].time[1], 60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
+      for k = 1,#grid_pat[bank].event do
+        grid_pat[bank].time[k] = modes[mode]
+        --print(modes[mode])
+      end
+    else
+      local modes = {60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
+      for k = 1,#grid_pat[bank].event do
+        grid_pat[bank].time[k] = modes[math.random(4)]
+        --print(modes[mode])
+      end
     end
-    print(modes[mode])
+  end
+end
+
+function midi_clock_linearize(bank)
+  for i = 1,grid_pat[bank].count do
+    g_p_q[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / ((60/bpm)/4))+0.5)
+    g_p_q[bank].event[i] = {}
+    if grid_pat[bank].time[i] == 0 or g_p_q[bank].clicks[i] == 0 then
+      g_p_q[bank].event[i][1] = "nothing"
+    else
+      for j = 1,g_p_q[bank].clicks[i] do
+        if j == 1 then
+          g_p_q[bank].event[i][1] = "something"
+        else
+          g_p_q[bank].event[i][j] = "nothing"
+        end
+      end
+    end
+  end
+  g_p_q[bank].current_step = 1
+  g_p_q[bank].sub_step = 1
+  --print("midi linearized")
+end
+
+function pattern_timing_to_clock_resolution(i)
+  local quarter_note = 60 / bpm
+  local eighth_note = (60 / bpm)/2
+  local eighth_triplet_note = (60 / bpm) / 3
+  local sixteenth_note = (60 / bpm) / 4
+  local thirtysecond_note = (60 / bpm) / 8
+  for j = 1,grid_pat[i].count do
+    if grid_pat[i].time[j] == quarter_note then
+      bank[i][bank[i].id].clock_resolution = 4
+    elseif grid_pat[i].time[j] == eighth_note then
+      bank[i][bank[i].id].clock_resolution = 2
+    elseif grid_pat[i].time[j] == eighth_triplet_note then
+      bank[i][bank[i].id].clock_resolution = 3
+    elseif grid_pat[i].time[j] == sixteenth_note then
+      bank[i][bank[i].id].clock_resolution = 1
+    end
   end
 end
 
@@ -216,10 +490,12 @@ clk_midi = midi.connect()
 clk_midi.event = function(data) clk:process_midi(data) end
 
 grid.alt = 0
+grid.alt_pp = 0
+grid.loop_mod = 0
 
 local function crow_init()
   for i = 1,4 do
-    crow.output[i].action = "{to(5,0),to(0,0.25)}"
+    crow.output[i].action = "{to(5,0),to(0,0.05)}"
     print("output["..i.."] initialized")
   end
 end
@@ -239,9 +515,9 @@ function init()
   rec.loop = 1
   rec.clear = 0
   
-  params:add_number("collection", "collection", 1,100,1)
-  params:set_action("collection", function (x) selected_coll = x end)
   params:add{type = "trigger", id = "load", name = "load", action = loadstate}
+  params:add_number("collection", "collection", 1,100,1)
+  --params:set_action("collection", function (x) selected_coll = x end)
   params:add{type = "trigger", id = "save", name = "save", action = savestate}
   
   params:add_separator()
@@ -252,10 +528,15 @@ function init()
   
   menu = 1
   
-  crow.output[1].action = "{to(5,0),to(0,0.25)}"
-  crow.output[2].action = "{to(5,0),to(0,0.25)}"
-  crow.output[3].action = "{to(5,0),to(0,0.25)}"
-  crow.output[4].action = "{to(5,0),to(0,0.25)}"
+  for i = 1,4 do
+    crow.output[i].action = "{to(5,0),to(0,0.05)}"
+  end
+  crow.count = {}
+  crow.count_execute = {}
+  for i = 1,3 do
+    crow.count[i] = 1
+    crow.count_execute[i] = 1
+  end
 
   screen.line_width(1)
 
@@ -263,31 +544,118 @@ function init()
   local edelta = 1
   local prebpm = 110
   
+  clock_counting = 0
+  
+  grid_pat = {}
+  for i = 1,3 do
+    grid_pat[i] = pattern_time.new()
+    grid_pat[i].process = grid_pattern_execute
+    grid_pat[i].external_start = 0
+  end
+  
+  g_p_q = {}
+  for i = 1,3 do
+    g_p_q[i] = {}
+    g_p_q[i].clicks = {}
+    g_p_q[i].event = {}
+    g_p_q[i].sub_step = 1
+    g_p_q[i].current_step = 1
+  end
+  
+  step_seq = {}
+  for i = 1,3 do
+    step_seq[i] = {}
+    step_seq[i].active = 1
+    step_seq[i].current_step = 1
+    step_seq[i].current_pat = nil
+    step_seq[i].rate = 1
+    step_seq[i].start_point = 1
+    step_seq[i].end_point = 16
+    step_seq[i].length = (step_seq[i].end_point - step_seq[i].start_point) + 1
+    step_seq[i].meta_step = 1
+    step_seq[i].meta_duration = 1
+    step_seq[i].meta_meta_step = 1
+    step_seq[i].held = 0
+    for j = 1,16 do
+      step_seq[i][j] = {}
+      step_seq[i][j].meta_meta_duration = 4
+      step_seq[i][j].assigned = 0 --necessary?
+      step_seq[i][j].assigned_to = 0
+      step_seq[i][j].loop_pattern = 1
+    end
+    step_seq[i].meta_meta_duration = 4
+    step_seq[i].loop_held = 0
+  end
+  
+  function testing_clocks(bank)
+    local current = g_p_q[bank].current_step
+    local sub_step = g_p_q[bank].sub_step
+    if grid_pat[bank].external_start == 1 and grid_pat[bank].count > 0 then
+      if g_p_q[bank].event[current][sub_step] == "something" then
+        --print(current, sub_step, "+++")
+        if grid_pat[bank].step == 0 then
+          grid_pat[bank].step = 1
+        end
+        grid_pattern_execute(grid_pat[bank].event[grid_pat[bank].step])
+      else
+        -- nothing!
+        if grid_pat[bank].step == 0 then
+          grid_pat[bank].step = 1
+        end
+      end
+      --increase sub_step now
+      if g_p_q[bank].sub_step == #g_p_q[bank].event[grid_pat[bank].step] then
+        g_p_q[bank].sub_step = 0
+        --if we're at the end of the events in this step, move to the next step
+        if grid_pat[bank].step == grid_pat[bank].count then
+          grid_pat[bank].step = 0
+          g_p_q[bank].current_step = 0
+        end
+        grid_pat[bank].step = grid_pat[bank].step + 1
+        --g_p_q[bank].current_step = g_p_q[bank].current_step + 1
+        g_p_q[bank].current_step = grid_pat[bank].step
+      end
+      g_p_q[bank].sub_step = g_p_q[bank].sub_step + 1
+    end
+  end
+  
   clk.on_step = function()
     update_tempo()
-    if clk.externalmidi then
-      prebpm = params:get("bpm")
-      local etap1 = util.time()
-      edelta = etap1 - etap
-      etap = etap1
-      local tap_tempo = math.floor((60/edelta)/4)
-      bpm = tap_tempo
-      update_delays()
-      if math.abs(prebpm - bpm) > 1 then
-        params:set("bpm",tap_tempo)
-      end
+    step_sequence()
+    if clk.externalmidi or clk.externalcrow then
       for i = 1,3 do
-        cheat_q_clock(i)
-        grid_pat_q_clock(i)
+        if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
+          testing_clocks(i)
+        end
+      end
+      if (clk.step+1)%4 == 1 or (clk.step+1)%4 == 3 then
+        for i = 1,3 do
+          cheat_q_clock(i)
+          grid_pat_q_clock(i)
+        end
+      end
+    end
+    if clk.crow_send then
+      crow.output[4]()
+      for i = 1,3 do
+        if bank[i].crow_execute ~= 1 then
+          crow.count[i] = crow.count[i] + 1
+          if crow.count[i] >= crow.count_execute[i] then
+            crow.output[i]()
+            crow.count[i] = 0
+          end
+        end
       end
     end
   end
+  
   clk.on_select_internal = function()
     clk:start()
     crow.input[2].mode("none")
     for i = 1,3 do
       quantizer[i]:start()
       grid_pat_quantizer[i]:start()
+      grid_pat[i].external_start = 0
     end
   end
   clk.on_select_external = function()
@@ -295,6 +663,7 @@ function init()
     for i = 1,3 do
       quantizer[i]:stop()
       grid_pat_quantizer[i]:stop()
+      grid_pat[i]:stop()
     end
     print("external MIDI clock")
   end
@@ -302,6 +671,7 @@ function init()
     for i = 1,3 do
       quantizer[i]:stop()
       grid_pat_quantizer[i]:stop()
+      grid_pat[i]:stop()
     end
     crow.input[2].mode("change",2,0.1,"rising")
     crow.input[2].change = change
@@ -313,21 +683,24 @@ function init()
     clk_midi.event = function(data) clk:process_midi(data) redraw() end
   end}
   
-  --params:set_action("bpm", function() update_tempo() end)
-  params:add_option("quantize_pads", "quantize 4x4 pads?", { "no", "yes" })
-  params:set_action("quantize_pads", function(x) quantize = x-1 end)
-  params:add_option("quantize_pats", "quantize pattern button?", { "no", "yes" })
-  params:set_action("quantize_pats", function(x) grid_pat_quantize = x-1 end)
-  params:add_number("quant_div", "pad quant. division", 1, 32, 4)
-  params:set_action("quant_div",function() update_tempo() end)
-  params:add_number("quant_div_pats", "pattern quant. division", 1, 32, 4)
-  params:set_action("quant_div_pats",function() update_tempo() end)
   params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
   params:set_action("zilchmo_patterning", function() end)
+  params:add_option("quantize_pads", "(see [timing] menu)", { "no", "yes" })
+  params:set_action("quantize_pads", function(x) quantize = x-1 end)
+  params:add_option("quantize_pats", "(see [timing] menu)", { "no", "yes" })
+  params:set_action("quantize_pats", function(x) grid_pat_quantize = x-1 end)
+  params:add_number("quant_div", "(see [timing] menu)", 1, 5, 4)
+  params:set_action("quant_div",function() update_tempo() end)
+  params:add_number("quant_div_pats", "(see [timing] menu)", 1, 5, 4)
+  params:set_action("quant_div_pats",function() update_tempo() end)
+  params:add_option("lock_pat", "(see [timing] menu)", {"no", "yes"} )
+  params:add{type = "trigger", id = "sync_pat", name = "(see [timing] menu)", action = slide_to_tempo}
 
   params:default()
 
   clk:start()
+  
+  grid_page = 0
   
   page = {}
   page.main_sel = 1
@@ -337,6 +710,13 @@ function init()
   page.filtering_sel = 0
   page.arc_sel = 0
   page.delay_sel = 0
+  page.time_sel = 1
+  page.time_page = {}
+  page.time_page_sel = {}
+  for i = 1,5 do
+    page.time_page[i] = 1
+    page.time_page_sel[i] = 1
+  end
   
   delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
   delay = {}
@@ -356,12 +736,13 @@ function init()
   edit = "all"
   
   start_up.init()
-  rec_head.init()
 
   bank = {}
   reset_all_banks()
   
   params:bang()
+  
+  selected_coll = 0
   
   --GRID
   selected = {}
@@ -382,71 +763,67 @@ function init()
       fingers[k][i] = {}
       fingers[k][i].con = {}
     end
-    counter_four[i] = {}
-    counter_four[i].key_up = metro.init()
-    counter_four[i].key_up.time = 0.05
-    counter_four[i].key_up.count = 1
-    counter_four[i].key_up.event = function()
-      local previous_rate = bank[i][bank[i].id].rate
-      zilchmo(4,i)
-      zilchmo_p1 = {}
-      zilchmo_p1.con = fingers[4][i].con
-      zilchmo_p1.row = 4
-      zilchmo_p1.bank = i
-      --zilchmo_pat[1]:watch(zilchmo_p1)
-      --try this
-      grid_p[i] = {}
-      grid_p[i].i = i
-      grid_p[i].action = "zilchmo_4"
-      --new
-      grid_p[i].con = fingers[4][i].con
-      grid_p[i].row = 4
-      grid_p[i].bank = i
-      --/new
-      grid_p[i].id = selected[i].id
-      grid_p[i].x = selected[i].x
-      grid_p[i].y = selected[i].y
-      grid_p[i].previous_rate = previous_rate
-      grid_p[i].rate = previous_rate
-      --
-      grid_p[i].start_point = bank[i][bank[i].id].start_point
-      grid_p[i].end_point = bank[i][bank[i].id].end_point
-      --
-      --grid_p[i].rate = bank[i][bank[i].id].rate
-      --[[if grid_p[i].rate ~= previous_rate then
-        grid_p[i].rate_adjusted = true
-      else
-        grid_p[i].rate_adjusted = false
-      end]]--
-      grid_pat[i]:watch(grid_p[i])
-    end
-    counter_four[i].key_up:stop()
-    counter_three[i] = {}
-    counter_three[i].key_up = metro.init()
-    counter_three[i].key_up.time = 0.05
-    counter_three[i].key_up.count = 1
-    counter_three[i].key_up.event = function()
-      zilchmo(3,i)
-    end
-    counter_three[i].key_up:stop()
-    counter_two[i] = {}
-    counter_two[i].key_up = metro.init()
-    counter_two[i].key_up.time = 0.05
-    counter_two[i].key_up.count = 1
-    counter_two[i].key_up.event = function()
-      zilchmo(2,i)
-    end
-    counter_two[i].key_up:stop()
   end
+  --counter_four= {}
+  counter_four.key_up = metro.init()
+  counter_four.key_up.time = 0.05
+  counter_four.key_up.count = 1
+  counter_four.key_up.event = function()
+    local previous_rate = bank[selected_zilchmo_bank][bank[selected_zilchmo_bank].id].rate
+    zilchmo(4,selected_zilchmo_bank)
+    zilchmo_p1 = {}
+    zilchmo_p1.con = fingers[4][selected_zilchmo_bank].con
+    zilchmo_p1.row = 4
+    zilchmo_p1.bank = selected_zilchmo_bank
+    --zilchmo_pat[1]:watch(zilchmo_p1)
+    --try this
+    grid_p[selected_zilchmo_bank] = {}
+    grid_p[selected_zilchmo_bank].i = selected_zilchmo_bank
+    grid_p[selected_zilchmo_bank].action = "zilchmo_4"
+    --new
+    grid_p[selected_zilchmo_bank].con = fingers[4][selected_zilchmo_bank].con
+    grid_p[selected_zilchmo_bank].row = 4
+    grid_p[selected_zilchmo_bank].bank = selected_zilchmo_bank
+    --/new
+    grid_p[selected_zilchmo_bank].id = selected[selected_zilchmo_bank].id
+    grid_p[selected_zilchmo_bank].x = selected[selected_zilchmo_bank].x
+    grid_p[selected_zilchmo_bank].y = selected[selected_zilchmo_bank].y
+    grid_p[selected_zilchmo_bank].previous_rate = previous_rate
+    grid_p[selected_zilchmo_bank].rate = previous_rate
+    --
+    grid_p[selected_zilchmo_bank].start_point = bank[selected_zilchmo_bank][bank[selected_zilchmo_bank].id].start_point
+    grid_p[selected_zilchmo_bank].end_point = bank[selected_zilchmo_bank][bank[selected_zilchmo_bank].id].end_point
+    grid_pat[selected_zilchmo_bank]:watch(grid_p[selected_zilchmo_bank])
+  end
+  counter_four.key_up:stop()
+  counter_three = {}
+  counter_three.key_up = metro.init()
+  counter_three.key_up.time = 0.05
+  counter_three.key_up.count = 1
+  counter_three.key_up.event = function()
+    zilchmo(3,selected_zilchmo_bank)
+  end
+  counter_three.key_up:stop()
+  counter_two = {}
+  counter_two.key_up = metro.init()
+  counter_two.key_up.time = 0.05
+  counter_two.key_up.count = 1
+  counter_two.key_up.event = function()
+    zilchmo(2,selected_zilchmo_bank)
+  end
+  counter_two.key_up:stop()
   
-  grid_pat = {}
+  g_p_q = {}
   for i = 1,3 do
-    grid_pat[i] = pattern_time.new()
-    grid_pat[i].process = grid_pattern_execute
+    g_p_q[i] = {}
+    g_p_q[i].clicks = {}
+    g_p_q[i].event = {}
+    g_p_q[i].sub_step = 1
+    g_p_q[i].current_step = 1
   end
   
   arc_pat = {}
-  for i = 1,4 do
+  for i = 1,3 do
     arc_pat[i] = pattern_time.new()
     if i ~=4 then
       arc_pat[i].process = arc_pattern_execute
@@ -482,6 +859,8 @@ function init()
   end
   rec_state_watcher.count = -1
   rec_state_watcher:start()
+  
+  already_saved()
 
 end
 
@@ -495,32 +874,6 @@ phase = function(n, x)
   if menu == 2 then
     redraw()
   end
-  --[[if rec.state == 1 then
-    for i = 2,4 do
-      if bank[i-1][bank[i-1].id].mode == 1 then
-        local squiggle = tonumber(poll_position_new[i])
-        local other_squiggle = tonumber(poll_position_new[1])
-        if squiggle ~= nil and other_squiggle ~= nil then
-          if math.floor(((squiggle*100)+0.5))/100 == math.floor(((other_squiggle*100)+0.5))/100 then
-            softcut.level_slew_time(i,0.01)
-            softcut.level(i,0.04)
-          else
-            if not bank[i-1][bank[i-1].id].enveloped then
-              softcut.level_slew_time(i,1.0)
-              softcut.level(i,bank[i-1][bank[i-1].id].level)
-            end
-          end
-        end
-      end
-    end
-  elseif rec.state == 0 then
-    for i = 2,4 do
-      if not bank[i-1][bank[i-1].id].enveloped then
-        softcut.level_slew_time(i,0.01)
-        softcut.level(i,bank[i-1][bank[i-1].id].level)
-      end
-    end
-  end]]--
 end
 
 local tap = 0
@@ -537,10 +890,7 @@ function change()
     delay[i].end_point = delay_time
     softcut.loop_end(i+4,delay[i].end_point)
   end
-  for i = 1,3 do
-    cheat_q_clock(i)
-    grid_pat_q_clock(i)
-  end
+  clk.on_step()
 end
 
 function update_tempo()
@@ -559,10 +909,38 @@ function update_tempo()
   end
 end
 
+function slide_to_tempo()
+  if synced_to_bpm == nil then
+    for i = 1,3 do
+      if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
+        sync_pattern_to_bpm(i,4)
+      end
+    end
+  end
+  local remembered = synced_to_bpm
+  for i = 1,3 do
+    if remembered >= params:get("bpm") then
+      for j = remembered,params:get("bpm"),-1 do
+        bpm = j
+        sync_pattern_to_bpm(i,4)
+      end
+    elseif remembered < params:get("bpm") then
+      for j = remembered,params:get("bpm") do
+        bpm = j
+        sync_pattern_to_bpm(i,4)
+      end
+    end
+  end
+  bpm = params:get("bpm")
+end
+
+function random_clock_resolution(bank)
+  for i = 1,16 do
+    bank[bank][i].clock_resolution = math.random(1,4)
+  end
+end
+
 function slice()
-  --local t = params:get("bpm")
-  --local d = params:get("quant_div")
-  --local interval = (60/t) / d
   for i = 1,3 do
     for j = 1,16 do
       bank[i][j].start_point = 1+((8/16)*(j-1))
@@ -575,11 +953,38 @@ function rec_count()
   rec_time = rec_time + 0.01
 end
 
+function step_sequence()
+  for i = 1,3 do
+    if step_seq[i].active == 1 then
+      step_seq[i].meta_step = step_seq[i].meta_step + 1
+      if step_seq[i].meta_step > step_seq[i].meta_duration then step_seq[i].meta_step = 1 end
+      if step_seq[i].meta_step == 1 then
+        step_seq[i].meta_meta_step = step_seq[i].meta_meta_step + 1
+        if step_seq[i].meta_meta_step > step_seq[i][step_seq[i].current_step].meta_meta_duration then step_seq[i].meta_meta_step = 1 end
+        if step_seq[i].meta_meta_step == 1 then
+          step_seq[i].current_step = step_seq[i].current_step + 1
+          if step_seq[i].current_step > step_seq[i].end_point then step_seq[i].current_step = step_seq[i].start_point end
+          current = step_seq[i].current_step
+          if step_seq[i][current].assigned_to ~= 0 then
+            pattern_saver[i].load_slot = step_seq[i][current].assigned_to
+            test_load(step_seq[i][current].assigned_to+((i-1)*8),i)
+            grid_pat[i].loop = step_seq[i][current].loop_pattern
+          end
+        end
+      end
+    end
+  end
+end
+
 function reset_all_banks()
   cross_filter = {}
   for i = 1,3 do
     bank[i] = {}
     bank[i].id = 1
+    bank[i].ext_clock = 1
+    bank[i].param_latch = 0
+    bank[i].crow_execute = 1
+    bank[i].snap_to_bars = 1
     for k = 1,16 do
       bank[i][k] = {}
       bank[i][k].clip = 1
@@ -607,14 +1012,19 @@ function reset_all_banks()
       bank[i][k].bp = 0.0
       bank[i][k].fd = 0.0
       bank[i][k].br = 0.0
+      bank[i][k].tilt = 0
+      bank[i][k].tilt_ease_type = 1
+      bank[i][k].tilt_ease_time = 50
       bank[i][k].cf_fc = 12000
       bank[i][k].cf_lp = 0
       bank[i][k].cf_hp = 0
       bank[i][k].cf_dry = 1
       bank[i][k].cf_exp_dry = 1
-      bank[i][k].filter_type = 1
+      bank[i][k].filter_type = 4
       bank[i][k].enveloped = false
-      bank[i][k].envelope_time = 0.5
+      bank[i][k].envelope_time = 3.0
+      bank[i][k].clock_resolution = 4
+      bank[i][k].offset = 1.0
     end
     cross_filter[i] = {}
     cross_filter[i].fc = 12000
@@ -631,8 +1041,6 @@ function cheat(b,i)
   if bank[b][i].enveloped then
     env_counter[b].butt = bank[b][i].level
     softcut.level(b+1,bank[b][i].level)
-    --softcut.level_cut_cut(b+1,5,bank[b][i].left_delay_level)
-    --softcut.level_cut_cut(b+1,6,bank[b][i].right_delay_level)
     softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
     softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
     env_counter[b].time = (bank[b][i].envelope_time/(bank[b][i].level/0.05))
@@ -643,11 +1051,14 @@ function cheat(b,i)
     softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
     softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
   end
+  if bank[b][i].end_point == 9 or bank[b][i].end_point == 17 or bank[b][i].end_point == 25 then
+    bank[b][i].end_point = bank[b][i].end_point-0.01
+  end
   softcut.loop_start(b+1,bank[b][i].start_point)
   softcut.loop_end(b+1,bank[b][i].end_point)
   softcut.buffer(b+1,bank[b][i].mode)
   if bank[b][i].pause == false then
-    softcut.rate(b+1,bank[b][i].rate*offset)
+    softcut.rate(b+1,bank[b][i].rate*bank[b][i].offset)
   else
     softcut.rate(b+1,0)
   end
@@ -656,46 +1067,39 @@ function cheat(b,i)
   else
     softcut.loop(b+1,1)
   end
-  --softcut.fade_time(b+1,0.1)
   softcut.fade_time(b+1,0.01)
   if bank[b][i].rate > 0 then
       softcut.position(b+1,bank[b][i].start_point+0.05)
   elseif bank[b][i].rate < 0 then
       softcut.position(b+1,bank[b][i].end_point-0.05)
   end
-  --
-  if bank[b][i].filter_type ~=4 then
-    softcut.post_filter_fc(b+1,bank[b][i].fc)
-    softcut.post_filter_dry(b+1,bank[b][i].fd)
-  else
-    softcut.post_filter_fc(b+1,cross_filter[b].fc)
-    softcut.post_filter_dry(b+1,cross_filter[b].exp_dry)
-  end
-  softcut.post_filter_rq(b+1,bank[b][i].q)
-  local filter_type = bank[b][i].filter_type
-  if bank[b][i].filter_type == 1 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",1)
-    params:set("filter "..math.floor(tonumber(b)).." hp",0)
-    params:set("filter "..math.floor(tonumber(b)).." bp",0)
-    params:set("filter "..math.floor(tonumber(b)).." dry",0)
-  elseif bank[b][i].filter_type == 2 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",0)
-    params:set("filter "..math.floor(tonumber(b)).." hp",1)
-    params:set("filter "..math.floor(tonumber(b)).." bp",0)
-    params:set("filter "..math.floor(tonumber(b)).." dry",0)
-  elseif bank[b][i].filter_type == 3 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",0)
-    params:set("filter "..math.floor(tonumber(b)).." hp",0)
-    params:set("filter "..math.floor(tonumber(b)).." bp",1)
-    params:set("filter "..math.floor(tonumber(b)).." dry",0)
-  elseif bank[b][i].filter_type == 4 then
-    params:set("filter "..math.floor(tonumber(b)).." lp",math.abs(cross_filter[b].exp_dry-1))
-    params:set("filter "..math.floor(tonumber(b)).." hp",math.abs(cross_filter[b].exp_dry-1))
-    params:set("filter "..math.floor(tonumber(b)).." bp",0)
-    params:set("filter "..math.floor(tonumber(b)).." dry",cross_filter[b].exp_dry)
+  if slew_counter[b] ~= nil then
+    slew_counter[b].next_tilt = bank[b][i].tilt
+    slew_counter[b].next_q = bank[b][i].q
+    if bank[b][i].tilt_ease_type == 1 then
+      if slew_counter[b].slewedVal ~= nil and math.floor(slew_counter[b].slewedVal*10000) ~= math.floor(slew_counter[b].next_tilt*10000) then
+        if math.floor(slew_counter[b].prev_tilt*10000) ~= math.floor(slew_counter[b].slewedVal*10000) then
+          slew_counter[b].interrupted = 1
+          slew_filter(util.round(b),slew_counter[b].slewedVal,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
+        else
+          slew_counter[b].interrupted = 0
+          slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
+        end
+      end
+    elseif bank[b][i].tilt_ease_type == 2 then
+      slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
+    end
   end
   softcut.pan(b+1,bank[b][i].pan)
   update_delays()
+  if slew_counter[b] ~= nil then
+    slew_counter[b].prev_tilt = bank[b][i].tilt
+    slew_counter[b].prev_q = bank[b][i].q
+  end
+  previous_pad = bank[b].id
+  if bank[b].crow_execute == 1 then
+    crow.output[b]()
+  end
 end
 
 function envelope(i)
@@ -703,8 +1107,8 @@ function envelope(i)
   env_counter[i].butt = env_counter[i].butt - 0.05
   if env_counter[i].butt > 0 then
     softcut.level(i+1,env_counter[i].butt)
-    softcut.level_cut_cut(i+1,5,env_counter[i].butt)
-    softcut.level_cut_cut(i+1,6,env_counter[i].butt)
+    softcut.level_cut_cut(i+1,5,env_counter[i].butt*bank[i][bank[i].id].left_delay_level)
+    softcut.level_cut_cut(i+1,6,env_counter[i].butt*bank[i][bank[i].id].right_delay_level)
   else
     env_counter[i]:stop()
     softcut.level(i+1,0)
@@ -713,6 +1117,86 @@ function envelope(i)
     softcut.level_cut_cut(i+1,6,0)
     softcut.level_slew_time(i+1,1.0)
   end
+end
+
+function slew_filter(i,prevVal,nextVal,prevQ,nextQ,count)
+  slew_counter[i]:stop()
+  slew_counter[i].current = 0
+  slew_counter[i].count = count
+  slew_counter[i].duration = (slew_counter[i].count/100)-0.01
+  slew_counter[i].beginVal = prevVal
+  slew_counter[i].endVal = nextVal
+  slew_counter[i].change = slew_counter[i].endVal - slew_counter[i].beginVal
+  slew_counter[i].beginQ = prevQ
+  slew_counter[i].endQ = nextQ
+  slew_counter[i].changeQ = slew_counter[i].endQ - slew_counter[i].beginQ
+  slew_counter[i]:start()
+end
+
+function easing_slew(i)
+  slew_counter[i].slewedVal = slew_counter[i].ease(slew_counter[i].current,slew_counter[i].beginVal,slew_counter[i].change,slew_counter[i].duration)
+  slew_counter[i].slewedQ = slew_counter[i].ease(slew_counter[i].current,slew_counter[i].beginQ,slew_counter[i].changeQ,slew_counter[i].duration)
+  slew_counter[i].current = slew_counter[i].current + 0.01
+  if grid.alt == 1 then
+    try_tilt_process(i,bank[i].id,slew_counter[i].slewedVal,slew_counter[i].slewedQ)
+  else
+    for j = 1,16 do
+      try_tilt_process(i,j,slew_counter[i].slewedVal,slew_counter[i].slewedQ)
+    end
+  end
+  if menu == 5 then
+    redraw()
+  end
+end
+
+function try_tilt_process(b,i,t,rq)
+  if util.round(t*100) < 0 then
+    local trill = math.abs(t)
+    bank[b][i].cf_lp = math.abs(t)
+    bank[b][i].cf_dry = 1+t
+    if util.round(t*100) >= -24 then
+      bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    elseif util.round(t*100) <= -24 and util.round(t*100) >= -50 then
+      bank[b][i].cf_exp_dry = (util.linexp(0.4,1,1,101,bank[b][i].cf_dry)-1)/100
+    elseif util.round(t*100) < -50 then
+      bank[b][i].cf_exp_dry = 0
+    end
+    bank[b][i].cf_fc = util.linexp(0,1,16000,10,bank[b][i].cf_lp)
+    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
+    params:set("filter "..b.." lp", math.abs(bank[b][i].cf_exp_dry-1))
+    params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
+    if params:get("filter "..b.." hp") ~= 0 then
+      params:set("filter "..b.." hp", 0)
+    end
+    if bank[b][i].cf_hp ~= 0 then
+      bank[b][i].cf_hp = 0
+    end
+  elseif util.round(t*100) > 0 then
+    bank[b][i].cf_hp = math.abs(t)
+    bank[b][i].cf_fc = util.linexp(0,1,10,12000,bank[b][i].cf_hp)
+    bank[b][i].cf_dry = 1-t
+    bank[b][i].cf_exp_dry = (util.linexp(0,1,1,101,bank[b][i].cf_dry)-1)/100
+    params:set("filter "..b.." cutoff",bank[b][i].cf_fc)
+    params:set("filter "..b.." hp", math.abs(bank[b][i].cf_exp_dry-1))
+    params:set("filter "..b.." dry", bank[b][i].cf_exp_dry)
+    if params:get("filter "..b.." lp") ~= 0 then
+      params:set("filter "..b.." lp", 0)
+    end
+    if bank[b][i].cf_lp ~= 0 then
+      bank[b][i].cf_lp = 0
+    end
+  elseif util.round(t*100) == 0 then
+    bank[b][i].cf_fc = 12000
+    bank[b][i].cf_lp = 0
+    bank[b][i].cf_hp = 0
+    bank[b][i].cf_dry = 1
+    bank[b][i].cf_exp_dry = 1
+    params:set("filter "..b.." cutoff",12000)
+    params:set("filter "..b.." lp", 0)
+    params:set("filter "..b.." hp", 0)
+    params:set("filter "..b.." dry", 1)
+  end
+  softcut.post_filter_rq(b+1,rq)
 end
 
 function buff_freeze()
@@ -729,7 +1213,7 @@ function buff_freeze()
 end
 
 function buff_flush()
-  softcut.buffer_clear_region(rec.start_point, rec.end_point)
+  softcut.buffer_clear_region(rec.start_point, rec.end_point-0.01)
   rec.state = 0
   rec.clear = 1
   softcut.rec_level(1,0)
@@ -748,18 +1232,15 @@ function load_sample(file,sample)
   if file ~= "-" then
     local ch, len = audio.file_info(file)
     if len/48000 <=90 then
-      --clip[sample].sample_length = len/48000
       if len/48000 > 8 then
         clip[sample].sample_length = 8
       else
         clip[sample].sample_length = len/48000
       end
     else
-      --clip[sample].sample_length = 90
       clip[sample].sample_length = 8
     end
-    --print(len/48000)
-    softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), 8, 1, 2)
+    softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), 8.05, 1, 2)
   end
 end
 
@@ -773,7 +1254,7 @@ function key(n,z)
 if screen_focus == 1 then
   if n == 3 and z == 1 then
     if menu == 1 then
-      for i = 1,6 do
+      for i = 1,7 do
         if page.main_sel == i then
           menu = i+1
         end
@@ -787,12 +1268,43 @@ if screen_focus == 1 then
     elseif menu == 5 then
       local filter_nav = (page.filtering_sel + 1)%3
       page.filtering_sel = filter_nav
-    elseif menu == 6 then
-      local delay_nav = (page.delay_sel+1)%5
-      page.delay_sel = delay_nav
+    elseif menu == 7 then
+      local time_nav = page.time_sel
+      local id = time_nav-1
+      if time_nav == 1 and page.time_page_sel[time_nav] == 1 then
+        local tap1 = util.time()
+        deltatap = tap1 - tap
+        tap = tap1
+        local tap_tempo = 60/deltatap
+        if tap_tempo >=20 then
+          params:set("bpm",math.floor(tap_tempo+0.5))
+        end
+      elseif time_nav == 1 and page.time_page_sel[time_nav] == 3 then
+        for i = 1,3 do
+          crow.count[i] = crow.count_execute[i]
+        end
+      elseif time_nav > 1 and time_nav < 5 then
+        if page.time_page_sel[time_nav] == 1 then
+          if key1_hold or grid.alt == 1 then
+            for j = 1,3 do
+              sync_pattern_to_bpm(j,params:get("quant_div"))
+            end
+          else
+            sync_pattern_to_bpm(id,params:get("quant_div"))
+          end
+        elseif page.time_page_sel[time_nav] == 2 then
+          if key1_hold or grid.alt == 1 then
+            for j = 1,3 do
+              snap_to_bars(j,bank[j].snap_to_bars)
+            end
+          else
+            snap_to_bars(id,bank[id].snap_to_bars)
+          end
+        end
+      end
     end
   elseif n == 2 and z == 1 then
-    if menu == 7 then
+    if menu == 8 then
       help_menu = "welcome"
     end
     menu = 1
@@ -839,7 +1351,7 @@ function clip_jump(i,s,y,z)
     local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
     bank[i][s].start_point = (((bank[i][s].start_point - old_min) * new_range) / old_range) + new_min
     bank[i][s].end_point = bank[i][s].start_point + current_difference
-    if menu == 7 then
+    if menu == 8 then
       which_bank = i
       help_menu = "buffer jump"
     end
@@ -862,95 +1374,203 @@ end
 function grid_redraw()
   g:all(0)
   
-  for j = 0,2 do
-    for k = 1,4 do
-      k = k+(5*j)
-      for i = 8,5,-1 do
-        g:led(k,i,3)
+  if grid_page == 0 then
+    
+    for j = 0,2 do
+      for k = 1,4 do
+        k = k+(5*j)
+        for i = 8,5,-1 do
+          g:led(k,i,3)
+        end
       end
     end
-  end
-  
-  for j = 0,2 do
-    for k = (5-j),(15-j),5 do
-      for i = (4-j),1,-1 do
-        g:led(k,i,3)
+    
+    for j = 0,2 do
+      for k = (5-j),(15-j),5 do
+        for i = (4-j),1,-1 do
+          g:led(k,i,3)
+        end
       end
     end
-  end
-  
-  for i = 1,3 do
-    if grid_pat[i].led == nil then grid_pat[i].led = 0 end
-    if grid_pat[i].rec == 1 then
-      grid_pat[i].led = (grid_pat[i].led + 1)
-      if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
-        g:led(2+(5*(i-1)),1,(9))
-      elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
-        g:led(2+(5*(i-1)),1,(0))
-        grid_pat[i].led = 0
+    
+    for i = 1,3 do
+      if grid_pat[i].led == nil then grid_pat[i].led = 0 end
+      if not clk.externalmidi and not clk.externalcrow then
+        if grid_pat[i].rec == 1 then
+          grid_pat[i].led = (grid_pat[i].led + 1)
+          if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
+            g:led(2+(5*(i-1)),1,(9))
+          elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
+            g:led(2+(5*(i-1)),1,(0))
+            grid_pat[i].led = 0
+          end
+        elseif grid_pat[i].play == 1 then
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,9)
+        elseif grid_pat[i].count > 0 then
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,5)
+        else
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,3)
+        end
+      else
+        if grid_pat[i].rec == 1 then
+          grid_pat[i].led = (grid_pat[i].led + 1)
+          if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
+            g:led(2+(5*(i-1)),1,(9))
+          elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
+            g:led(2+(5*(i-1)),1,(0))
+            grid_pat[i].led = 0
+          end
+        elseif grid_pat[i].external_start == 1 then
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,9)
+        elseif grid_pat[i].count > 0 then
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,5)
+        else
+          grid_pat[i].led = 0
+          g:led(2+(5*(i-1)),1,3)
+        end
       end
-    elseif grid_pat[i].play == 1 then
-      grid_pat[i].led = 0
-      g:led(2+(5*(i-1)),1,9)
-    elseif grid_pat[i].count > 0 then
-      grid_pat[i].led = 0
-      g:led(2+(5*(i-1)),1,5)
-    else
-      grid_pat[i].led = 0
-      g:led(2+(5*(i-1)),1,3)
     end
-  end
-  
-  for i = 1,4 do
-    if arc_pat[i].rec == 1 then
-      g:led(16,5-i,15)
-    elseif arc_pat[i].play == 1 then
-      g:led(16,5-i,9)
-    elseif arc_pat[i].count > 0 then
-      g:led(16,5-i,5)
-    else
-      g:led(16,5-i,0)
+    
+    for i = 1,3 do
+      if arc_pat[i].rec == 1 then
+        g:led(16,5-i,15)
+      elseif arc_pat[i].play == 1 then
+        g:led(16,5-i,9)
+      elseif arc_pat[i].count > 0 then
+        g:led(16,5-i,5)
+      else
+        g:led(16,5-i,0)
+      end
     end
-  end
-  
-  for i = 1,3 do
-    g:led(selected[i].x, selected[i].y, 15)
-    if bank[i][bank[i].id].pause == true then
-     g:led(3+(5*(i-1)),1,15)
-     g:led(3+(5*(i-1)),2,15)
-    else
-      g:led(3+(5*(i-1)),1,3)
-      g:led(3+(5*(i-1)),2,3)
+    
+    for i = 1,3 do
+      g:led(selected[i].x, selected[i].y, 15)
+      if bank[i][bank[i].id].pause == true then
+       g:led(3+(5*(i-1)),1,15)
+       g:led(3+(5*(i-1)),2,15)
+      else
+        g:led(3+(5*(i-1)),1,3)
+        g:led(3+(5*(i-1)),2,3)
+      end
     end
-  end
-  
-  for i,e in pairs(lit) do
-    g:led(e.x, e.y,15)
-  end
-  
-  g:led(16,8,(grid.alt*12)+3)
-  
-  g:led(1,math.abs(bank[1][bank[1].id].clip-5),8)
-  g:led(6,math.abs(bank[2][bank[2].id].clip-5),8)
-  g:led(11,math.abs(bank[3][bank[3].id].clip-5),8)
-  
-  g:led(2,math.abs(bank[1][bank[1].id].mode-5),6)
-  g:led(7,math.abs(bank[2][bank[2].id].mode-5),6)
-  g:led(12,math.abs(bank[3][bank[3].id].mode-5),6)
-  
-  for i = 1,3 do
-    if bank[i][bank[i].id].loop == false then
-      g:led(3+(5*(i-1)),4,2)
-    elseif bank[i][bank[i].id].loop == true then
-      g:led(3+(5*(i-1)),4,4)
+    
+    for i,e in pairs(lit) do
+      g:led(e.x, e.y,15)
     end
-  end
+    
+    g:led(16,8,(grid.alt*12)+3)
+    
+    g:led(1,math.abs(bank[1][bank[1].id].clip-5),8)
+    g:led(6,math.abs(bank[2][bank[2].id].clip-5),8)
+    g:led(11,math.abs(bank[3][bank[3].id].clip-5),8)
+    
+    g:led(2,math.abs(bank[1][bank[1].id].mode-5),6)
+    g:led(7,math.abs(bank[2][bank[2].id].mode-5),6)
+    g:led(12,math.abs(bank[3][bank[3].id].mode-5),6)
+    
+    for i = 1,3 do
+      if bank[i][bank[i].id].loop == false then
+        g:led(3+(5*(i-1)),4,2)
+      elseif bank[i][bank[i].id].loop == true then
+        g:led(3+(5*(i-1)),4,4)
+      end
+    end
+    
+    if rec.clear == 0 then
+      g:led(16,8-rec.clip,(10*rec.state)+3)
+    elseif rec.clear == 1 then
+      g:led(16,8-rec.clip,3)
+    end
   
-  if rec.clear == 0 then
-    g:led(16,8-rec.clip,(5*rec.state)+10)
-  elseif rec.clear == 1 then
-    g:led(16,8-rec.clip,3)
+  else
+    
+    for i = 1,3 do
+      for j = step_seq[i].start_point,step_seq[i].end_point do
+        if j < 9 then
+          g:led((i*5)-2,9-j,2)
+          if grid.loop_mod == 1 then
+            g:led((i*5)-2,9-step_seq[i].start_point,4)
+            g:led((i*5)-2,9-step_seq[i].end_point,4)
+          end
+        elseif j >=9 then
+          g:led((i*5)-1,17-j,2)
+          if grid.loop_mod == 1 then
+            g:led((i*5)-1,17-step_seq[i].start_point,4)
+            g:led((i*5)-1,17-step_seq[i].end_point,4)
+          end
+        end
+      end
+    end
+    
+    for i = 1,11,5 do
+      for j = 1,8 do
+        local current = math.floor(i/5)+1
+        if step_seq[current].held == 0 then
+          g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
+          g:led(i,j,j == 9 - pattern_saver[current].load_slot and 15 or ((5*pattern_saver[current].saved[9-j])+2))
+        else
+          g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
+          g:led(i,j,j == 9 - step_seq[current][step_seq[current].held].assigned_to and 15 or ((5*pattern_saver[current].saved[9-j])+2))
+        end
+      end
+    end
+    
+    for i = 1,3 do
+      for j = 1,16 do
+        if step_seq[i][j].assigned_to ~= 0 then
+          if j < 9 then
+            g:led((i*5)-2,9-j,4)
+          elseif j >= 9 then
+            g:led((i*5)-1,17-j,4)
+          end
+        end
+      end
+      if step_seq[i].current_step < 9 then
+        g:led((i*5)-2,9-step_seq[i].current_step,15)
+      elseif step_seq[i].current_step >=9 then
+        g:led((i*5)-1,9-(step_seq[i].current_step-8),15)
+      end
+      if step_seq[i].held < 9 then
+        g:led((i*5)-2,9-step_seq[i].held,9)
+      elseif step_seq[i].held >= 9 then
+        g:led((i*5)-1,9-(step_seq[i].held-8),9)
+      end
+    end
+    
+    for i = 1,3 do
+      g:led((i*5)-3, 9-step_seq[i].meta_duration,4)
+      g:led((i*5)-3, 9-step_seq[i].meta_step,6)
+    end
+    
+    for i = 1,3 do
+      if step_seq[i].held == 0 then
+        g:led((i*5), 9-step_seq[i][step_seq[i].current_step].meta_meta_duration,4)
+        g:led((i*5), 9-step_seq[i].meta_meta_step,6)
+      else
+        g:led((i*5), 9-step_seq[i].meta_meta_step,2)
+        g:led((i*5), 9-step_seq[i][step_seq[i].held].meta_meta_duration,4)
+      end
+      if step_seq[i].held == 0 then
+        g:led(16,8-i,(step_seq[i].active*6)+2)
+      else
+        g:led(16,8-i,step_seq[i][step_seq[i].held].loop_pattern*4)
+      end
+    end
+    
+    g:led(16,8,(grid.alt_pp*12)+3)
+    g:led(16,2,(grid.loop_mod*9)+3)
+    
+    if grid.loop_mod == 1 then
+      
+    end  
+    
   end
+  g:led(16,1,15*grid_page)
   
   g:refresh()
 end
@@ -967,8 +1587,6 @@ function grid_pattern_execute(entry)
     selected[i].y = entry.y
     bank[i].id = selected[i].id
     if params:get("zilchmo_patterning") == 2 then
-      --bank[i][bank[i].id].loop = entry.loop
-      --bank[i][bank[i].id].pause = entry.pause
       bank[i][bank[i].id].mode = entry.mode
       bank[i][bank[i].id].clip = entry.clip
     end
@@ -982,17 +1600,23 @@ function grid_pattern_execute(entry)
   elseif entry.action == "zilchmo_4" then
     if params:get("zilchmo_patterning") == 2 then
       bank[i][entry.id].rate = entry.rate
+      if fingers[entry.row][entry.bank] == nil then
+        fingers[entry.row][entry.bank] = {}
+      end
       fingers[entry.row][entry.bank].con = entry.con
       zilchmo(entry.row,entry.bank)
       if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
         bank[i][bank[i].id].start_point = entry.start_point
         bank[i][bank[i].id].end_point = entry.end_point
-        cheat(i,bank[i].id)
+        softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+        softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
       end
       local length = math.floor(math.log10(entry.con)+1)
       for i = 1,length do
-        g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)
-        g:refresh()
+        if grid_page == 0 then
+          g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)
+          g:refresh()
+        end
       end
     end
   end
@@ -1011,8 +1635,8 @@ function arc_pattern_execute(entry)
     softcut.loop_start(id+1, (entry.start_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
     softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
   else
-    bank[id][bank[id].id].fc = entry.fc
-    softcut.post_filter_fc(id+1,entry.fc)
+    -- DO SOMETHING WITH TILT
+    slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
   end
   redraw()
 end
@@ -1038,8 +1662,8 @@ function zilchmo(k,i)
   redraw()
 end
 
-function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n)
-  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l,m,n}) do
+function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r)
+  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r}) do
     clipboard[k] = v
   end
 end
@@ -1060,6 +1684,10 @@ function clipboard_paste(i)
   bank[i][d].fifth = clipboard[12]
   bank[i][d].enveloped = clipboard[13]
   bank[i][d].envelope_time = clipboard[14]
+  bank[i][d].tilt = clipboard[15]
+  bank[i][d].tilt_ease_time = clipboard[16]
+  bank[i][d].tilt_ease_type = clipboard[17]
+  bank[i][d].offset = clipboard[18]
   redraw()
   if bank[i][d].loop == true then
     cheat(i,d)
@@ -1106,16 +1734,26 @@ arc_redraw = function()
       a:led(i,(math.floor(util.linlin(0,8,1,64,start_to_led)))+16,8)
     end
     if arc_param[i] == 4 then
-      local fc_to_led = bank[arc_control[i]][bank[arc_control[i]].id].fc
-      if bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 1 then
-        a:segment(i, tau*(1/4), util.linlin(1, 12000, (tau*(1/4))+0.1, tau*1.249999, fc_to_led), 15)
-      elseif bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 2 then
-        a:segment(i, util.linlin(1, 12000, (tau*(1/4)), tau*1.24, fc_to_led), tau*(1/4), 15)
-      elseif bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 3 then
-        a:segment(i, util.linlin(10, 12000, (tau*(1/4)), tau*1.20, fc_to_led), util.linlin(10, 12000, (tau*(1/4))+0.3, tau*1.249999, fc_to_led), 15)
-      elseif bank[arc_control[i]][bank[arc_control[i]].id].filter_type == 4 then
-        --NEED STUFF
+      local tilt_to_led = slew_counter[i].slewedVal
+      if tilt_to_led == nil then
+        tilt_to_led = bank[i][bank[i].id].tilt
+        a:led(i,47,5)
+        a:led(i,48,10)
+        a:led(i,49,15)
+        a:led(i,50,10)
+        a:led(i,51,5)
+      elseif tilt_to_led >= -0.04 and tilt_to_led <=0.20 then
+        a:led(i,47,5)
+        a:led(i,48,10)
+        a:led(i,49,15)
+        a:led(i,50,10)
+        a:led(i,51,5)
+      elseif tilt_to_led < -0.04 then
+        a:segment(i, tau*(1/4), util.linlin(-1, 1, (tau*(1/4))+0.1, tau*1.249999, tilt_to_led), 15)
+      elseif tilt_to_led > 0.20 then
+        a:segment(i, util.linlin(-1, 1, (tau*(1/4)), (tau*1.24)+0.4, tilt_to_led-0.1), tau*(1/4)+0.1, 15)
       end
+      
     end
   end
   
@@ -1136,7 +1774,7 @@ end
 --file loading
 
 function savestate()
-  local file = io.open(_path.data .. "cheat_codes/collections"..selected_coll..".data", "w+")
+  local file = io.open(_path.data .. "cheat_codes/collections"..params:get("collection")..".data", "w+")
   io.output(file)
   io.write("PERMANENCE".."\n")
   for i = 1,3 do
@@ -1204,10 +1842,60 @@ function savestate()
   io.write(rec.clip .. "\n")
   io.write(rec.start_point .. "\n")
   io.write(rec.end_point .. "\n")
+  io.write("v1.1.1.1.1.1.1.1".."\n")
+  for i = 1,3 do
+    io.write(step_seq[i].active .. "\n")
+    io.write(step_seq[i].meta_duration .. "\n")
+    for k = 1,16 do
+      io.write(step_seq[i][k].meta_meta_duration .. "\n")
+      io.write(step_seq[i][k].assigned_to .. "\n")
+      io.write(bank[i][k].tilt .. "\n")
+      io.write(bank[i][k].tilt_ease_time .. "\n")
+      io.write(bank[i][k].tilt_ease_type .. "\n")
+    end
+  end
+  io.write("the last params".."\n")
+  io.write(params:get("clock_out") .. "\n")
+  io.write(params:get("crow_clock_out") .. "\n")
+  io.write(params:get("midi_device") .. "\n")
+  io.write(params:get("loop_enc_resolution") .."\n")
+  io.write(params:get("clock") .. "\n")
+  io.write(params:get("lock_pat") .. "\n")
+  for i = 1,3 do
+    io.write(bank[i].crow_execute .. "\n")
+    io.write(bank[i].snap_to_bars .. "\n")
+  end
+  for i = 1,3 do
+    for j = 1,16 do
+      io.write(bank[i][j].offset .. "\n")
+    end
+  end
+  io.write("crow execute count".."\n")
+  for i = 1,3 do
+    io.write(crow.count_execute[i] .. "\n")
+  end
+  io.write("step seq loop points".."\n")
+  for i = 1,3 do
+    io.write(step_seq[i].start_point .. "\n")
+    io.write(step_seq[i].end_point .. "\n")
+  end
+  io.write("Live buffer max".."\n")
+  io.write(params:get"live_buff_rate" .. "\n")
+  io.write("loop Pattern per step".."\n")
+  for i = 1,3 do
+    for k = 1,16 do
+      io.write(step_seq[i][k].loop_pattern.."\n")
+    end
+  end
   io.close(file)
+  if selected_coll ~= params:get("collection") then
+    meta_copy_coll(selected_coll,params:get("collection"))
+  end
+  meta_shadow(params:get("collection"))
 end
 
 function loadstate()
+  selected_coll = params:get("collection")
   local file = io.open(_path.data .. "cheat_codes/collections"..selected_coll..".data", "r")
   if file then
     io.input(file)
@@ -1301,8 +1989,60 @@ function loadstate()
       rec.start_point = tonumber(io.read())
       rec.end_point = tonumber(io.read())
       softcut.loop_start(1,rec.start_point)
-      softcut.loop_end(1,rec.end_point)
+      softcut.loop_end(1,rec.end_point-0.01)
       softcut.position(1,rec.start_point)
+    end
+    if io.read() == "v1.1.1.1.1.1.1.1" then
+      for i = 1,3 do
+        step_seq[i].active = tonumber(io.read())
+        step_seq[i].meta_duration = tonumber(io.read())
+        for k = 1,16 do
+          step_seq[i][k].meta_meta_duration = tonumber(io.read())
+          step_seq[i][k].assigned_to = tonumber(io.read())
+          bank[i][k].tilt = tonumber(io.read())
+          bank[i][k].tilt_ease_time = tonumber(io.read())
+          bank[i][k].tilt_ease_type = tonumber(io.read())
+        end
+      end
+    end
+    if io.read() == "the last params" then
+      params:set("clock_out",tonumber(io.read()))
+      params:set("crow_clock_out",tonumber(io.read()))
+      params:set("midi_device",tonumber(io.read()))
+      params:set("loop_enc_resolution",tonumber(io.read()))
+      params:set("clock",tonumber(io.read()))
+      params:set("lock_pat",tonumber(io.read()))
+      for i = 1,3 do
+        bank[i].crow_execute = tonumber(io.read())
+        bank[i].snap_to_bars = tonumber(io.read())
+      end
+      for i = 1,3 do
+        for j = 1,16 do
+          bank[i][j].offset = tonumber(io.read())
+        end
+      end
+    end
+    if io.read() == "crow execute count" then
+      for i = 1,3 do
+        crow.count_execute[i] = tonumber(io.read())
+      end
+    end
+    if io.read() == "step seq loop points" then
+      for i = 1,3 do
+        step_seq[i].start_point = tonumber(io.read())
+        step_seq[i].current_step = step_seq[i].start_point
+        step_seq[i].end_point = tonumber(io.read())
+      end
+    end
+    if io.read() == "Live buffer max" then
+      params:set("live_buff_rate",tonumber(io.read()))
+    end
+    if io.read() == "loop Pattern per step" then
+      for i = 1,3 do
+        for k = 1,16 do
+          step_seq[i][k].loop_pattern = tonumber(io.read())
+        end
+      end
     end
     io.close(file)
     for i = 1,3 do
@@ -1314,4 +2054,385 @@ function loadstate()
       end
     end
   end
+  already_saved()
+  for i = 1,3 do
+    if step_seq[i].active == 1 and step_seq[i][step_seq[i].current_step].assigned_to ~= 0 then
+      test_load(step_seq[i][step_seq[i].current_step].assigned_to+((i-1)*8),i)
+    end
+  end
+  --maybe?
+  if selected_coll ~= params:get("collection") then
+    meta_shadow(selected_coll)
+  elseif selected_coll == params:get("collection") then
+    cleanup()
+  end
+end
+
+function test_save(i)
+  if grid.alt_pp == 0 then
+    if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
+      copy_entire_pattern(i)
+      print(pattern_saver[i].source, pattern_saver[i].save_slot)
+      save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
+      pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
+      pattern_saver[i].load_slot = pattern_saver[i].save_slot
+      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,15)
+      g:refresh()
+    else
+      print("no pattern data to save")
+      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,0)
+      g:refresh()
+    end
+  else
+    if pattern_saver[i].saved[pattern_saver[i].save_slot] == 1 then
+      delete_pattern(pattern_saver[i].save_slot+8*(i-1))
+      pattern_saver[i].saved[pattern_saver[i].save_slot] = 0
+      pattern_saver[i].load_slot = 0
+    else
+      print("no pattern data to delete")
+    end
+  end
+end
+
+function test_load(slot,destination)
+  if pattern_saver[destination].saved[slot-((destination-1)*8)] == 1 then
+    if grid_pat[destination].play == 1 then
+      grid_pat[destination]:stop()
+    elseif grid_pat[destination].external_start == 1 then
+      grid_pat[destination].external_start = 0
+      grid_pat[destination].step = 1
+      g_p_q[destination].current_step = 1
+      g_p_q[destination].sub_step = 1
+    end
+    load_pattern(slot,destination)
+    if not clk.externalmidi and not clk.externalcrow then
+      grid_pat[destination]:start()
+    else
+      if grid_pat[destination].count > 0 then
+        grid_pat[destination].external_start = 1
+      end
+    end
+  end
+end
+
+function save_pattern(source,slot)
+  local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..slot..".data", "w+")
+  io.output(file)
+  io.write("stored pad pattern: collection "..selected_coll.." + slot "..slot.."\n")
+  io.write(original_pattern[source].count .. "\n")
+  for i = 1,original_pattern[source].count do
+    io.write(original_pattern[source].time[i] .. "\n")
+    io.write(original_pattern[source].event[i].id .. "\n")
+    io.write(original_pattern[source].event[i].rate .. "\n")
+    io.write(tostring(original_pattern[source].event[i].loop) .. "\n")
+    if original_pattern[source].event[i].mode ~= nil then
+      io.write(original_pattern[source].event[i].mode .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+    io.write(tostring(original_pattern[source].event[i].pause) .. "\n")
+    io.write(original_pattern[source].event[i].start_point .. "\n")
+    if original_pattern[source].event[i].clip ~= nil then
+      io.write(original_pattern[source].event[i].clip .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+    io.write(original_pattern[source].event[i].end_point .. "\n")
+    if original_pattern[source].event[i].rate_adjusted ~= nil then
+      io.write(tostring(original_pattern[source].event[i].rate_adjusted) .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+    io.write(original_pattern[source].event[i].y .. "\n")
+    io.write(original_pattern[source].event[i].x .. "\n")
+    io.write(tostring(original_pattern[source].event[i].action) .. "\n")
+    io.write(original_pattern[source].event[i].i .. "\n")
+    if original_pattern[source].event[i].previous_rate ~= nil then
+      io.write(original_pattern[source].event[i].previous_rate .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+    if original_pattern[source].event[i].row ~=nil then
+      io.write(original_pattern[source].event[i].row .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+    if original_pattern[source].event[i].con ~= nil then
+      io.write(original_pattern[source].event[i].con .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+    if original_pattern[source].event[i].bank ~= nil and #original_pattern[source].event > 0 then
+      io.write(original_pattern[source].event[i].bank .. "\n")
+    else
+      io.write("nil" .. "\n")
+    end
+  end
+  io.write(original_pattern[source].metro.props.time .. "\n")
+  io.write(original_pattern[source].prev_time .. "\n")
+  io.close(file)
+  print("saved pattern "..source.." to slot "..slot)
+end
+
+function already_saved()
+  for i = 1,24 do
+    local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..i..".data", "r")
+    if file then
+      io.input(file)
+      if io.read() == "stored pad pattern: collection "..selected_coll.." + slot "..i then
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 1
+      else
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 0
+        os.remove(_path.data .. "cheat_codes/pattern" ..selected_coll.."_"..i..".data")
+      end
+      io.close(file)
+    else
+      local current = math.floor((i-1)/8)+1
+      pattern_saver[current].saved[i-(8*(current-1))] = 0
+    end
+  end
+end
+
+function clear_zero()
+  for i = 1,24 do
+    local file = io.open(_path.data .. "cheat_codes/pattern0_"..i..".data", "r")
+    if file then
+      io.input(file)
+      if io.read() == "stored pad pattern: collection 0 + slot "..i then
+        os.remove(_path.data .. "cheat_codes/pattern0_"..i..".data")
+        print("cleared default pattern")
+      end
+      io.close(file)
+    end
+  end
+end
+
+function delete_pattern(slot)
+  local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..slot..".data", "w+")
+  io.output(file)
+  io.write()
+  io.close(file)
+  print("deleted pattern from slot "..slot)
+end
+
+function copy_pattern_across_coll(read_coll,write_coll,slot)
+  local infile = io.open(_path.data .. "cheat_codes/pattern"..read_coll.."_"..slot..".data", "r")
+  local outfile = io.open(_path.data .. "cheat_codes/pattern"..write_coll.."_"..slot..".data", "w+")
+  io.output(outfile)
+  for line in infile:lines() do
+    if line == "stored pad pattern: collection "..read_coll.." + slot "..slot then
+      io.write("stored pad pattern: collection "..write_coll.." + slot "..slot.."\n")
+    else
+      io.write(line.."\n")
+    end
+  end
+  io.close(infile)
+  io.close(outfile)
+end
+
+function shadow_pattern(read_coll,write_coll,slot)
+  local infile = io.open(_path.data .. "cheat_codes/pattern"..read_coll.."_"..slot..".data", "r")
+  local outfile = io.open(_path.data .. "cheat_codes/shadow-pattern"..write_coll.."_"..slot..".data", "w+")
+  io.output(outfile)
+  for line in infile:lines() do
+    if line == "stored pad pattern: collection "..read_coll.." + slot "..slot then
+      io.write("stored pad pattern: collection "..write_coll.." + slot "..slot.."\n")
+    else
+      io.write(line.."\n")
+    end
+  end
+  io.close(infile)
+  io.close(outfile)
+end
+
+function meta_shadow(coll)
+  for i = 1,3 do
+    for j = 1,8 do
+      if pattern_saver[i].saved[j] == 1 then
+        shadow_pattern(coll,coll,j+(8*(i-1)))
+      elseif pattern_saver[i].saved[j] == 0 then
+        local file = io.open(_path.data .. "cheat_codes/shadow-pattern"..coll.."_"..j+(8*(i-1))..".data", "w+")
+        -- need an already saved shadow thing here to clear out
+        if file then
+          io.output(file)
+          io.write()
+          io.close(file)
+        end
+      end
+    end
+  end
+end
+
+function clear_empty_shadows(coll)
+  for i = 1,24 do
+    local file = io.open(_path.data .. "cheat_codes/shadow-pattern"..coll.."_"..i..".data", "r")
+    if file then
+      io.input(file)
+      if io.read() == "stored pad pattern: collection "..coll.." + slot "..i then
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 1
+      else
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 0
+        os.remove(_path.data .. "cheat_codes/shadow-pattern" ..coll.."_"..i..".data")
+      end
+      io.close(file)
+    else
+      local current = math.floor((i-1)/8)+1
+      pattern_saver[current].saved[i-(8*(current-1))] = 0
+    end
+  end
+end
+
+function shadow_to_play(coll,slot)
+  local infile = io.open(_path.data .. "cheat_codes/shadow-pattern"..coll.."_"..slot..".data", "r")
+  local outfile = io.open(_path.data .. "cheat_codes/pattern"..coll.."_"..slot..".data", "w+")
+  io.output(outfile)
+  if infile then
+    for line in infile:lines() do
+      if line == "stored pad pattern: collection "..coll.." + slot "..slot then
+        io.write("stored pad pattern: collection "..coll.." + slot "..slot.."\n")
+      else
+        io.write(line.."\n")
+      end
+    end
+    io.close(infile)
+    io.close(outfile)
+  end
+end
+
+function meta_copy_coll(read_coll,write_coll)
+  for i = 1,3 do
+    for j = 1,8 do
+      if pattern_saver[i].saved[j] == 1 then
+        copy_pattern_across_coll(read_coll,write_coll,j+(8*(i-1)))
+      elseif pattern_saver[i].saved[j] == 0 then
+        local file = io.open(_path.data .. "cheat_codes/pattern"..write_coll.."_"..j+(8*(i-1))..".data", "w+")
+        if file then
+          io.output(file)
+          io.write()
+          io.close(file)
+        end
+      end
+    end
+  end
+end
+
+function load_pattern(slot,destination)
+  local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..slot..".data", "r")
+  if file then
+    io.input(file)
+    if io.read() == "stored pad pattern: collection "..selected_coll.." + slot "..slot then
+      grid_pat[destination].event = {}
+      grid_pat[destination].count = tonumber(io.read())
+      for i = 1,grid_pat[destination].count do
+        grid_pat[destination].time[i] = tonumber(io.read())
+        grid_pat[destination].event[i] = {}
+        grid_pat[destination].event[i].id = {}
+        grid_pat[destination].event[i].rate = {}
+        grid_pat[destination].event[i].loop = {}
+        grid_pat[destination].event[i].mode = {}
+        grid_pat[destination].event[i].pause = {}
+        grid_pat[destination].event[i].start_point = {}
+        grid_pat[destination].event[i].clip = {}
+        grid_pat[destination].event[i].end_point = {}
+        grid_pat[destination].event[i].rate_adjusted = {}
+        grid_pat[destination].event[i].y = {}
+        grid_pat[destination].event[i].x = {}
+        grid_pat[destination].event[i].action = {}
+        grid_pat[destination].event[i].i = {}
+        grid_pat[destination].event[i].previous_rate = {}
+        grid_pat[destination].event[i].row = {}
+        grid_pat[destination].event[i].con = {}
+        grid_pat[destination].event[i].bank = nil
+        grid_pat[destination].event[i].id = tonumber(io.read())
+        grid_pat[destination].event[i].rate = tonumber(io.read())
+        local loop_to_boolean = io.read()
+        if loop_to_boolean == "true" then
+          grid_pat[destination].event[i].loop = true
+        else
+          grid_pat[destination].event[i].loop = false
+        end
+        grid_pat[destination].event[i].mode = tonumber(io.read())
+        local pause_to_boolean = io.read()
+        if pause_to_boolean == "true" then
+          grid_pat[destination].event[i].pause = true
+        else
+          grid_pat[destination].event[i].pause = false
+        end
+        grid_pat[destination].event[i].start_point = tonumber(io.read())
+        grid_pat[destination].event[i].clip = tonumber(io.read())
+        grid_pat[destination].event[i].end_point = tonumber(io.read())
+        local rate_adjusted_to_boolean = io.read()
+        if rate_adjusted_to_boolean == "true" then
+          grid_pat[destination].event[i].rate_adjusted = true
+        else
+          grid_pat[destination].event[i].rate_adjusted = false
+        end
+        grid_pat[destination].event[i].y = tonumber(io.read())
+        local loaded_x = tonumber(io.read())
+        grid_pat[destination].event[i].action = io.read()
+        grid_pat[destination].event[i].i = destination
+        local source = tonumber(io.read())
+        if destination < source then
+          grid_pat[destination].event[i].x = loaded_x - (5*(source-destination))
+        elseif destination > source then
+          grid_pat[destination].event[i].x = loaded_x + (5*(destination-source))
+        elseif destination == source then
+          grid_pat[destination].event[i].x = loaded_x
+        end
+        grid_pat[destination].event[i].previous_rate = tonumber(io.read())
+        grid_pat[destination].event[i].row = tonumber(io.read())
+        grid_pat[destination].event[i].con = io.read()
+        local loaded_bank = tonumber(io.read())
+        if loaded_bank ~= nil then
+          print(loaded_bank)
+          if destination < source then
+            grid_pat[destination].event[i].bank = loaded_bank - (5*(source-destination))
+          elseif destination > source then
+            grid_pat[destination].event[i].bank = loaded_bank + (5*(source-destination))
+          elseif destination == source then
+            grid_pat[destination].event[i].bank = loaded_bank
+          end
+        end
+      end
+      grid_pat[destination].metro.props.time = tonumber(io.read())
+      grid_pat[destination].prev_time = tonumber(io.read())
+    end
+    midi_clock_linearize(destination)
+    io.close(file)
+  else
+    print("nofile")
+  end
+end
+
+function cleanup()
+  clear_zero()
+  for i = 1,3 do
+    for j = 1,8 do
+      shadow_to_play(selected_coll,j+(8*(i-1)))
+    end
+  end
+  --print(selected_coll)
+  for i = 1,24 do
+    local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..i..".data", "r")
+    if file then
+      io.input(file)
+      if io.read() == "stored pad pattern: collection "..selected_coll.." + slot "..i then
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 1
+      else
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 0
+        os.remove(_path.data .. "cheat_codes/pattern" ..selected_coll.."_"..i..".data")
+      end
+      io.close(file)
+    else
+      local current = math.floor((i-1)/8)+1
+      pattern_saver[current].saved[i-(8*(current-1))] = 0
+    end
+  end
+  clear_empty_shadows(selected_coll)
 end
