@@ -685,16 +685,16 @@ function init()
   
   params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
   params:set_action("zilchmo_patterning", function() end)
-  params:add_option("quantize_pads", "ignore", { "no", "yes" })
+  params:add_option("quantize_pads", "(see [timing] menu)", { "no", "yes" })
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
-  params:add_option("quantize_pats", "ignore", { "no", "yes" })
+  params:add_option("quantize_pats", "(see [timing] menu)", { "no", "yes" })
   params:set_action("quantize_pats", function(x) grid_pat_quantize = x-1 end)
-  params:add_number("quant_div", "ignore", 1, 5, 4)
+  params:add_number("quant_div", "(see [timing] menu)", 1, 5, 4)
   params:set_action("quant_div",function() update_tempo() end)
-  params:add_number("quant_div_pats", "ignore", 1, 5, 4)
+  params:add_number("quant_div_pats", "(see [timing] menu)", 1, 5, 4)
   params:set_action("quant_div_pats",function() update_tempo() end)
-  params:add_option("lock_pat", "ignore", {"no", "yes"} )
-  params:add{type = "trigger", id = "sync_pat", name = "ignore", action = slide_to_tempo}
+  params:add_option("lock_pat", "(see [timing] menu)", {"no", "yes"} )
+  params:add{type = "trigger", id = "sync_pat", name = "(see [timing] menu)", action = slide_to_tempo}
 
   params:default()
 
