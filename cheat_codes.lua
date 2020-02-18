@@ -458,7 +458,6 @@ function midi_clock_linearize(bank)
   end
   g_p_q[bank].current_step = 1
   g_p_q[bank].sub_step = 1
-  --print("midi linearized")
 end
 
 function pattern_timing_to_clock_resolution(i)
@@ -906,6 +905,8 @@ function update_tempo()
       quantizer[i].time = interval
       grid_pat_quantizer[i].time = interval_pats
     end
+  else
+    bpm = params:get("bpm")
   end
 end
 
@@ -1938,7 +1939,8 @@ function loadstate()
           bank[i][k].bp = tonumber(io.read())
           bank[i][k].fd = tonumber(io.read())
           bank[i][k].br = tonumber(io.read())
-          bank[i][k].filter_type = tonumber(io.read())
+          tonumber(io.read())
+          bank[i][k].filter_type = 4
           arc_control[i] = tonumber(io.read())
           arc_param[i] = tonumber(io.read())
         end
