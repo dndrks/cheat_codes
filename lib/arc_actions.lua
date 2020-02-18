@@ -71,7 +71,7 @@ function arc_actions.init(n,d)
       if d < 0 then
         if util.round(bank[a_c][bank[a_c].id].tilt*100) < 0 and util.round(bank[a_c][bank[a_c].id].tilt*100) > -9 then
           bank[a_c][bank[a_c].id].tilt = -0.10
-        elseif util.round(bank[a_c][bank[a_c].id].tilt*100) > 0 and util.round(bank[a_c][bank[a_c].id].tilt*100) < 20 then
+        elseif util.round(bank[a_c][bank[a_c].id].tilt*100) > 0 and util.round(bank[a_c][bank[a_c].id].tilt*100) < 3 then
           bank[a_c][bank[a_c].id].tilt = 0.0
         end
       end
@@ -88,7 +88,7 @@ function arc_actions.init(n,d)
         if d < 0 then
           if util.round(bank[a_c][j].tilt*100) < -1 and util.round(bank[a_c][j].tilt*100) > -9 then
             bank[a_c][j].tilt = -0.10
-          elseif util.round(bank[a_c][j].tilt*100) > 0 and util.round(bank[a_c][j].tilt*100) < 20 then
+          elseif util.round(bank[a_c][j].tilt*100) > 0 and util.round(bank[a_c][j].tilt*100) < 3 then
             bank[a_c][j].tilt = 0.0
           end
         end
