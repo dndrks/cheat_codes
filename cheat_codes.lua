@@ -301,6 +301,47 @@ function snap_to_bars(bank,bar_count)
   end
 end
 
+function snap_to_bars_midi(bank,bar_count)
+  local entry_count = 0
+  local target_entry_count = bar_count*16
+  for i = 1,#g_p_q[bank].event do
+    entry_count = entry_count + #g_p_q[bank].event[i]
+  end
+  print("before: "..entry_count)
+  if entry_count < target_entry_count then
+    for i = 1,target_entry_count-entry_count do
+      table.insert(g_p_q[bank].event[#g_p_q[bank].event],"nothing")
+    end
+  elseif entry_count > target_entry_count then
+    print("subtracting...")
+    local last_event = #g_p_q[bank].event
+    print("last event: "..last_event)
+    local distance_count = entry_count - target_entry_count
+    print("want to remove "..distance_count)
+    for j = 1,distance_count do
+      print("loop last event: "..last_event)
+      while #g_p_q[bank].event[last_event] == 1 do
+        print("skip: "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
+        if last_event > 0 then last_event = last_event - 1 end
+        print("minus 1!: "..last_event)
+        if #g_p_q[bank].event[last_event] > 1 then
+          print("removing "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
+          table.remove(g_p_q[bank].event[last_event])
+        end
+      end
+      if #g_p_q[bank].event[last_event] > 1 then
+        print("removing "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
+        table.remove(g_p_q[bank].event[last_event])
+      end
+    end
+  end
+  local entry_count = 0
+  for i = 1,#g_p_q[bank].event do
+    entry_count = entry_count + #g_p_q[bank].event[i]
+  end
+  print("after: "..entry_count)
+end
+
 function reset_pattern_time(bank)
   if old_pat_time ~= nil then
     grid_pat[bank].time = table.clone(old_pat_time)
@@ -441,9 +482,10 @@ function es_linearize(bank,mode)
 end
 
 function midi_clock_linearize(bank)
+  g_p_q[bank].event = {}
   for i = 1,grid_pat[bank].count do
     g_p_q[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / ((60/bpm)/4))+0.5)
-    g_p_q[bank].event[i] = {}
+    g_p_q[bank].event[i] = {} -- critical
     if grid_pat[bank].time[i] == 0 or g_p_q[bank].clicks[i] == 0 then
       g_p_q[bank].event[i][1] = "nothing"
     else
@@ -1042,15 +1084,15 @@ function cheat(b,i)
   if bank[b][i].enveloped then
     env_counter[b].butt = bank[b][i].level
     softcut.level(b+1,bank[b][i].level)
-    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
-    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
+    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*(bank[b][i].left_delay_level*bank[b][i].level))
+    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*(bank[b][i].right_delay_level*bank[b][i].level))
     env_counter[b].time = (bank[b][i].envelope_time/(bank[b][i].level/0.05))
     env_counter[b]:start()
   else
     softcut.level_slew_time(b+1,0.1)
     softcut.level(b+1,bank[b][i].level)
-    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*bank[b][i].left_delay_level)
-    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*bank[b][i].right_delay_level)
+    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*(bank[b][i].left_delay_level*bank[b][i].level))
+    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*(bank[b][i].right_delay_level*bank[b][i].level))
   end
   if bank[b][i].end_point == 9 or bank[b][i].end_point == 17 or bank[b][i].end_point == 25 then
     bank[b][i].end_point = bank[b][i].end_point-0.01
@@ -1309,11 +1351,24 @@ if screen_focus == 1 then
       help_menu = "welcome"
     end
     menu = 1
+    if key1_hold == true then key1_hold = false end
   end
   if n == 1 and z == 1 then
-    key1_hold = true
+    if menu == 2 then
+      local k1_state = key1_hold
+      if key1_hold == false then
+        key1_hold = true
+      else
+        key1_hold = false
+      end
+    else
+      key1_hold = true
+    end
+    
   elseif n == 1 and z == 0 then
-    key1_hold = false
+    if menu ~= 2 then
+      key1_hold = false
+    end
   end
   redraw()
 end

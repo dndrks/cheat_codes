@@ -27,16 +27,26 @@ function main_menu.init()
     screen.level(3)
     screen.text("loops")
     if key1_hold then
-      if page.loops_sel < 3 and bank[page.loops_sel+1].id == 16 then
+      if page.loops_sel < 3 and bank[page.loops_sel+1].id == 16 and grid.alt == 0 then
         screen.move(0,20)
         screen.level(6)
         screen.text("(pad 16 overwrites bank!)")
       end
+      if grid.alt == 1 then
+        screen.move(0,20)
+        screen.level(6)
+        screen.text("(grid-ALT sets offset for all)")
+      end
       for i = 1,3 do
         screen.move(0,20+(i*10))
         screen.level(page.loops_sel == i-1 and 15 or 3)
-        local loops_to_screen_options = {"a", "b", "c"}
-        screen.text(loops_to_screen_options[i]..""..bank[i].id)
+        if grid.alt == 0 then
+          local loops_to_screen_options = {"a", "b", "c"}
+          screen.text(loops_to_screen_options[i]..""..bank[i].id)
+        else
+          local loops_to_screen_options = {"(a)","(b)","(c)"}
+          screen.text(loops_to_screen_options[i])
+        end
         screen.move(20,20+(i*10))
         screen.text((bank[i][bank[i].id].mode == 1 and "Live" or "Clip")..":")
         screen.move(40,20+(i*10))

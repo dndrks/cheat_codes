@@ -375,6 +375,7 @@ function grid_actions.init(x,y,z)
         if z == 1 and x == k+(5*(i-1)) and y == k then
           if grid.alt == 0 then
             menu = 6-y
+            if key1_hold == true then key1_hold = false end
             if menu == 2 then
               page.loops_sel = math.floor((x/4)-1)
             elseif menu == 5 then

@@ -54,7 +54,7 @@ function encoder_actions.init(n,d)
     elseif menu == 2 then
       local id = page.loops_sel + 1
       if id ~=4 then
-        if key1_hold or grid.alt == 1 then
+        if key1_hold and grid.alt == 0 then
           local pre_adjust = bank[id][bank[id].id].clip
           local current_difference = (bank[id][bank[id].id].end_point - bank[id][bank[id].id].start_point)
           if bank[id][bank[id].id].mode == 1 and bank[id][bank[id].id].clip + d > 3 then
@@ -79,7 +79,7 @@ function encoder_actions.init(n,d)
               bank[id][i].end_point = bank[id][i].start_point + current_difference
             end
           end
-        else
+        elseif key1_hold == false and grid.alt == 0 then
           if d >= 0 and bank[id][bank[id].id].start_point < (bank[id][bank[id].id].end_point - d/loop_enc_resolution) then
             bank[id][bank[id].id].start_point = util.clamp(bank[id][bank[id].id].start_point+d/loop_enc_resolution,(1+(8*(bank[id][bank[id].id].clip-1))),(8.9+(8*(bank[id][bank[id].id].clip-1))))
           elseif d < 0 then
@@ -147,6 +147,11 @@ function encoder_actions.init(n,d)
           if bank[id].id == 16 then
             for i = 1,15 do
               bank[id][i].offset = bank[id][16].offset
+            end
+          end
+          if grid.alt == 1 then
+            for i = 1,16 do
+              bank[id][i].offset = bank[id][bank[id].id].offset
             end
           end
         else

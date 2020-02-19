@@ -131,7 +131,7 @@ function arc_actions.init(n,d)
       arc_p[n].delay_focus = "R"
       arc_p[n].right_delay_value = params:get("delay R: rate")
     end
-    arc_pat[n]:watch(arc_p[n])
+    --arc_pat[n]:watch(arc_p[n])
   end
   redraw()
 end
