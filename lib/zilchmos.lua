@@ -40,6 +40,8 @@ function zilchmos.init(k,i)
         if not bank[i][bank[i].id].enveloped then
           softcut.level_slew_time(i+1,1.0)
           softcut.level(i+1,bank[i][bank[i].id].level)
+          softcut.level_cut_cut(i+1,5,util.linlin(-1,1,0,1,bank[i][bank[i].id].pan)*(bank[i][bank[i].id].left_delay_level*bank[i][bank[i].id].level))
+          softcut.level_cut_cut(i+1,6,util.linlin(-1,1,1,0,bank[i][bank[i].id].pan)*(bank[i][bank[i].id].right_delay_level*bank[i][bank[i].id].level))
         end
       end
     end
@@ -77,6 +79,8 @@ function zilchmos.init(k,i)
         if not bank[i][bank[i].id].enveloped then
           softcut.level_slew_time(i+1,1.0)
           softcut.level(i+1,bank[i][bank[i].id].level)
+          softcut.level_cut_cut(i+1,5,util.linlin(-1,1,0,1,bank[i][bank[i].id].pan)*(bank[i][bank[i].id].left_delay_level*bank[i][bank[i].id].level))
+          softcut.level_cut_cut(i+1,6,util.linlin(-1,1,1,0,bank[i][bank[i].id].pan)*(bank[i][bank[i].id].right_delay_level*bank[i][bank[i].id].level))
         end
       end
     end
@@ -125,7 +129,6 @@ function zilchmos.init(k,i)
           end
         end
         if bank[i][bank[i].id].loop == true and bank[i][bank[i].id].enveloped == false then
-        --if bank[i][bank[i].id].loop == true then
           cheat(i,bank[i].id)
         end
       elseif k == 3 then
@@ -255,14 +258,10 @@ function zilchmos.init(k,i)
     if fingers[k][i].con == "14" then
       if grid.alt == 0 then
         bank[i][bank[i].id].rate = bank[i][bank[i].id].rate*-1
-        --[[local current = params:get("rate "..i)
-        params:set("rate "..i,13-current)]]--
       else
         for j = 1,16 do
           bank[i][j].rate = bank[i][j].rate*-1
         end
-        --[[local current = params:get("rate "..i)
-        params:set("rate "..i,13-current)]]--
       end
       if bank[i][bank[i].id].pause == false then
         softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
@@ -273,27 +272,15 @@ function zilchmos.init(k,i)
         if math.abs(bank[i][bank[i].id].rate) < 4 then
           bank[i][bank[i].id].rate = bank[i][bank[i].id].rate*2
         end
-        --[[if params:get("rate "..i) < 12 and params:get("rate "..i) >= 7 then
-          params:delta("rate "..i,1)
-        elseif params:get("rate "..i) >= 1 and params:get("rate "..i) <= 6 then
-          params:delta("rate "..i,-1)
-        end]]--
       else
         for j = 1,16 do
           if math.abs(bank[i][j].rate) < 4 then
             bank[i][j].rate = bank[i][j].rate*2
           end
-          --[[if params:get("rate "..i) < 12 and params:get("rate "..i) >= 7 then
-            params:delta("rate "..i,1)
-          elseif params:get("rate "..i) >= 1 and params:get("rate "..i) < 6 then
-            params:delta("rate "..i,-1)
-          end]]--
         end
       end
       if bank[i][bank[i].id].pause == false then
         softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
-        --softcut.level(i+1,bank[i][bank[i].id].level)
-        -- WILL THIS WORK??
       end
     end
     if fingers[k][i].con == "134" then
@@ -301,27 +288,15 @@ function zilchmos.init(k,i)
         if math.abs(bank[i][bank[i].id].rate) > 0.125 then
           bank[i][bank[i].id].rate = bank[i][bank[i].id].rate/2
         end
-        --[[if params:get("rate "..i) > 7 then
-          params:delta("rate "..i,-1)
-        elseif params:get("rate "..i) >= 1 and params:get("rate "..i) < 6 then
-          params:delta("rate "..i,1)
-        end]]--
       else
         for j = 1,16 do
           if math.abs(bank[i][j].rate) > 0.125 then
             bank[i][j].rate = bank[i][j].rate/2
           end
-          --[[if params:get("rate "..i) > 7 then
-            params:delta("rate "..i,-1)
-          elseif params:get("rate "..i) > 1 and params:get("rate "..i) < 6 then
-            params:delta("rate "..i,1)
-          end]]--
         end
       end
       if bank[i][bank[i].id].pause == false then
         softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
-        --softcut.level(i+1,bank[i][bank[i].id].level)
-        -- WILL THIS WORK??
       end
     end
     if fingers[k][i].con == "123" then

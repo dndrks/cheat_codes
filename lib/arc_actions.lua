@@ -46,26 +46,12 @@ function arc_actions.init(n,d)
     end
     softcut.loop_end(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].end_point)
   elseif arc_param[n] == 4 then
---    if grid.alt == 0 then
---      bank[arc_control[n]][bank[arc_control[n]].id].fc = util.explin(10,12000,10,12000,bank[arc_control[n]][bank[arc_control[n]].id].fc)
---      bank[arc_control[n]][bank[arc_control[n]].id].fc = util.clamp(bank[arc_control[n]][bank[arc_control[n]].id].fc+(d*10), 10, 12000)
---      bank[arc_control[n]][bank[arc_control[n]].id].fc = util.linexp(10,12000,10,12000,bank[arc_control[n]][bank[arc_control[n]].id].fc)
---    else
---      for j = 1,16 do
---        bank[arc_control[n]][j].fc = util.explin(10,12000,10,12000,bank[arc_control[n]][j].fc)
---        bank[arc_control[n]][j].fc = util.clamp(bank[arc_control[n]][j].fc+(d*10), 10, 12000)
---        bank[arc_control[n]][j].fc = util.linexp(10,12000,10,12000,bank[arc_control[n]][j].fc)
---      end
---    end
---    params:set("filter "..arc_control[n].." cutoff", bank[arc_control[n]][bank[arc_control[n]].id].fc)
     local a_c = arc_control[n]
     if key1_hold or grid.alt == 1 then
       if slew_counter[a_c] ~= nil then
         slew_counter[a_c].prev_tilt = bank[a_c][bank[a_c].id].tilt
       end
       bank[a_c][bank[a_c].id].tilt = util.explin(1,3,-1,1,bank[a_c][bank[a_c].id].tilt+2)
-      --here's the fine arc
-      --bank[a_c][bank[a_c].id].tilt = util.clamp(bank[a_c][bank[a_c].id].tilt+(d/10000),-1,1)
       bank[a_c][bank[a_c].id].tilt = util.clamp(bank[a_c][bank[a_c].id].tilt+(d/1000),-1,1)
       bank[a_c][bank[a_c].id].tilt = util.linexp(-1,1,1,3,bank[a_c][bank[a_c].id].tilt)-2
       if d < 0 then
@@ -81,7 +67,6 @@ function arc_actions.init(n,d)
         slew_counter[a_c].prev_tilt = bank[a_c][bank[a_c].id].tilt
       end
       for j = 1,16 do
-        --bank[a_c][j].tilt = util.clamp(bank[a_c][j].tilt+(d/10000),-1,1)
         bank[a_c][j].tilt = util.explin(1,3,-1,1,bank[a_c][j].tilt+2)
         bank[a_c][j].tilt = util.clamp(bank[a_c][j].tilt+(d/1000),-1,1)
         bank[a_c][j].tilt = util.linexp(-1,1,1,3,bank[a_c][j].tilt)-2
@@ -131,7 +116,6 @@ function arc_actions.init(n,d)
       arc_p[n].delay_focus = "R"
       arc_p[n].right_delay_value = params:get("delay R: rate")
     end
-    --arc_pat[n]:watch(arc_p[n])
   end
   redraw()
 end

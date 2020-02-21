@@ -128,7 +128,6 @@ function grid_actions.init(x,y,z)
               grid_pat[i]:stop()
               grid_pat[i].external_start = 0
               grid_pat[i]:clear()
-              --optional?
               pattern_saver[i].load_slot = 0
             elseif grid_pat[i].rec == 1 then
               grid_pat[i]:rec_stop()
@@ -166,7 +165,6 @@ function grid_actions.init(x,y,z)
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
               grid_pat[i]:clear()
-              --optional?
               pattern_saver[i].load_slot = 0
             else
               table.insert(grid_pat_quantize_events[i],i)
@@ -234,6 +232,7 @@ function grid_actions.init(x,y,z)
     end
     
     if x == 16 and y == 8 then
+      if grid.alt_pp == 1 then grid.alt_pp = 0 end
       grid.alt = z
       if menu == 8 then
         if grid.alt == 1 then
@@ -293,9 +292,6 @@ function grid_actions.init(x,y,z)
     
     for i = 7,5,-1 do
       if x == 16 and z == 1 and y == i then
-        --softcut.position(1,1+(8*(7-y)))
-        --softcut.fade_time(1,0.1)
-        --softcut.recpre_slew_time(1,0.1)
         softcut.level_slew_time(1,0.5)
         softcut.fade_time(1,0.01)
         
@@ -330,7 +326,6 @@ function grid_actions.init(x,y,z)
         softcut.loop_end(1,rec.end_point-0.01)
         if rec.loop == 1 then
           if old_clip ~= rec.clip then rec.state = 0 end
-          --if rec.state == 0 then rec.state = 1
           buff_freeze()
           if rec.clear == 1 then
             rec.clear = 0
@@ -343,12 +338,6 @@ function grid_actions.init(x,y,z)
         if menu == 8 then
           help_menu = "buffer switch"
         end
-        buff_key_down = util.time()
-      --[[elseif x == 16 and z == 0 and y == i then
-        local buff_key_up = util.time()
-        if buff_key_up - buff_key_down >=1.5 then
-          buff_flush()
-        end-]]--
       end
     end
     
@@ -531,21 +520,6 @@ function grid_actions.init(x,y,z)
             end
           elseif z == 0 then
             step_seq[current].loop_held = step_seq[current].loop_held - 1
-          end
-        end
-        for j = 1,8 do
-          if z == 1 and x == i and y == j then
-            local current = math.floor(x/5)+1
-            --step_seq[current].loop_held = step_seq[current].loop_held + 1
-          elseif z == 0 and x == i and y == j then
-            local current = math.floor(x/5)+1
-            --step_seq[current].loop_held = step_seq[current].loop_held - 1
-          elseif z == 1 and x == i+1 and y == j then
-            local current = math.floor(x/5)+1
-            --step_seq[current].loop_held = step_seq[current].loop_held + 1
-          elseif z == 0 and x == i+1 and y == j then
-            local current = math.floor(x/5)+1
-            --step_seq[current].loop_held = step_seq[current].loop_held - 1
           end
         end
       end

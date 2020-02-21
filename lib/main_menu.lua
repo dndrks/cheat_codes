@@ -131,7 +131,6 @@ function main_menu.init()
       end
       screen.move(35+(20*(i-1)),57)
       local level_to_screen = util.linlin(0,2,0,40,bank[i][bank[i].id].level)
-      --screen.level(bank[i][bank[i].id].pause and 3 or 15)
       screen.line(35+(20*(i-1)),57-level_to_screen)
       screen.close()
       screen.stroke()
@@ -183,7 +182,6 @@ function main_menu.init()
         screen.text(pan_to_screen_options[i]..""..bank[i].id)
       end
     end
-    --
     screen.level(3)
     screen.move(0,64)
     screen.text("...")

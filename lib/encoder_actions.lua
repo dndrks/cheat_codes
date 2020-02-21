@@ -230,6 +230,8 @@ function encoder_actions.init(n,d)
       if bank[n][bank[n].id].enveloped == false then
         softcut.level_slew_time(n+1,1.0)
         softcut.level(n+1,bank[n][bank[n].id].level)
+        softcut.level_cut_cut(n+1,5,util.linlin(-1,1,0,1,bank[n][bank[n].id].pan)*(bank[n][bank[n].id].left_delay_level*bank[n][bank[n].id].level))
+        softcut.level_cut_cut(n+1,6,util.linlin(-1,1,1,0,bank[n][bank[n].id].pan)*(bank[n][bank[n].id].right_delay_level*bank[n][bank[n].id].level))
       end
     elseif page.levels_sel == 1 then
       if key1_hold or grid.alt == 1 then

@@ -43,9 +43,6 @@ end
 
 help_menu = "welcome"
 
---[[rec_counter = metro.init(rec_count, 0.01, -1)
-rec_time = 0]]--
-
 function f1()
   softcut.post_filter_lp(2,0)
   softcut.post_filter_hp(2,1)
@@ -217,7 +214,6 @@ function linearize_grid_pat(bank, mode, resolution)
     local thirtysecond_note = (60 / bpm) / 8
     local resolutions = {quarter_note, eighth_note, eighth_triplet_note, sixteenth_note, thirtysecond_note}
     for k = 1,grid_pat[bank].count do
-      --print("before quant: "..grid_pat[bank].time[k])
       grid_pat[bank].time[k] = resolutions[resolution] * math.floor((grid_pat[bank].time[k] / resolutions[resolution]) + 0.5)
       if grid_pat[bank].time[k] == 0 then
         if quantize == 1 then
@@ -226,7 +222,6 @@ function linearize_grid_pat(bank, mode, resolution)
           grid_pat[bank].time[k] = resolutions[resolution]
         end
       end
-      --print("after quant: "..grid_pat[bank].time[k])
     end
   end
 end
@@ -253,7 +248,6 @@ end
 function adjust_times(bank, multiplier)
   if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
     local total_time = 0
-    --synced_to_bpm = bpm
     for i = 1,#grid_pat[bank].event do
       total_time = total_time + grid_pat[bank].time[i]
     end
@@ -264,7 +258,6 @@ function adjust_times(bank, multiplier)
       reset_pattern_time(bank)
     end
     for k = 1,grid_pat[bank].count do
-      --print("before quant: "..grid_pat[bank].time[k])
       grid_pat[bank].time[k] = multiplier * grid_pat[bank].time[k]
     end
     total_time = 0
@@ -279,7 +272,6 @@ end
 function snap_to_bars(bank,bar_count)
   if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
     local total_time = 0
-    --synced_to_bpm = bpm
     for i = 1,#grid_pat[bank].event do
       total_time = total_time + grid_pat[bank].time[i]
     end
@@ -289,7 +281,6 @@ function snap_to_bars(bank,bar_count)
     end
     local bar_time = (((60/bpm)*4)*bar_count)/total_time
     for k = 1,grid_pat[bank].count do
-      --print("before quant: "..grid_pat[bank].time[k])
       grid_pat[bank].time[k] = grid_pat[bank].time[k] * bar_time
     end
     total_time = 0
@@ -298,10 +289,29 @@ function snap_to_bars(bank,bar_count)
     end
     print("after total: "..total_time)
     midi_clock_linearize(bank)
+    --snap_to_bars_midi(bank,bar_count)
   end
 end
 
 function snap_to_bars_midi(bank,bar_count)
+  g_p_q[bank].event = {}
+  for i = 1,grid_pat[bank].count do
+    g_p_q[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / ((60/bpm)/4))+0.5)
+    g_p_q[bank].event[i] = {} -- critical
+    if grid_pat[bank].time[i] == 0 or g_p_q[bank].clicks[i] == 0 then
+      g_p_q[bank].event[i][1] = "nothing"
+    else
+      for j = 1,g_p_q[bank].clicks[i] do
+        if j == 1 then
+          g_p_q[bank].event[i][1] = "something"
+        else
+          g_p_q[bank].event[i][j] = "nothing"
+        end
+      end
+    end
+  end
+  g_p_q[bank].current_step = 1
+  g_p_q[bank].sub_step = 1
   local entry_count = 0
   local target_entry_count = bar_count*16
   for i = 1,#g_p_q[bank].event do
@@ -324,7 +334,7 @@ function snap_to_bars_midi(bank,bar_count)
         print("skip: "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
         if last_event > 0 then last_event = last_event - 1 end
         print("minus 1!: "..last_event)
-        if #g_p_q[bank].event[last_event] > 1 then
+        if #g_p_q[bank].event[last_event] ~= nil and #g_p_q[bank].event[last_event] > 1 then
           print("removing "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
           table.remove(g_p_q[bank].event[last_event])
         end
@@ -340,6 +350,65 @@ function snap_to_bars_midi(bank,bar_count)
     entry_count = entry_count + #g_p_q[bank].event[i]
   end
   print("after: "..entry_count)
+end
+
+function save_external_timing(bank,slot)
+  
+  local dirname = _path.data.."cheat_codes/external-timing/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+  
+  local file = io.open(_path.data .. "cheat_codes/external-timing/pattern"..selected_coll.."_"..slot.."_external-timing.data", "w+")
+  io.output(file)
+  io.write("external clock timing for stored pad pattern: collection "..selected_coll.." + slot "..slot.."\n")
+  local total_entry_count = 0
+  local number_of_events = #g_p_q[bank].event
+  for i = 1,number_of_events do
+    total_entry_count = total_entry_count + #g_p_q[bank].event[i]
+  end
+  io.write(total_entry_count.."\n")
+  io.write(number_of_events.."\n")
+  for i = 1,number_of_events do
+    io.write("event: "..i.."\n")
+    io.write("total entries: "..#g_p_q[bank].event[i].."\n")
+    for j = 1,#g_p_q[bank].event[i] do
+      io.write(g_p_q[bank].event[i][j].."\n")
+    end
+  end
+  io.close(file)
+  print("saved external timing for pattern "..bank.." to slot "..slot)
+end
+
+function load_external_timing(bank,slot)
+  local file = io.open(_path.data .. "cheat_codes/external-timing/pattern"..selected_coll.."_"..slot.."_external-timing.data", "r")
+  if file then
+    io.input(file)
+    if io.read() == "external clock timing for stored pad pattern: collection "..selected_coll.." + slot "..slot then
+      g_p_q[bank].event = {}
+      local total_entry_count = tonumber(io.read())
+      local number_of_events = tonumber(io.read())
+      for i = 1,number_of_events do
+        local event_id = tonumber(string.match(io.read(), '%d+'))
+        local entry_count = tonumber(string.match(io.read(), '%d+'))
+        g_p_q[bank].event[i] = {}
+        for j = 1,entry_count do
+          g_p_q[bank].event[i][j] = io.read()
+        end
+      end
+    end
+    io.close(file)
+  else
+    print("no external timing file")
+  end
+end
+
+function c_q(bank)
+  local entry_count = 0
+  for i = 1,#g_p_q[bank].event do
+    entry_count = entry_count + #g_p_q[bank].event[i]
+  end
+  print("current: "..entry_count)
 end
 
 function reset_pattern_time(bank)
@@ -558,6 +627,7 @@ function init()
   
   params:add{type = "trigger", id = "load", name = "load", action = loadstate}
   params:add_number("collection", "collection", 1,100,1)
+  params:add_option("collect_live","collect Live buffers?",{"no","yes"})
   --params:set_action("collection", function (x) selected_coll = x end)
   params:add{type = "trigger", id = "save", name = "save", action = savestate}
   
@@ -906,15 +976,34 @@ function init()
 end
 
 poll_position_new = {}
-for i = 1,3 do
+--[[for i = 1,3 do
   poll_position_new[i] = {}
-end
+end]]--
 
 phase = function(n, x)
   poll_position_new[n] = x
   if menu == 2 then
     redraw()
   end
+  --[[if rec.state == 1 then
+    for i = 2,4 do
+      local squiggle = tonumber(poll_position_new[i])
+      local other_squiggle = tonumber(poll_position_new[1])
+      if squiggle ~= nil and other_squiggle ~= nil then
+        --if math.floor(((squiggle*10)+0.5))/10 == math.floor(((other_squiggle*10)+0.5))/10 then
+        if math.floor(((squiggle*10)+0.5))/10 > math.floor(((other_squiggle*10)+0.5))/10 - 0.1 and math.floor(((squiggle*10)+0.5))/10 < math.floor(((other_squiggle*10)+0.5))/10 + 0.1 then
+          --softcut.position(i,math.floor(((other_squiggle*10)+0.5))/10-0.05)
+          softcut.level_slew_time(i,0.005)
+          softcut.level(i,0.04)
+        else
+          if not bank[i-1][bank[i-1].id].enveloped then
+            softcut.level_slew_time(i,1.0)
+            softcut.level(i,bank[i-1][bank[i-1].id].level)
+          end
+        end
+      end
+    end
+  end]]--
 end
 
 local tap = 0
@@ -1047,7 +1136,7 @@ function reset_all_banks()
       bank[i][k].fifth = false
       bank[i][k].pan = 0.0
       bank[i][k].left_delay_pan = util.linlin(-1,1,0,1,bank[i][k].pan)*bank[i][k].left_delay_level
-      bank[i][k].right_delay_pan = util.linlin(-1,1,1,0,bank[i][k].pan)*bank[i][k].left_delay_level
+      bank[i][k].right_delay_pan = util.linlin(-1,1,1,0,bank[i][k].pan)*bank[i][k].right_delay_level
       bank[i][k].fc = 12000
       bank[i][k].q = 2.0
       bank[i][k].lp = 1.0
@@ -1256,7 +1345,7 @@ function buff_freeze()
 end
 
 function buff_flush()
-  softcut.buffer_clear_region(rec.start_point, rec.end_point-0.01)
+  softcut.buffer_clear_region(rec.start_point, rec.end_point-rec.start_point)
   rec.state = 0
   rec.clear = 1
   softcut.rec_level(1,0)
@@ -1291,6 +1380,27 @@ function save_sample(i)
   local name = "cc_"..os.date("%y%m%d_%X-buff")..i..".wav"
   local save_pos = i - 1
   softcut.buffer_write_mono(_path.dust.."/audio/"..name,1+(8*save_pos),8,1)
+end
+
+function collect_samples(i) -- this works!!!
+  local dirname = _path.dust.."audio/cc_collected/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+  local dirname = _path.dust.."audio/cc_collected/"..params:get("collection").."/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+  local name = "cc_"..params:get("collection").."-"..i..".wav"
+  local save_pos = i - 1
+  softcut.buffer_write_mono(_path.dust.."audio/cc_collected/"..params:get("collection").."/"..name,1+(8*save_pos),8,1)
+end
+
+function reload_collected_samples(file,sample)
+  buff_freeze()
+  if file ~= "-" then
+    softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), 8, 1, 1)
+  end
 end
 
 function key(n,z)
@@ -1538,7 +1648,7 @@ function grid_redraw()
     end
     
     if rec.clear == 0 then
-      g:led(16,8-rec.clip,(10*rec.state)+3)
+      g:led(16,8-rec.clip,(5*rec.state)+5)
     elseif rec.clear == 1 then
       g:led(16,8-rec.clip,3)
     end
@@ -1943,11 +2053,22 @@ function savestate()
       io.write(step_seq[i][k].loop_pattern.."\n")
     end
   end
+  io.write("collect live?".."\n")
+  io.write(params:get("collect_live").."\n")
+  if params:get("collect_live") == 2 then
+    io.write("sample refs".."\n")
+    for i = 1,3 do
+      io.write("/home/we/dust/audio/cc_collected/"..params:get("collection").."/".."cc_"..params:get("collection").."-"..i..".wav".."\n")
+      collect_samples(i)
+    end
+  end
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
   end
   meta_shadow(params:get("collection"))
+  --maybe not this? want to clean up
+  selected_coll = params:get("collection")
 end
 
 function loadstate()
@@ -2101,6 +2222,18 @@ function loadstate()
         end
       end
     end
+    if io.read() == "collect live?" then
+      local restore_live = tonumber(io.read())
+      params:set("collect_live",restore_live)
+      if restore_live == 2 then
+        if io.read() == "sample refs" then
+          for i = 1,3 do
+            local string_to_sample = io.read()
+            reload_collected_samples(string_to_sample,i)
+          end
+        end
+      end
+    end
     io.close(file)
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
@@ -2129,7 +2262,7 @@ function test_save(i)
   if grid.alt_pp == 0 then
     if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
       copy_entire_pattern(i)
-      print(pattern_saver[i].source, pattern_saver[i].save_slot)
+      --print(pattern_saver[i].source, pattern_saver[i].save_slot)
       save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
       pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
       pattern_saver[i].load_slot = pattern_saver[i].save_slot
@@ -2228,6 +2361,7 @@ function save_pattern(source,slot)
   io.write(original_pattern[source].metro.props.time .. "\n")
   io.write(original_pattern[source].prev_time .. "\n")
   io.close(file)
+  save_external_timing(source,slot)
   print("saved pattern "..source.." to slot "..slot)
 end
 
@@ -2264,6 +2398,17 @@ function clear_zero()
       io.close(file)
     end
   end
+  for i = 1,24 do
+    local external_timing_file = io.open(_path.data .. "cheat_codes/external-timing/pattern0_"..i.."_external-timing.data", "r")
+    if external_timing_file then
+      io.input(external_timing_file)
+      if io.read() == "external clock timing for stored pad pattern: collection 0 + slot "..i then
+        os.remove(_path.data .. "cheat_codes/external-timing/pattern0_"..i.."_external-timing.data")
+        print("cleared default external timing")
+      end
+      io.close(external_timing_file)
+    end
+  end
 end
 
 function delete_pattern(slot)
@@ -2272,6 +2417,11 @@ function delete_pattern(slot)
   io.write()
   io.close(file)
   print("deleted pattern from slot "..slot)
+  local external_timing_file = io.open(_path.data .. "cheat_codes/external-timing/pattern"..selected_coll.."_"..slot.."_external-timing.data", "w+")
+  io.output(external_timing_file)
+  io.write()
+  io.close(external_timing_file)
+  print("deleted external timing from slot "..slot)
 end
 
 function copy_pattern_across_coll(read_coll,write_coll,slot)
@@ -2287,6 +2437,22 @@ function copy_pattern_across_coll(read_coll,write_coll,slot)
   end
   io.close(infile)
   io.close(outfile)
+
+  --/externalshadow
+  local external_timing_infile = io.open(_path.data .. "cheat_codes/external-timing/pattern"..read_coll.."_"..slot.."_external-timing.data", "r")
+  local external_timing_outfile = io.open(_path.data .. "cheat_codes/external-timing/pattern"..write_coll.."_"..slot.."_external-timing.data", "w+")
+  io.output(external_timing_outfile)
+  for line in external_timing_infile:lines() do
+    if line == "external clock timing for stored pad pattern: collection "..read_coll.." + slot "..slot then
+      io.write("external clock timing for stored pad pattern: collection "..write_coll.." + slot "..slot.."\n")
+    else
+      io.write(line.."\n")
+    end
+  end
+  io.close(external_timing_infile)
+  io.close(external_timing_outfile)
+  --externalshadow/
+  
 end
 
 function shadow_pattern(read_coll,write_coll,slot)
@@ -2302,6 +2468,22 @@ function shadow_pattern(read_coll,write_coll,slot)
   end
   io.close(infile)
   io.close(outfile)
+  
+  --/externalshadow
+  local external_timing_infile = io.open(_path.data .. "cheat_codes/external-timing/pattern"..read_coll.."_"..slot.."_external-timing.data", "r")
+  local external_timing_outfile = io.open(_path.data .. "cheat_codes/external-timing/shadow-pattern"..write_coll.."_"..slot.."_external-timing.data", "w+")
+  io.output(external_timing_outfile)
+  for line in external_timing_infile:lines() do
+    if line == "external clock timing for stored pad pattern: collection "..read_coll.." + slot "..slot then
+      io.write("external clock timing for stored pad pattern: collection "..write_coll.." + slot "..slot.."\n")
+    else
+      io.write(line.."\n")
+    end
+  end
+  io.close(external_timing_infile)
+  io.close(external_timing_outfile)
+  --externalshadow/
+
 end
 
 function meta_shadow(coll)
@@ -2317,6 +2499,15 @@ function meta_shadow(coll)
           io.write()
           io.close(file)
         end
+        
+        --/externalshadow
+        local external_timing_file = io.open(_path.data .. "cheat_codes/external-timing/shadow-pattern"..coll.."_"..j+(8*(i-1)).."_external-timing.data", "w+")
+        if external_timing_file then
+          io.output(external_timing_file)
+          io.write()
+          io.close(external_timing_file)
+        end
+        --externalshadow/
       end
     end
   end
@@ -2341,6 +2532,25 @@ function clear_empty_shadows(coll)
       pattern_saver[current].saved[i-(8*(current-1))] = 0
     end
   end
+  
+  --/externalshadow
+  for i = 1,24 do
+    local file = io.open(_path.data .. "cheat_codes/external-timing/shadow-pattern"..coll.."_"..i.."_external-timing.data", "r")
+    if file then
+      io.input(file)
+      if io.read() == "external clock timing for stored pad pattern: collection "..coll.." + slot "..i then
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 1
+      else
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 0
+        os.remove(_path.data .. "cheat_codes/external-timing/shadow-pattern" ..coll.."_"..i.."_external-timing.data")
+      end
+      io.close(file)
+    end
+  end
+  --externalshadow/
+  
 end
 
 function shadow_to_play(coll,slot)
@@ -2358,6 +2568,24 @@ function shadow_to_play(coll,slot)
     io.close(infile)
     io.close(outfile)
   end
+  
+  --/externalshadow
+  local external_timing_infile = io.open(_path.data .. "cheat_codes/external-timing/shadow-pattern"..coll.."_"..slot.."_external-timing.data", "r")
+  local external_timing_outfile = io.open(_path.data .. "cheat_codes/external-timing/pattern"..coll.."_"..slot.."_external-timing.data", "w+")
+  io.output(external_timing_outfile)
+  if external_timing_infile then
+    for line in external_timing_infile:lines() do
+      if line == "external clock timing for stored pad pattern: collection "..coll.." + slot "..slot then
+        io.write("external clock timing for stored pad pattern: collection "..coll.." + slot "..slot.."\n")
+      else
+        io.write(line.."\n")
+      end
+    end
+    io.close(external_timing_infile)
+    io.close(external_timing_outfile)
+  end
+  --externalshadow/
+  
 end
 
 function meta_copy_coll(read_coll,write_coll)
@@ -2372,6 +2600,16 @@ function meta_copy_coll(read_coll,write_coll)
           io.write()
           io.close(file)
         end
+        
+        --/externalshadow
+        local external_timing_file = io.open(_path.data .. "cheat_codes/external-timing/pattern"..write_coll.."_"..j+(8*(i-1)).."_external-timing.data", "w+")
+        if external_timing_file then
+          io.output(external_timing_file)
+          io.write()
+          io.close(external_timing_file)
+        end
+        --externalshadow/
+        
       end
     end
   end
@@ -2445,7 +2683,7 @@ function load_pattern(slot,destination)
         grid_pat[destination].event[i].con = io.read()
         local loaded_bank = tonumber(io.read())
         if loaded_bank ~= nil then
-          print(loaded_bank)
+          --print(loaded_bank)
           if destination < source then
             grid_pat[destination].event[i].bank = loaded_bank - (5*(source-destination))
           elseif destination > source then
@@ -2458,8 +2696,9 @@ function load_pattern(slot,destination)
       grid_pat[destination].metro.props.time = tonumber(io.read())
       grid_pat[destination].prev_time = tonumber(io.read())
     end
-    midi_clock_linearize(destination)
+    --midi_clock_linearize(destination)
     io.close(file)
+    load_external_timing(destination,slot)
   else
     print("nofile")
   end
@@ -2473,6 +2712,8 @@ function cleanup()
     end
   end
   --print(selected_coll)
+  
+  --need all this to just happen at cleanup after save
   for i = 1,24 do
     local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..i..".data", "r")
     if file then
@@ -2491,5 +2732,26 @@ function cleanup()
       pattern_saver[current].saved[i-(8*(current-1))] = 0
     end
   end
+  
+  --/externalshadow
+  for i = 1,24 do
+    local file = io.open(_path.data .. "cheat_codes/external-timing/pattern"..selected_coll.."_"..i.."_external-timing.data", "r")
+    if file then
+      io.input(file)
+      if io.read() == "external clock timing for stored pad pattern: collection "..selected_coll.." + slot "..i then
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 1
+      else
+        local current = math.floor((i-1)/8)+1
+        pattern_saver[current].saved[i-(8*(current-1))] = 0
+        os.remove(_path.data .. "cheat_codes/external-timing/pattern" ..selected_coll.."_"..i.."_external-timing.data")
+      end
+      io.close(file)
+    else
+      print("can't clean these external files?")
+    end
+  end
+  --externalshadow/
+  
   clear_empty_shadows(selected_coll)
 end
