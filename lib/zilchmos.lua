@@ -48,13 +48,16 @@ function zilchmos.init(k,i)
     if fingers[k][i].con == "2" then
       if k == 4 then
         if grid.alt == 0 then
-          bank[i][bank[i].id].start_point = 1+((8/16)*(bank[i].id-1))
+          bank[i][bank[i].id].start_point = 1+((8/16)*(bank[i].id-1))+(8*(bank[i][bank[i].id].clip-1))
+          bank[i][bank[i].id].end_point = 1+((8/16)*bank[i].id)+(8*(bank[i][bank[i].id].clip-1))
         else
           for j = 1,16 do
-            bank[i][j].start_point = 1+((8/16)*(j-1))
+            bank[i][j].start_point = 1+((8/16)*(j-1))+(8*(bank[i][j].clip-1))
+            bank[i][j].end_point = 1+((8/16)*j)+(8*(bank[i][bank[i].id].clip-1))
           end
         end
         softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+        softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
       elseif k == 3 then
         if grid.alt == 0 then
           bank[i][bank[i].id].pan = 0
@@ -86,13 +89,19 @@ function zilchmos.init(k,i)
     end
     if fingers[k][i].con == "3" then
       if k == 4 then
+        local bpm_to_sixteenth = (60/bpm)/4
         if grid.alt == 0 then
-          bank[i][bank[i].id].end_point = 1+((8/16)*bank[i].id)
+          --bank[i][bank[i].id].end_point = 1+((8/16)*bank[i].id)
+          bank[i][bank[i].id].start_point = (1+((8/16)*(bank[i].id-1)))+(8*(bank[i][bank[i].id].clip-1))
+          bank[i][bank[i].id].end_point = bank[i][bank[i].id].start_point + bpm_to_sixteenth
         else
           for j= 1,16 do
-            bank[i][j].end_point = 1+((8/16)*j)
+            --bank[i][j].end_point = 1+((8/16)*j)
+            bank[i][j].start_point = (1+((8/16)*(j-1)))+(8*(bank[i][j].clip-1))
+            bank[i][j].end_point = bank[i][j].start_point + bpm_to_sixteenth
           end
         end
+        softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
         softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
       elseif k == 3 then
         if grid.alt == 0 then
@@ -230,11 +239,37 @@ function zilchmos.init(k,i)
     end
     if fingers[k][i].con == "13" then
       if k == 4 then
-        local double = (bank[i][bank[i].id].end_point - bank[i][bank[i].id].start_point)*2
-        if bank[i][bank[i].id].end_point - double > 0 then
-          bank[i][bank[i].id].start_point = bank[i][bank[i].id].end_point - double
-          softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+        if grid.alt == 0 then
+          local double = (bank[i][bank[i].id].end_point - bank[i][bank[i].id].start_point)*2
+          local maximum_val = 9+(8*(bank[i][bank[i].id].clip-1))
+          local minimum_val = 1+(8*(bank[i][bank[i].id].clip-1))
+          if bank[i][bank[i].id].start_point - double >= minimum_val then
+            bank[i][bank[i].id].start_point = bank[i][bank[i].id].end_point - double
+            --softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+          elseif bank[i][bank[i].id].start_point - double < minimum_val then
+            if bank[i][bank[i].id].end_point + double < maximum_val then
+              bank[i][bank[i].id].end_point = bank[i][bank[i].id].end_point + double
+              --softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
+            end
+          end
+        else
+          for j = 1,16 do
+            local double = (bank[i][j].end_point - bank[i][j].start_point)*2
+            local maximum_val = 9+(8*(bank[i][j].clip-1))
+            local minimum_val = 1+(8*(bank[i][j].clip-1))
+            if bank[i][j].start_point - double >= minimum_val then
+              bank[i][j].start_point = bank[i][j].end_point - double
+              --softcut.loop_start(i+1,bank[i][j].start_point)
+            elseif bank[i][j].start_point - double < minimum_val then
+              if bank[i][j].end_point + double < maximum_val then
+                bank[i][j].end_point = bank[i][j].end_point + double
+                --softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
+              end
+            end
+          end
         end
+        softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+        softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
       elseif k == 3 then
         if grid.alt == 0 then
           bank[i][bank[i].id].pan = bank[i][bank[i].id].pan * -1

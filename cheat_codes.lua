@@ -1377,23 +1377,27 @@ function load_sample(file,sample)
 end
 
 function save_sample(i)
-  local name = "cc_"..os.date("%y%m%d_%X-buff")..i..".wav"
-  local save_pos = i - 1
-  softcut.buffer_write_mono(_path.dust.."/audio/"..name,1+(8*save_pos),8,1)
-end
-
-function collect_samples(i) -- this works!!!
-  local dirname = _path.dust.."audio/cc_collected/"
+  local dirname = _path.dust.."audio/cc_saved_samples/"
   if os.rename(dirname, dirname) == nil then
     os.execute("mkdir " .. dirname)
   end
-  local dirname = _path.dust.."audio/cc_collected/"..params:get("collection").."/"
+  local name = "cc_"..os.date("%y%m%d_%X-buff")..i..".wav"
+  local save_pos = i - 1
+  softcut.buffer_write_mono(_path.dust.."/audio/cc_saved_samples/"..name,1+(8*save_pos),8,1)
+end
+
+function collect_samples(i) -- this works!!!
+  local dirname = _path.dust.."audio/cc_collection-samples/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+  local dirname = _path.dust.."audio/cc_collection-samples/"..params:get("collection").."/"
   if os.rename(dirname, dirname) == nil then
     os.execute("mkdir " .. dirname)
   end
   local name = "cc_"..params:get("collection").."-"..i..".wav"
   local save_pos = i - 1
-  softcut.buffer_write_mono(_path.dust.."audio/cc_collected/"..params:get("collection").."/"..name,1+(8*save_pos),8,1)
+  softcut.buffer_write_mono(_path.dust.."audio/cc_collection-samples/"..params:get("collection").."/"..name,1+(8*save_pos),8,1)
 end
 
 function reload_collected_samples(file,sample)
@@ -2058,7 +2062,7 @@ function savestate()
   if params:get("collect_live") == 2 then
     io.write("sample refs".."\n")
     for i = 1,3 do
-      io.write("/home/we/dust/audio/cc_collected/"..params:get("collection").."/".."cc_"..params:get("collection").."-"..i..".wav".."\n")
+      io.write("/home/we/dust/audio/cc_collection-samples/"..params:get("collection").."/".."cc_"..params:get("collection").."-"..i..".wav".."\n")
       collect_samples(i)
     end
   end
