@@ -360,6 +360,22 @@ function main_menu.init()
       help_menus.arc_params()
     elseif help_menu == "arc patterns" then
       help_menus.arc_pattern()
+    elseif help_menu == "meta page" then
+      help_menus.meta_page()
+    elseif help_menu == "meta: slots" then
+      help_menus.meta_slots()
+    elseif help_menu == "meta: clock" then
+      help_menus.meta_clock()
+    elseif help_menu == "meta: step" then
+      help_menus.meta_step()
+    elseif help_menu == "meta: duration" then
+      help_menus.meta_duration()
+    elseif help_menu == "meta: alt" then
+      help_menus.meta_alt()
+    elseif help_menu == "meta: toggle" then
+      help_menus.meta_toggle()
+    elseif help_menu == "meta: loop mod" then
+      help_menus.meta_loop_mod()
     end
     screen.level(3)
     screen.move(0,64)

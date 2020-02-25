@@ -195,7 +195,7 @@ function start_up.init()
   
   for i = 1,3 do
     local banks = {"a","b","c"}
-    params:add_control("delay L: ("..banks[i]..") send", "delay L: ("..banks[i]..") send", controlspec.new(0,1,'lin',1,1,""))
+    params:add_control("delay L: ("..banks[i]..") send", "delay L: ("..banks[i]..") send", controlspec.new(0,1,'lin',0.1,1,""))
     params:set_action("delay L: ("..banks[i]..") send", function(x)
       if bank[i][bank[i].id].enveloped == false then
         softcut.level_cut_cut(i+1,5,x*bank[i][bank[i].id].level)
@@ -204,7 +204,7 @@ function start_up.init()
         bank[i][j].left_delay_level = x
       end
     end)
-    params:add_control("delay R: ("..banks[i]..") send", "delay R: ("..banks[i]..") send", controlspec.new(0,1,'lin',1,1,""))
+    params:add_control("delay R: ("..banks[i]..") send", "delay R: ("..banks[i]..") send", controlspec.new(0,1,'lin',0.1,1,""))
     params:set_action("delay R: ("..banks[i]..") send", function(x)
       if bank[i][bank[i].id].enveloped == false then
         softcut.level_cut_cut(i+1,6,x*bank[i][bank[i].id].level)

@@ -139,6 +139,7 @@ function grid_actions.init(x,y,z)
               midi_clock_linearize(i)
               if not clk.externalmidi and not clk.externalcrow then
                 grid_pat[i]:start()
+                grid_pat[i].loop = 1
               else
                 if grid_pat[i].count > 0 then
                   grid_pat[i].external_start = 1
@@ -232,12 +233,14 @@ function grid_actions.init(x,y,z)
     end
     
     if x == 16 and y == 8 then
-      if grid.alt_pp == 1 then grid.alt_pp = 0 end
+      if grid.alt_pp == 1 then
+        grid.alt_pp = 0
+      end
       grid.alt = z
       if menu == 8 then
         if grid.alt == 1 then
           help_menu = "alt"
-        else
+        elseif grid.alt == 0 then
           help_menu = "welcome"
         end
       end
@@ -530,11 +533,50 @@ function grid_actions.init(x,y,z)
       redraw()
       grid_redraw()
     end
+    
+    if menu == 8 then
+      if x == 1 or x == 6 or x == 11 then
+        help_menu = "meta: slots"
+      elseif x == 2 or x == 7 or x == 12 then
+        help_menu = "meta: clock"
+      elseif x == 3 or x == 4 or x == 8 or x == 9 or x == 13 or x == 14 then
+        if grid.loop_mod == 0 then
+          help_menu = "meta: step"
+        end
+      elseif x == 5 or x == 10 or x == 15 then
+        help_menu = "meta: duration"
+      elseif x == 16 then
+        if y == 8 then
+          if z == 1 then
+            help_menu = "meta: alt"
+          elseif z == 0 then
+            help_menu = "welcome"
+          end
+        elseif y == 7 or y == 6 or y == 5 then
+          help_menu = "meta: toggle"
+        elseif y == 2 then
+          if z == 1 then
+            help_menu = "meta: loop mod"
+          elseif z == 0 then
+            help_menu = "welcome"
+          end
+        end
+      end
+      redraw()
+    end
   
   end
   
   if x == 16 and y == 1 and z == 1 then
     grid_page = (grid_page + 1)%2
+    if menu == 8 then
+      if grid_page == 1 then
+        help_menu = "meta page"
+      elseif grid_page == 0 then
+        help_menu = "welcome"
+      end
+      redraw()
+    end
   end
     
 end

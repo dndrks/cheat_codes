@@ -288,8 +288,8 @@ function snap_to_bars(bank,bar_count)
       total_time = total_time + grid_pat[bank].time[i]
     end
     print("after total: "..total_time)
-    midi_clock_linearize(bank)
-    --snap_to_bars_midi(bank,bar_count)
+    --midi_clock_linearize(bank)
+    snap_to_bars_midi(bank,bar_count)
   end
 end
 
@@ -328,20 +328,31 @@ function snap_to_bars_midi(bank,bar_count)
     print("last event: "..last_event)
     local distance_count = entry_count - target_entry_count
     print("want to remove "..distance_count)
+    local how_many = 0
     for j = 1,distance_count do
-      print("loop last event: "..last_event)
-      while #g_p_q[bank].event[last_event] == 1 do
-        print("skip: "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
-        if last_event > 0 then last_event = last_event - 1 end
-        print("minus 1!: "..last_event)
-        if #g_p_q[bank].event[last_event] ~= nil and #g_p_q[bank].event[last_event] > 1 then
+      if last_event > 1 then
+        print("loop last event: "..last_event)
+        while #g_p_q[bank].event[last_event] == 1 do
+          print("skip: "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
+          if last_event > 0 then last_event = last_event - 1 end
+          print("minus 1!: "..last_event, j)
+          if last_event == 0 then
+            print("HERY EHY!!!")
+            --[[if distance_count-j > 0 then
+              table.remove(g_p_q[bank].event[total_again])
+              total_again = total_again - 1
+            end]]--
+          end
+        end
+        if #g_p_q[bank].event[last_event] > 1 then
           print("removing "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
           table.remove(g_p_q[bank].event[last_event])
         end
-      end
-      if #g_p_q[bank].event[last_event] > 1 then
-        print("removing "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
-        table.remove(g_p_q[bank].event[last_event])
+      --elseif last_event == 1 and j ~= distance_count+1 then
+      elseif last_event == 1 then
+        print("still got some left!!!"..j)
+        local total_again = #g_p_q[bank].event
+        table.remove(g_p_q[bank].event)
       end
     end
   end
@@ -350,6 +361,10 @@ function snap_to_bars_midi(bank,bar_count)
     entry_count = entry_count + #g_p_q[bank].event[i]
   end
   print("after: "..entry_count)
+  if entry_count < grid_pat[bank].count then
+    grid_pat[bank].count = entry_count
+    grid_pat[bank].step = 1
+  end
 end
 
 function save_external_timing(bank,slot)
@@ -399,7 +414,9 @@ function load_external_timing(bank,slot)
     end
     io.close(file)
   else
-    print("no external timing file")
+    print("creating external timing file...")
+    midi_clock_linearize(bank)
+    save_external_timing(bank,slot)
   end
 end
 
@@ -1097,7 +1114,7 @@ function step_sequence()
           step_seq[i].current_step = step_seq[i].current_step + 1
           if step_seq[i].current_step > step_seq[i].end_point then step_seq[i].current_step = step_seq[i].start_point end
           current = step_seq[i].current_step
-          if step_seq[i][current].assigned_to ~= 0 then
+          if grid_pat[i].rec == 0 and step_seq[i][current].assigned_to ~= 0 then
             pattern_saver[i].load_slot = step_seq[i][current].assigned_to
             test_load(step_seq[i][current].assigned_to+((i-1)*8),i)
             grid_pat[i].loop = step_seq[i][current].loop_pattern
