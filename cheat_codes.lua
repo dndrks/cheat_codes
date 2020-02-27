@@ -288,8 +288,8 @@ function snap_to_bars(bank,bar_count)
       total_time = total_time + grid_pat[bank].time[i]
     end
     print("after total: "..total_time)
-    midi_clock_linearize(bank)
-    --snap_to_bars_midi(bank,bar_count)
+    --midi_clock_linearize(bank)
+    snap_to_bars_midi(bank,bar_count)
   end
 end
 
@@ -301,6 +301,7 @@ function print_my_g_p_q(bank)
 end
 
 function snap_to_bars_midi(bank,bar_count)
+  --midi_clock_linearize(bank)
   --[==[print_my_g_p_q(bank)
   g_p_q[bank].event = {}
   for i = 1,grid_pat[bank].count do
@@ -325,50 +326,52 @@ function snap_to_bars_midi(bank,bar_count)
   for i = 1,#g_p_q[bank].event do
     entry_count = entry_count + #g_p_q[bank].event[i]
   end
-  print("before_midi: "..entry_count)
+  print("before trimming midi event count: "..entry_count)
   if entry_count < target_entry_count then
     for i = 1,target_entry_count-entry_count do
       table.insert(g_p_q[bank].event[#g_p_q[bank].event],"nothing")
     end
   elseif entry_count > target_entry_count then
-    print("subtracting...")
+    --print("subtracting...")
     local last_event = #g_p_q[bank].event
     local last_group = #g_p_q[bank].event
-    print("last event: "..last_event)
+    --print("last event: "..last_event)
     local distance_count = entry_count - target_entry_count
-    print("want to remove "..distance_count)
+    print("removing "..distance_count.." event")
     local current_count = 0
     
-    print_my_g_p_q(bank)
+    --print_my_g_p_q(bank)
     
     while current_count < distance_count do
       if last_group > 0 then
         if #g_p_q[bank].event[last_group] > 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "nothing" then
           local check_table = #g_p_q[bank].event
-          print("removing: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]].." from group "..last_group..", entry "..#g_p_q[bank].event[last_group])
+          --print("removing: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]].." from group "..last_group..", entry "..#g_p_q[bank].event[last_group])
           table.remove(g_p_q[bank].event[last_group])
           current_count = current_count + 1
           if current_count == distance_count then print("done now!") break end
-          print("current count :" .. current_count)
+          --print("current count :" .. current_count)
         elseif #g_p_q[bank].event[last_group] == 1 and g_p_q[bank].event[last_group][#g_p_q[1].event[last_group]] == "something" then
-          print("skipping: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]].." from group "..last_group..", entry "..#g_p_q[bank].event[last_group])
+          --print("skipping: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]].." from group "..last_group..", entry "..#g_p_q[bank].event[last_group])
           last_group = last_group - 1
         elseif #g_p_q[bank].event[last_group] == 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "nothing" then
-          print("there's only nothing in group "..last_group..", but removing it")
+          --print("there's only nothing in group "..last_group..", but removing it")
           table.remove(g_p_q[bank].event[last_group])
           --print_my_g_p_q(1)
           current_count = current_count + 1
           if current_count == distance_count then print("done now!") break end
-          print("current count :" .. current_count)
+          --print("current count :" .. current_count)
           last_group = last_group - 1
           --break
         end
       elseif last_group == 0 then
-        print("still got some left!!!: "..current_count.." / "..distance_count)
+        --print("still got some left!!!: "..current_count.." / "..distance_count)
         table.remove(g_p_q[bank].event)
         current_count = current_count + 1
       end
     end
+    g_p_q[bank].current_step = 1
+    g_p_q[bank].sub_step = 1
     
     --[==[while current_count < distance_count do
       if last_group > 1 then
@@ -429,7 +432,7 @@ function snap_to_bars_midi(bank,bar_count)
   for i = 1,#g_p_q[bank].event do
     entry_count = entry_count + #g_p_q[bank].event[i]
   end
-  print("after_midi: "..entry_count)
+  print("after trimming midi event count: "..entry_count)
   --[[if entry_count < grid_pat[bank].count then
     grid_pat[bank].count = entry_count
     grid_pat[bank].step = 1
@@ -689,6 +692,11 @@ grid.alt = 0
 grid.alt_pp = 0
 grid.loop_mod = 0
 
+local function crow_flush()
+  crow.reset()
+  crow.clear()
+end
+
 local function crow_init()
   for i = 1,4 do
     crow.output[i].action = "{to(5,0),to(0,0.05)}"
@@ -720,6 +728,7 @@ function init()
   params:add_separator()
   
   params:add{type = "trigger", id = "init_crow", name = "initialize crow", action = crow_init}
+  params:add{type = "trigger", id = "clear_crow", name = "(reset/clear crow)", action = crow_flush}
   
   screen_focus = 1
   
@@ -2884,7 +2893,7 @@ function cleanup()
       end
       io.close(file)
     else
-      print("can't clean these external files?")
+      --print("can't clean these external files?")
     end
   end
   --externalshadow/
