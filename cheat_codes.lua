@@ -288,12 +288,20 @@ function snap_to_bars(bank,bar_count)
       total_time = total_time + grid_pat[bank].time[i]
     end
     print("after total: "..total_time)
-    --midi_clock_linearize(bank)
-    snap_to_bars_midi(bank,bar_count)
+    midi_clock_linearize(bank)
+    --snap_to_bars_midi(bank,bar_count)
+  end
+end
+
+function print_my_g_p_q(bank)
+  for i = #g_p_q[bank].event,1,-1 do
+    print(i)
+    tab.print(g_p_q[bank].event[i])
   end
 end
 
 function snap_to_bars_midi(bank,bar_count)
+  --[==[print_my_g_p_q(bank)
   g_p_q[bank].event = {}
   for i = 1,grid_pat[bank].count do
     g_p_q[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / ((60/bpm)/4))+0.5)
@@ -311,13 +319,13 @@ function snap_to_bars_midi(bank,bar_count)
     end
   end
   g_p_q[bank].current_step = 1
-  g_p_q[bank].sub_step = 1
+  g_p_q[bank].sub_step = 1]==]--
   local entry_count = 0
   local target_entry_count = bar_count*16
   for i = 1,#g_p_q[bank].event do
     entry_count = entry_count + #g_p_q[bank].event[i]
   end
-  print("before: "..entry_count)
+  print("before_midi: "..entry_count)
   if entry_count < target_entry_count then
     for i = 1,target_entry_count-entry_count do
       table.insert(g_p_q[bank].event[#g_p_q[bank].event],"nothing")
@@ -325,10 +333,72 @@ function snap_to_bars_midi(bank,bar_count)
   elseif entry_count > target_entry_count then
     print("subtracting...")
     local last_event = #g_p_q[bank].event
+    local last_group = #g_p_q[bank].event
     print("last event: "..last_event)
     local distance_count = entry_count - target_entry_count
     print("want to remove "..distance_count)
-    local how_many = 0
+    local current_count = 0
+    
+    print_my_g_p_q(bank)
+    
+    while current_count < distance_count do
+      if last_group > 0 then
+        if #g_p_q[bank].event[last_group] > 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "nothing" then
+          local check_table = #g_p_q[bank].event
+          print("removing: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]].." from group "..last_group..", entry "..#g_p_q[bank].event[last_group])
+          table.remove(g_p_q[bank].event[last_group])
+          current_count = current_count + 1
+          if current_count == distance_count then print("done now!") break end
+          print("current count :" .. current_count)
+        elseif #g_p_q[bank].event[last_group] == 1 and g_p_q[bank].event[last_group][#g_p_q[1].event[last_group]] == "something" then
+          print("skipping: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]].." from group "..last_group..", entry "..#g_p_q[bank].event[last_group])
+          last_group = last_group - 1
+        elseif #g_p_q[bank].event[last_group] == 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "nothing" then
+          print("there's only nothing in group "..last_group..", but removing it")
+          table.remove(g_p_q[bank].event[last_group])
+          --print_my_g_p_q(1)
+          current_count = current_count + 1
+          if current_count == distance_count then print("done now!") break end
+          print("current count :" .. current_count)
+          last_group = last_group - 1
+          --break
+        end
+      elseif last_group == 0 then
+        print("still got some left!!!: "..current_count.." / "..distance_count)
+        table.remove(g_p_q[bank].event)
+        current_count = current_count + 1
+      end
+    end
+    
+    --[==[while current_count < distance_count do
+      if last_group > 1 then
+        if #g_p_q[bank].event[last_group] > 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "nothing" then
+          local check_table = #g_p_q[bank].event
+          print("removing "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]])
+          table.remove(g_p_q[bank].event[last_group])
+          current_count = current_count + 1
+          if current_count == distance_count then break end
+          print("current count :" .. current_count)
+          if #g_p_q[bank].event ~= check_table then
+            break
+            print("tables got funky")
+          end
+        elseif g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "something" then
+          print("skip: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]])
+          last_group = last_group - 1
+        end
+      elseif last_group == 1 then
+        print("still got some left!!!"..current_count)
+        table.remove(g_p_q[bank].event)
+        current_count = current_count + 1
+      end
+    end
+    ]==]--
+    
+    
+    
+    --OLD
+    --[==[
     for j = 1,distance_count do
       if last_event > 1 then
         print("loop last event: "..last_event)
@@ -338,10 +408,7 @@ function snap_to_bars_midi(bank,bar_count)
           print("minus 1!: "..last_event, j)
           if last_event == 0 then
             print("HERY EHY!!!")
-            --[[if distance_count-j > 0 then
-              table.remove(g_p_q[bank].event[total_again])
-              total_again = total_again - 1
-            end]]--
+            break
           end
         end
         if #g_p_q[bank].event[last_event] > 1 then
@@ -355,16 +422,18 @@ function snap_to_bars_midi(bank,bar_count)
         table.remove(g_p_q[bank].event)
       end
     end
+    ]==]--
+    
   end
   local entry_count = 0
   for i = 1,#g_p_q[bank].event do
     entry_count = entry_count + #g_p_q[bank].event[i]
   end
-  print("after: "..entry_count)
-  if entry_count < grid_pat[bank].count then
+  print("after_midi: "..entry_count)
+  --[[if entry_count < grid_pat[bank].count then
     grid_pat[bank].count = entry_count
     grid_pat[bank].step = 1
-  end
+  end]]--
 end
 
 function save_external_timing(bank,slot)
@@ -715,7 +784,7 @@ function init()
     step_seq[i].loop_held = 0
   end
   
-  function testing_clocks(bank)
+  --[==[function testing_clocks(bank)
     local current = g_p_q[bank].current_step
     local sub_step = g_p_q[bank].sub_step
     if grid_pat[bank].external_start == 1 and grid_pat[bank].count > 0 then
@@ -742,6 +811,52 @@ function init()
         grid_pat[bank].step = grid_pat[bank].step + 1
         --g_p_q[bank].current_step = g_p_q[bank].current_step + 1
         g_p_q[bank].current_step = grid_pat[bank].step
+      end
+      g_p_q[bank].sub_step = g_p_q[bank].sub_step + 1
+    end
+  end]==]--
+  
+  function testing_clocks(bank)
+    local current = g_p_q[bank].current_step
+    local sub_step = g_p_q[bank].sub_step
+    if grid_pat[bank].external_start == 1 and grid_pat[bank].count > 0 then
+      if g_p_q[bank].event[current][sub_step] == "something" then
+        --print(current, sub_step, "+++")
+        if grid_pat[bank].step == 0 then
+          grid_pat[bank].step = 1
+        end
+        if g_p_q[bank].current_step == 0 then
+          g_p_q[bank].current_step = 1
+        end
+        grid_pattern_execute(grid_pat[bank].event[g_p_q[bank].current_step])
+      elseif g_p_q[bank].event[current][sub_step] == "nothing" then
+        -- nothing!
+        if grid_pat[bank].step == 0 then
+          grid_pat[bank].step = 1
+        end
+        if g_p_q[bank].current_step == 0 then
+          g_p_q[bank].current_step = 1
+        end
+      elseif g_p_q[bank].event[current][sub_step] == nil then
+        print(current.." is nil!")
+        table.remove(g_p_q[bank].event,current)
+        g_p_q[bank].current_step = g_p_q[bank].current_step + 1
+        g_p_q[bank].sub_step = 1
+      end
+      --increase sub_step now
+      if g_p_q[bank].sub_step == #g_p_q[bank].event[g_p_q[bank].current_step] then
+        g_p_q[bank].sub_step = 0
+        --if we're at the end of the events in this step, move to the next step
+        if grid_pat[bank].step == grid_pat[bank].count then
+          grid_pat[bank].step = 0
+          --g_p_q[bank].current_step = 0
+        end
+        if g_p_q[bank].current_step == #g_p_q[bank].event then
+          g_p_q[bank].current_step = 0
+        end
+        grid_pat[bank].step = grid_pat[bank].step + 1
+        g_p_q[bank].current_step = g_p_q[bank].current_step +1
+        --g_p_q[bank].current_step = g_p_q[bank].current_step + 1
       end
       g_p_q[bank].sub_step = g_p_q[bank].sub_step + 1
     end
