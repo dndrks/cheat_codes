@@ -350,17 +350,21 @@ function snap_to_bars_midi(bank,bar_count)
           table.remove(g_p_q[bank].event[last_group])
           current_count = current_count + 1
           if current_count == distance_count then print("done now!") break end
-          --print("current count :" .. current_count)
-        elseif #g_p_q[bank].event[last_group] == 1 and g_p_q[bank].event[last_group][#g_p_q[1].event[last_group]] == "something" then
+          print("current count :" .. current_count)
+        elseif #g_p_q[bank].event[last_group] == 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "something" then
           --print("skipping: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]].." from group "..last_group..", entry "..#g_p_q[bank].event[last_group])
           last_group = last_group - 1
         elseif #g_p_q[bank].event[last_group] == 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "nothing" then
           --print("there's only nothing in group "..last_group..", but removing it")
           table.remove(g_p_q[bank].event[last_group])
-          --print_my_g_p_q(1)
+          print_my_g_p_q(1)
           current_count = current_count + 1
           if current_count == distance_count then print("done now!") break end
           --print("current count :" .. current_count)
+          last_group = last_group - 1
+        elseif g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == nil then
+          print("A NIL IN"..last_group)
+          table.remove(g_p_q[bank].event,last_group)
           last_group = last_group - 1
           --break
         end
