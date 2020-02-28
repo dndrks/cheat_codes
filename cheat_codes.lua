@@ -437,6 +437,10 @@ function snap_to_bars_midi(bank,bar_count)
     entry_count = entry_count + #g_p_q[bank].event[i]
   end
   print("after trimming midi event count: "..entry_count)
+  if entry_count ~= target_entry_count then
+    --doubletap? is this ok??
+    snap_to_bars_midi(bank,bar_count)
+  end
   --[[if entry_count < grid_pat[bank].count then
     grid_pat[bank].count = entry_count
     grid_pat[bank].step = 1
