@@ -1494,7 +1494,7 @@ function buff_freeze()
 end
 
 function buff_flush()
-  softcut.buffer_clear_region(rec.start_point, rec.end_point-rec.start_point)
+  softcut.buffer_clear_region_channel(1,rec.start_point, rec.end_point-rec.start_point)
   rec.state = 0
   rec.clear = 1
   softcut.rec_level(1,0)
