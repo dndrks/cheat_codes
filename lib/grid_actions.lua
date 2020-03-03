@@ -4,6 +4,11 @@ function grid_actions.init(x,y,z)
   
   if grid_page == 0 then
     
+    if z == 1 and x == 1 and y == 1 and grid.alt == 1 then
+      clk_midi:stop()
+      clk:reset()
+    end
+    
     for i = 1,3 do
       if z == 1 and x > 0 + (5*(i-1)) and x <= 4 + (5*(i-1)) and y >=5 then
         if grid.alt == 0 then
@@ -127,6 +132,7 @@ function grid_actions.init(x,y,z)
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
               grid_pat[i].external_start = 0
+              grid_pat[i].tightened_start = 0
               grid_pat[i]:clear()
               pattern_saver[i].load_slot = 0
             elseif grid_pat[i].rec == 1 then
@@ -140,6 +146,11 @@ function grid_actions.init(x,y,z)
               if not clk.externalmidi and not clk.externalcrow then
                 grid_pat[i]:start()
                 grid_pat[i].loop = 1
+                --[[if grid_pat[i].count > 0 then
+                  grid_pat[i].tightened_start = 1
+                  snap_to_bars(i,bank[i].snap_to_bars)
+                  butts = "go"
+                end]]--
               else
                 if grid_pat[i].count > 0 then
                   grid_pat[i].external_start = 1
@@ -163,12 +174,20 @@ function grid_actions.init(x,y,z)
             end
           else
             if grid.alt == 1 then
+              --[[grid_pat[i]:rec_stop()
+              grid_pat[i]:stop()
+              grid_pat[i]:clear()
+              pattern_saver[i].load_slot = 0]]--
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
+              grid_pat[i].external_start = 0
+              grid_pat[i].tightened_start = 0
+              butts = "no"
               grid_pat[i]:clear()
               pattern_saver[i].load_slot = 0
             else
-              table.insert(grid_pat_quantize_events[i],i)
+              --table.insert(grid_pat_quantize_events[i],i)
+              better_grid_pat_q_clock(i)
             end
           end
           if menu == 8 then

@@ -287,6 +287,12 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("timing")
+    screen.level(3)
+    screen.move(115,10)
+    local clork_sterp = clk.step+1
+    --if clork_sterp == 0 then clork_sterp = 4 end
+    local clork_bert = clk.beat + 1
+    screen.text(clork_bert.."."..clork_sterp)
     screen.level(10)
     screen.move(15,30)
     screen.line(120,30)
