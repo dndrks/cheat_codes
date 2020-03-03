@@ -182,7 +182,7 @@ function grid_actions.init(x,y,z)
               grid_pat[i]:stop()
               grid_pat[i].external_start = 0
               grid_pat[i].tightened_start = 0
-              butts = "no"
+              --butts = "no"
               grid_pat[i]:clear()
               pattern_saver[i].load_slot = 0
             else

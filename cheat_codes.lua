@@ -158,15 +158,7 @@ function cheat_q_clock(i)
 end
 
 function better_grid_pat_q_clock(i)
-  if grid.alt == 1 then
-    grid_pat[i]:rec_stop()
-    grid_pat[i]:stop()
-    grid_pat[i].external_start = 0
-    grid_pat[i].tightened_start = 0
-    --butts = "no"
-    grid_pat[i]:clear()
-    pattern_saver[i].load_slot = 0
-  elseif grid_pat[i].rec == 1 then
+  if grid_pat[i].rec == 1 then
     grid_pat[i]:rec_stop()
     if params:get("lock_pat") == 2 and quantize == 1 then
       sync_pattern_to_bpm(i,params:get("quant_div"))
@@ -180,7 +172,7 @@ function better_grid_pat_q_clock(i)
       if grid_pat[i].count > 0 then
         grid_pat[i].tightened_start = 1
         snap_to_bars(i,bank[i].snap_to_bars)
-        butts = "go"
+        --butts = "go"
       end
     else
       if grid_pat[i].count > 0 then
@@ -1834,24 +1826,36 @@ function grid_redraw()
     for i = 1,3 do
       --if grid_pat[i].led == nil then grid_pat[i].led = 0 end
       if not clk.externalmidi and not clk.externalcrow then
-        if grid_pat[i].rec == 1 then
-          --[==[grid_pat[i].led = (grid_pat[i].led + 1)
-          if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
-            g:led(2+(5*(i-1)),1,(9))
-          elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
-            g:led(2+(5*(i-1)),1,(0))
-            grid_pat[i].led = 0
-          end]==]--
-          g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
-        elseif grid_pat[i].play == 1 then
-          --grid_pat[i].led = 0
-          g:led(2+(5*(i-1)),1,9)
-        elseif grid_pat[i].count > 0 then
-          --grid_pat[i].led = 0
-          g:led(2+(5*(i-1)),1,5)
-        else
-          --grid_pat[i].led = 0
-          g:led(2+(5*(i-1)),1,3)
+        if grid_pat_quantize == 0 then
+          if grid_pat[i].rec == 1 then
+            --[==[grid_pat[i].led = (grid_pat[i].led + 1)
+            if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
+              g:led(2+(5*(i-1)),1,(9))
+            elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
+              g:led(2+(5*(i-1)),1,(0))
+              grid_pat[i].led = 0
+            end]==]--
+            g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
+          elseif grid_pat[i].play == 1 then
+            --grid_pat[i].led = 0
+            g:led(2+(5*(i-1)),1,9)
+          elseif grid_pat[i].count > 0 then
+            --grid_pat[i].led = 0
+            g:led(2+(5*(i-1)),1,5)
+          else
+            --grid_pat[i].led = 0
+            g:led(2+(5*(i-1)),1,3)
+          end
+        elseif grid_pat_quantize == 1 then
+          if grid_pat[i].rec == 1 then
+            g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
+          elseif grid_pat[i].tightened_start == 1 then
+            g:led(2+(5*(i-1)),1,9)
+          elseif grid_pat[i].count > 0 then
+            g:led(2+(5*(i-1)),1,5)
+          else
+            g:led(2+(5*(i-1)),1,3)
+          end
         end
       else
         if grid_pat[i].rec == 1 then
