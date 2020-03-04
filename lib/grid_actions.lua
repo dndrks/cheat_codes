@@ -145,6 +145,11 @@ function grid_actions.init(x,y,z)
               end
               midi_clock_linearize(i)
               if not clk.externalmidi and not clk.externalcrow then
+                -- does this work??
+                if grid_pat[i].auto_snap == 1 then
+                  print("auto-snap")
+                  snap_to_bars(i,how_many_bars(i))
+                end
                 grid_pat[i]:start()
                 grid_pat[i].loop = 1
                 --[[if grid_pat[i].count > 0 then

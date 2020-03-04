@@ -164,8 +164,9 @@ function how_many_bars(bank)
   end
   local time_per_bar = (60/bpm)*4
   local this_many_bars = math.floor((total_pattern_time/time_per_bar)+0.5)
-  --local this_many_bars = (total_pattern_time/time_per_bar)
-  print("bar sentience: "..this_many_bars)
+  --print("bar sentience: "..this_many_bars)
+  -- need at least ONE bar, so...
+  if this_many_bars == 0 then this_many_bars = 1 end
   return this_many_bars
 end
 
@@ -184,7 +185,10 @@ function better_grid_pat_q_clock(i)
       if grid_pat[i].count > 0 then
         grid_pat[i].tightened_start = 1
         --snap_to_bars(i,bank[i].snap_to_bars)
-        --snap_to_bars(i,how_many_bars(i))
+        if grid_pat[i].auto_snap == 1 then
+          print("auto-snap")
+          snap_to_bars(i,how_many_bars(i))
+        end
         --butts = "go"
       end
     else
@@ -825,6 +829,8 @@ function init()
     grid_pat[i] = pattern_time.new()
     grid_pat[i].process = grid_pattern_execute
     grid_pat[i].external_start = 0
+    grid_pat[i].tightened_start = 0
+    grid_pat[i].auto_snap = 0
     grid_pat[i].quantize = 0
   end
   
