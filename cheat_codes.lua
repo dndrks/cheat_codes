@@ -157,6 +157,18 @@ function cheat_q_clock(i)
   end
 end
 
+function how_many_bars(bank)
+  local total_pattern_time = 0
+  for i = 1,#grid_pat[bank].event do
+    total_pattern_time = total_pattern_time + grid_pat[bank].time[i]
+  end
+  local time_per_bar = (60/bpm)*4
+  local this_many_bars = math.floor((total_pattern_time/time_per_bar)+0.5)
+  --local this_many_bars = (total_pattern_time/time_per_bar)
+  print("bar sentience: "..this_many_bars)
+  return this_many_bars
+end
+
 function better_grid_pat_q_clock(i)
   if grid_pat[i].rec == 1 then
     grid_pat[i]:rec_stop()
@@ -171,7 +183,8 @@ function better_grid_pat_q_clock(i)
       grid_pat[i].loop = 1
       if grid_pat[i].count > 0 then
         grid_pat[i].tightened_start = 1
-        snap_to_bars(i,bank[i].snap_to_bars)
+        --snap_to_bars(i,bank[i].snap_to_bars)
+        --snap_to_bars(i,how_many_bars(i))
         --butts = "go"
       end
     else
@@ -188,9 +201,14 @@ function better_grid_pat_q_clock(i)
     grid_pat[i].step = 1
     g_p_q[i].current_step = 1
     g_p_q[i].sub_step = 1
+  elseif grid_pat[i].tightened_start == 1 then
+    grid_pat[i].tightened_start = 0
+    grid_pat[i].step = 1
+    g_p_q[i].current_step = 1
+    g_p_q[i].sub_step = 1
   else
     if not clk.externalmidi and not clk.externalcrow then
-      --grid_pat[i]:start()
+      grid_pat[i].tightened_start = 1
     else
       grid_pat[i].external_start = 1
     end
@@ -807,6 +825,7 @@ function init()
     grid_pat[i] = pattern_time.new()
     grid_pat[i].process = grid_pattern_execute
     grid_pat[i].external_start = 0
+    grid_pat[i].quantize = 0
   end
   
   g_p_q = {}
@@ -949,6 +968,10 @@ function init()
         g_p_q[bank].sub_step = 1
       end
       --increase sub_step now
+      if g_p_q[bank].current_step > #g_p_q[bank].event then
+        print("HOW DID THIS HAPPEN?")
+        g_p_q[bank].current_step = 1
+      end
       if g_p_q[bank].sub_step == #g_p_q[bank].event[g_p_q[bank].current_step] then
         g_p_q[bank].sub_step = 0
         --if we're at the end of the events in this step, move to the next step
@@ -1057,7 +1080,12 @@ function init()
   params:add_option("quantize_pads", "(see [timing] menu)", { "no", "yes" })
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "(see [timing] menu)", { "no", "yes" })
-  params:set_action("quantize_pats", function(x) grid_pat_quantize = x-1 end)
+  params:set_action("quantize_pats", function(x)
+    grid_pat_quantize = x-1
+    for i = 1,3 do
+      grid_pat[i].quantize = x-1
+    end
+  end)
   params:add_number("quant_div", "(see [timing] menu)", 1, 5, 4)
   params:set_action("quant_div",function() update_tempo() end)
   params:add_number("quant_div_pats", "(see [timing] menu)", 1, 5, 4)
@@ -1826,7 +1854,8 @@ function grid_redraw()
     for i = 1,3 do
       --if grid_pat[i].led == nil then grid_pat[i].led = 0 end
       if not clk.externalmidi and not clk.externalcrow then
-        if grid_pat_quantize == 0 then
+        --if grid_pat_quantize == 0 then
+        if grid_pat[i].quantize == 0 then
           if grid_pat[i].rec == 1 then
             --[==[grid_pat[i].led = (grid_pat[i].led + 1)
             if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
@@ -1846,7 +1875,8 @@ function grid_redraw()
             --grid_pat[i].led = 0
             g:led(2+(5*(i-1)),1,3)
           end
-        elseif grid_pat_quantize == 1 then
+        --elseif grid_pat_quantize == 1 then
+        elseif grid_pat[i].quantize == 1 then
           if grid_pat[i].rec == 1 then
             g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
           elseif grid_pat[i].tightened_start == 1 then
@@ -2570,10 +2600,21 @@ function test_load(slot,destination)
       grid_pat[destination].step = 1
       g_p_q[destination].current_step = 1
       g_p_q[destination].sub_step = 1
+    elseif grid_pat[destination].tightened_start == 1 then
+      grid_pat[destination].tightened_start = 0
+      grid_pat[destination].step = 1
+      g_p_q[destination].current_step = 1
+      g_p_q[destination].sub_step = 1
     end
     load_pattern(slot,destination)
     if not clk.externalmidi and not clk.externalcrow then
-      grid_pat[destination]:start()
+      --if grid_pat_quantize == 0 then
+      if grid_pat[destination].quantize == 0 then
+        grid_pat[destination]:start()
+      --elseif grid_pat_quantize == 1 then
+      elseif grid_pat[destination].quantize == 1 then
+        grid_pat[destination].tightened_start = 1
+      end
     else
       if grid_pat[destination].count > 0 then
         grid_pat[destination].external_start = 1

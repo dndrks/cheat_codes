@@ -127,7 +127,8 @@ function grid_actions.init(x,y,z)
     for k = 1,1 do
       for i = 1,3 do
         if z == 0 and x == (k+1)+(5*(i-1)) and y<=k then
-          if grid_pat_quantize == 0 then
+          --if grid_pat_quantize == 0 then
+          if grid_pat[i].quantize == 0 then
             if grid.alt == 1 then
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
