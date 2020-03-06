@@ -160,6 +160,10 @@ function grid_actions.init(x,y,z)
               else
                 if grid_pat[i].count > 0 then
                   grid_pat[i].external_start = 1
+                  if grid_pat[i].auto_snap == 1 then
+                    print("auto-snap")
+                    snap_to_bars(i,how_many_bars(i))
+                  end
                 end
               end
             elseif grid_pat[i].count == 0 then

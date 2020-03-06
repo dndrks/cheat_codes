@@ -157,6 +157,22 @@ function cheat_q_clock(i)
   end
 end
 
+function set_pattern_mode(bank)
+  if grid_pat[bank].playmode == 1 then
+    grid_pat[bank].quantize = 0
+    grid_pat[bank].auto_snap = 0
+  elseif grid_pat[bank].playmode == 2 then
+    grid_pat[bank].quantize = 0
+    grid_pat[bank].auto_snap = 1
+  elseif grid_pat[bank].playmode == 3 then
+    grid_pat[bank].quantize = 1
+    grid_pat[bank].auto_snap = 0
+  elseif grid_pat[bank].playmode == 4 then
+    grid_pat[bank].quantize = 1
+    grid_pat[bank].auto_snap = 1
+  end
+end
+
 function how_many_bars(bank)
   local total_pattern_time = 0
   for i = 1,#grid_pat[bank].event do
@@ -194,6 +210,10 @@ function better_grid_pat_q_clock(i)
     else
       if grid_pat[i].count > 0 then
         grid_pat[i].external_start = 1
+        if grid_pat[i].auto_snap == 1 then
+          print("auto-snap")
+          snap_to_bars(i,how_many_bars(i))
+        end
       end
     end
   elseif grid_pat[i].count == 0 then
@@ -832,6 +852,7 @@ function init()
     grid_pat[i].tightened_start = 0
     grid_pat[i].auto_snap = 0
     grid_pat[i].quantize = 0
+    grid_pat[i].playmode = 1
   end
   
   g_p_q = {}
@@ -1011,6 +1032,14 @@ function init()
         else
           grid_pat[i].led = 0
         end
+        --[[
+        elseif clk.externalcrow then
+          if clk.beat == 0 or clk.beat == 2 then
+            grid_pat[i].led = 1
+          else
+            grid_pat[i].led = 0
+          end
+        end]]--
       end
     end
     --here it is!!
@@ -1021,6 +1050,7 @@ function init()
       end
     end
     if clk.externalmidi or clk.externalcrow then
+      if clk.externalmidi and clk.step == 1 then external_to_bpm() end
       for i = 1,3 do
         if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
           testing_clocks(i)
@@ -1073,6 +1103,7 @@ function init()
     end
     crow.input[2].mode("change",2,0.1,"rising")
     crow.input[2].change = change
+    clk.step = 0
   end
   clk:add_clock_params()
   params:add{type = "number", id = "midi_device", name = "midi device", min = 1, max = 4, default = 1, action = function(value)
@@ -1301,6 +1332,9 @@ end
 local tap = 0
 local deltatap = 1
 
+local crow_tap = 0
+local crow_deltatap = 1
+
 function change()
   local tap1 = util.time()
   deltatap = tap1 - tap
@@ -1312,7 +1346,52 @@ function change()
     delay[i].end_point = delay_time
     softcut.loop_end(i+4,delay[i].end_point)
   end
+  --
+  --these are 1/4 notes...i want 1/16th notes...
+  --[[==
+  clk.beat = clk.beat + 1
+  local crow_tap1 = util.time()
+  crow_deltatap = crow_tap1 - crow_tap
+  crow_tap = tap1
+  local crow_tap_tempo = 60/crow_deltatap
+  if crow_tap_tempo >=20 then
+    params:set("bpm",math.floor(crow_tap_tempo+0.5))
+  end
+  if clk.beat == 4 then
+    clk.beat = 0
+  end
+  ==]]--
+
+  clk.step = clk.step + 1
+  if clk.step == 4 then
+    clk.step = 0
+    clk.beat = clk.beat + 1
+    if clk.beat == 4 then
+      clk.beat = 0
+    end
+  end
+  
+  if clk.step == 0 then
+    local crow_tap1 = util.time()
+    crow_deltatap = crow_tap1 - crow_tap
+    crow_tap = tap1
+    local crow_tap_tempo = 60/crow_deltatap
+    if crow_tap_tempo >=20 then
+      params:set("bpm",math.floor(crow_tap_tempo+0.5))
+    end
+  end
+  
   clk.on_step()
+end
+
+function external_to_bpm()
+  local tap1 = util.time()
+  deltatap = tap1 - tap
+  tap = tap1
+  local tap_tempo = 60/deltatap
+  if tap_tempo >=20 then
+    params:set("bpm",math.floor(tap_tempo+0.5))
+  end
 end
 
 function update_tempo()
@@ -1743,6 +1822,7 @@ if screen_focus == 1 then
           else
             sync_pattern_to_bpm(id,params:get("quant_div"))
           end
+        --[==[
         elseif page.time_page_sel[time_nav] == 2 then
           if key1_hold or grid.alt == 1 then
             for j = 1,3 do
@@ -1751,6 +1831,7 @@ if screen_focus == 1 then
           else
             snap_to_bars(id,bank[id].snap_to_bars)
           end
+        ]==]--
         end
       end
     end
@@ -1895,21 +1976,22 @@ function grid_redraw()
         end
       else
         if grid_pat[i].rec == 1 then
-          grid_pat[i].led = (grid_pat[i].led + 1)
+          --[==[grid_pat[i].led = (grid_pat[i].led + 1)
           if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
             g:led(2+(5*(i-1)),1,(9))
           elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
             g:led(2+(5*(i-1)),1,(0))
             grid_pat[i].led = 0
-          end
+          end]==]--
+          g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
         elseif grid_pat[i].external_start == 1 then
-          grid_pat[i].led = 0
+          --grid_pat[i].led = 0
           g:led(2+(5*(i-1)),1,9)
         elseif grid_pat[i].count > 0 then
-          grid_pat[i].led = 0
+          --grid_pat[i].led = 0
           g:led(2+(5*(i-1)),1,5)
         else
-          grid_pat[i].led = 0
+          --grid_pat[i].led = 0
           g:led(2+(5*(i-1)),1,3)
         end
       end

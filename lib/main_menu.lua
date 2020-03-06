@@ -303,7 +303,7 @@ function main_menu.init()
       screen.move(15+(23*(i-1)),25)
       screen.text(time_options[i])
       local glb_options = {"bpm","clk source","send crow clk?"}
-      local p_options = {"linearize","snap to bars","crow output"}
+      local p_options = {"linearize","mode","crow output"}
       local p_options_external_clock = {"linearize","trim to bars","crow output"}
       for j = 1,3 do
         screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
@@ -320,7 +320,8 @@ function main_menu.init()
           else
             screen.text(p_options_external_clock[j])
           end
-          local fine_options = {"[K3]",bank[page.time_sel-1].snap_to_bars.." [+K3]", bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}
+          local mode_options = {"loose","trim","quant","quant+trim"}
+          local fine_options = {"[K3]", mode_options[grid_pat[page.time_sel-1].playmode], bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}
           screen.move(85,40+(10*(j-1)))
           screen.text(fine_options[j])
           if bank[page.time_sel-1].crow_execute ~= 1 then
