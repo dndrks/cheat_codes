@@ -2833,15 +2833,20 @@ function one_point_two()
         if ext_file then
           io.close(ext_file)
         else
-          print("creating external timing file...")
-          midi_clock_linearize(current)
-          save_external_timing(current,i-(8*(current-1)))
+          load_pattern(i,current)
         end
-          ---
       else
       end
       io.close(file)
     end
+  end
+  for i = 1,3 do
+    grid_pat[i]:rec_stop()
+    grid_pat[i]:stop()
+    grid_pat[i].external_start = 0
+    grid_pat[i].tightened_start = 0
+    grid_pat[i]:clear()
+    pattern_saver[i].load_slot = 0
   end
 end
 
