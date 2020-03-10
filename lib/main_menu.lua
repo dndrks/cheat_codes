@@ -320,7 +320,7 @@ function main_menu.init()
           else
             screen.text(p_options_external_clock[j])
           end
-          local mode_options = {"loose","trim","quant","quant+trim"}
+          local mode_options = {"loose","distro","quant","quant+trim"}
           local fine_options = {"[K3]", mode_options[grid_pat[page.time_sel-1].playmode], bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}
           screen.move(85,40+(10*(j-1)))
           screen.text(fine_options[j])

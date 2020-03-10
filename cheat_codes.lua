@@ -158,18 +158,37 @@ function cheat_q_clock(i)
 end
 
 function set_pattern_mode(bank)
+  grid_pat[bank].step = 1
+  g_p_q[bank].current_step = 1
+  g_p_q[bank].sub_step = 1
   if grid_pat[bank].playmode == 1 then
     grid_pat[bank].quantize = 0
     grid_pat[bank].auto_snap = 0
+    if grid_pat[bank].tightened_start == 1 then
+      grid_pat[bank].tightened_start = 0
+      grid_pat[bank]:start()
+    end
   elseif grid_pat[bank].playmode == 2 then
     grid_pat[bank].quantize = 0
     grid_pat[bank].auto_snap = 1
+    if grid_pat[bank].tightened_start == 1 then
+      grid_pat[bank].tightened_start = 0
+      grid_pat[bank]:start()
+    end
   elseif grid_pat[bank].playmode == 3 then
     grid_pat[bank].quantize = 1
     grid_pat[bank].auto_snap = 0
+    if grid_pat[bank].play == 1 then
+      grid_pat[bank]:stop()
+      grid_pat[bank].tightened_start = 1
+    end
   elseif grid_pat[bank].playmode == 4 then
     grid_pat[bank].quantize = 1
     grid_pat[bank].auto_snap = 1
+    if grid_pat[bank].play == 1 then
+      grid_pat[bank]:stop()
+      grid_pat[bank].tightened_start = 1
+    end
   end
 end
 
@@ -602,6 +621,11 @@ function copy_entire_pattern(bank)
   original_pattern = {}
   original_pattern[bank] = {}
   original_pattern[bank].time = table.clone(grid_pat[bank].time)
+  --[[if grid_pat[bank].playmode ~= nil then
+    original_pattern[bank].playmode = grid_pat[bank].playmode
+  else
+    original_pattern[bank].playmode = 1
+  end]]--
   original_pattern[bank].event = {}
   for i = 1,#grid_pat[bank].event do
     original_pattern[bank].event[i] = {}
