@@ -621,11 +621,6 @@ function copy_entire_pattern(bank)
   original_pattern = {}
   original_pattern[bank] = {}
   original_pattern[bank].time = table.clone(grid_pat[bank].time)
-  --[[if grid_pat[bank].playmode ~= nil then
-    original_pattern[bank].playmode = grid_pat[bank].playmode
-  else
-    original_pattern[bank].playmode = 1
-  end]]--
   original_pattern[bank].event = {}
   for i = 1,#grid_pat[bank].event do
     original_pattern[bank].event[i] = {}
@@ -672,6 +667,11 @@ function copy_entire_pattern(bank)
   original_pattern[bank].metro.props.time = grid_pat[bank].metro.props.time
   original_pattern[bank].prev_time = grid_pat[bank].prev_time
   original_pattern[bank].count = grid_pat[bank].count
+  if grid_pat[bank].playmode ~= nil then
+    original_pattern[bank].playmode = grid_pat[bank].playmode
+  else
+    original_pattern[bank].playmode = 1
+  end
 end
 
 function paste_entire_pattern(source,destination)
@@ -1019,6 +1019,7 @@ function init()
         g_p_q[bank].sub_step = 1
       end
       --increase sub_step now
+      --if g_p_q[bank].current_step > #g_p_q[bank].event or g_p_q[bank].current_step > #grid_pat[bank].event then
       if g_p_q[bank].current_step > #g_p_q[bank].event then
         print("HOW DID THIS HAPPEN?")
         g_p_q[bank].current_step = 1
@@ -2675,6 +2676,7 @@ function loadstate()
   elseif selected_coll == params:get("collection") then
     cleanup()
   end
+  one_point_two()
 end
 
 function test_save(i)
@@ -2790,6 +2792,8 @@ function save_pattern(source,slot)
   end
   io.write(original_pattern[source].metro.props.time .. "\n")
   io.write(original_pattern[source].prev_time .. "\n")
+  io.write("which playmode?" .. "\n")
+  io.write(original_pattern[source].playmode .. "\n")
   io.close(file)
   save_external_timing(source,slot)
   print("saved pattern "..source.." to slot "..slot)
@@ -2812,6 +2816,31 @@ function already_saved()
     else
       local current = math.floor((i-1)/8)+1
       pattern_saver[current].saved[i-(8*(current-1))] = 0
+    end
+  end
+end
+
+function one_point_two()
+  for i = 1,24 do
+    local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..i..".data", "r")
+    if file then
+      io.input(file)
+      if io.read() == "stored pad pattern: collection "..selected_coll.." + slot "..i then
+        local current = math.floor((i-1)/8)+1
+                ---
+        --create pre-1.2 external files
+        local ext_file = io.open(_path.data .. "cheat_codes/external-timing/pattern"..selected_coll.."_"..i.."_external-timing.data", "r")
+        if ext_file then
+          io.close(ext_file)
+        else
+          print("creating external timing file...")
+          midi_clock_linearize(current)
+          save_external_timing(current,i-(8*(current-1)))
+        end
+          ---
+      else
+      end
+      io.close(file)
     end
   end
 end
@@ -3125,6 +3154,12 @@ function load_pattern(slot,destination)
       end
       grid_pat[destination].metro.props.time = tonumber(io.read())
       grid_pat[destination].prev_time = tonumber(io.read())
+      if io.read() == "which playmode?" then
+        grid_pat[destination].playmode = tonumber(io.read())
+      else
+        grid_pat[destination].playmode = 1
+      end
+      set_pattern_mode(destination)
     end
     --midi_clock_linearize(destination)
     io.close(file)
