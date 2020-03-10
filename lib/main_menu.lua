@@ -311,7 +311,7 @@ function main_menu.init()
         if page.time_sel == 1 then
           screen.text(glb_options[j])
           local clock_options = {"internal","MIDI","crow"}
-          local fine_options = {params:get("bpm"), clock_options[params:get("clock")],params:get("crow_clock_out") == 2 and "yes" or "no"}
+          local fine_options = {params:get("bpm") >= 20 and params:get("bpm") or "too slow", clock_options[params:get("clock")],params:get("crow_clock_out") == 2 and "yes" or "no"}
           screen.move(85,40+(10*(j-1)))
           screen.text(fine_options[j])
         elseif page.time_sel < 5 then

@@ -1125,6 +1125,12 @@ function init()
       quantizer[i]:stop()
       grid_pat_quantizer[i]:stop()
       grid_pat[i]:stop()
+      if grid_pat[i].playmode == 1 then
+        grid_pat[i].playmode = 3
+      elseif grid_pat[i].playmode == 2 then
+        grid_pat[i].playmode = 4
+      end
+      set_pattern_mode(i)
     end
     crow.input[2].mode("change",2,0.1,"rising")
     crow.input[2].change = change
@@ -1403,6 +1409,8 @@ function change()
     local crow_tap_tempo = 60/crow_deltatap
     if crow_tap_tempo >=20 then
       params:set("bpm",math.floor(crow_tap_tempo+0.5))
+    else
+      params:set("bpm",1)
     end
   end
   

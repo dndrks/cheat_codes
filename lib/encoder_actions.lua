@@ -193,6 +193,11 @@ function encoder_actions.init(n,d)
           params:delta("bpm",d)
         elseif page.time_page_sel[page.time_sel] == 2 then
           params:delta("clock",d)
+          grid_pat[page.time_sel]:rec_stop()
+          grid_pat[page.time_sel]:stop()
+          grid_pat[page.time_sel].external_start = 0
+          grid_pat[page.time_sel].tightened_start = 0
+          pattern_saver[page.time_sel].load_slot = 0
         elseif page.time_page_sel[page.time_sel] == 3 then
           params:delta("crow_clock_out",d)
         end
