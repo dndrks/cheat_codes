@@ -1117,6 +1117,12 @@ function init()
       quantizer[i]:stop()
       grid_pat_quantizer[i]:stop()
       grid_pat[i]:stop()
+      if grid_pat[i].playmode == 1 then
+        grid_pat[i].playmode = 3
+      elseif grid_pat[i].playmode == 2 then
+        grid_pat[i].playmode = 4
+      end
+      set_pattern_mode(i)
     end
     print("external MIDI clock")
   end

@@ -193,11 +193,13 @@ function encoder_actions.init(n,d)
           params:delta("bpm",d)
         elseif page.time_page_sel[page.time_sel] == 2 then
           params:delta("clock",d)
-          grid_pat[page.time_sel]:rec_stop()
-          grid_pat[page.time_sel]:stop()
-          grid_pat[page.time_sel].external_start = 0
-          grid_pat[page.time_sel].tightened_start = 0
-          pattern_saver[page.time_sel].load_slot = 0
+          for i = 1,3 do
+            grid_pat[i]:rec_stop()
+            grid_pat[i]:stop()
+            grid_pat[i].external_start = 0
+            grid_pat[i].tightened_start = 0
+            pattern_saver[i].load_slot = 0
+          end
         elseif page.time_page_sel[page.time_sel] == 3 then
           params:delta("crow_clock_out",d)
         end
@@ -206,12 +208,14 @@ function encoder_actions.init(n,d)
           bank[page.time_sel-1].crow_execute = util.clamp(bank[page.time_sel-1].crow_execute+d,0,1)
         elseif page.time_page_sel[page.time_sel] == 2 then
           --bank[page.time_sel-1].snap_to_bars = util.clamp(bank[page.time_sel-1].snap_to_bars+d,1,16)
-          if not clk.externalmidi and not clk.externalcrow then
-            grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,1,4)
-          else
-            grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,3,4)
+          if grid_pat[page.time_sel-1].rec ~= 1 then
+            if not clk.externalmidi and not clk.externalcrow then
+              grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,1,4)
+            else
+              grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,3,4)
+            end
+            set_pattern_mode(page.time_sel-1)
           end
-          set_pattern_mode(page.time_sel-1)
         elseif page.time_page_sel[page.time_sel] == 4 and bank[page.time_sel-1].crow_execute ~= 1 then
           crow.count_execute[page.time_sel-1] = util.clamp(crow.count_execute[page.time_sel-1]+d,1,16)
         end
