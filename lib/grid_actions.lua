@@ -4,10 +4,10 @@ function grid_actions.init(x,y,z)
   
   if grid_page == 0 then
     
-    if z == 1 and x == 1 and y == 1 and grid.alt == 1 then
+    --[[if z == 1 and x == 1 and y == 1 and grid.alt == 1 then
       clk_midi:stop()
       clk:reset()
-    end
+    end]]--
     
     for i = 1,3 do
       if z == 1 and x > 0 + (5*(i-1)) and x <= 4 + (5*(i-1)) and y >=5 then
@@ -597,14 +597,19 @@ function grid_actions.init(x,y,z)
   end
   
   if x == 16 and y == 1 and z == 1 then
-    grid_page = (grid_page + 1)%2
-    if menu == 8 then
-      if grid_page == 1 then
-        help_menu = "meta page"
-      elseif grid_page == 0 then
-        help_menu = "welcome"
+    if grid.alt == 0 then
+      grid_page = (grid_page + 1)%2
+      if menu == 8 then
+        if grid_page == 1 then
+          help_menu = "meta page"
+        elseif grid_page == 0 then
+          help_menu = "welcome"
+        end
+        redraw()
       end
-      redraw()
+    elseif grid.alt == 1 then
+      clk_midi:stop()
+      clk:reset()
     end
   end
     

@@ -45,7 +45,7 @@ function encoder_actions.init(n,d)
     elseif menu == 6 then
       page.delay_sel = util.clamp(page.delay_sel+d,0,4)
     elseif menu == 7 then
-      page.time_sel = util.clamp(page.time_sel+d,1,5)
+      page.time_sel = util.clamp(page.time_sel+d,1,4)
     end
   end
   if n == 2 then
