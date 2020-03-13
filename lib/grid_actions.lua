@@ -394,6 +394,8 @@ function grid_actions.init(x,y,z)
     for k = 4,1,-1 do
       for i = 1,3 do
         if z == 1 and x == k+(5*(i-1)) and y == k then
+          
+          ---
           if grid.alt == 0 then
             menu = 6-y
             if key1_hold == true then key1_hold = false end
@@ -404,6 +406,9 @@ function grid_actions.init(x,y,z)
             end
             redraw()
           else
+            if y == 2 then
+              random_grid_pat(math.ceil(x/4),3)
+            end
             local current = math.floor(x/5)+1
             bank[current][bank[current].id].rate = 1
             softcut.rate(current+1,1*bank[current][bank[current].id].offset)
@@ -411,9 +416,11 @@ function grid_actions.init(x,y,z)
               bank[current][bank[current].id].fifth = false
             end
           end
+          ---
         end
       end
     end
+    
   else
     
     if grid.loop_mod == 0 then

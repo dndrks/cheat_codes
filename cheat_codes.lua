@@ -1990,14 +1990,15 @@ if screen_focus == 1 then
           crow.count[i] = crow.count_execute[i]
         end
       elseif time_nav > 1 and time_nav < 5 then
-        if page.time_page_sel[time_nav] == 1 then
-          if key1_hold or grid.alt == 1 then
+        if page.time_page_sel[time_nav] == 2 then
+          random_grid_pat(id,3)
+          --[[if key1_hold or grid.alt == 1 then
             for j = 1,3 do
               sync_pattern_to_bpm(j,params:get("quant_div"))
             end
           else
             sync_pattern_to_bpm(id,params:get("quant_div"))
-          end
+          end]]--
         --[==[
         elseif page.time_page_sel[time_nav] == 2 then
           if key1_hold or grid.alt == 1 then

@@ -206,8 +206,7 @@ function encoder_actions.init(n,d)
       elseif page.time_sel < 5 then
         if page.time_page_sel[page.time_sel] == 3 then
           bank[page.time_sel-1].crow_execute = util.clamp(bank[page.time_sel-1].crow_execute+d,0,1)
-        elseif page.time_page_sel[page.time_sel] == 2 then
-          --bank[page.time_sel-1].snap_to_bars = util.clamp(bank[page.time_sel-1].snap_to_bars+d,1,16)
+        elseif page.time_page_sel[page.time_sel] == 1 then
           if grid_pat[page.time_sel-1].rec ~= 1 then
             if not clk.externalmidi and not clk.externalcrow then
               grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,1,4)
