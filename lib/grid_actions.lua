@@ -4,77 +4,80 @@ function grid_actions.init(x,y,z)
   
   if grid_page == 0 then
     
-    --[[if z == 1 and x == 1 and y == 1 and grid.alt == 1 then
-      clk_midi:stop()
-      clk:reset()
-    end]]--
+    for i = 1,3 do
+      if grid.alt == 1 then
+        if x == 1+(5*(i-1)) and y == 1 and z == 1 then
+          bank[i].focus_hold = (bank[i].focus_hold + 1)%2
+        end
+      end
+    end
     
     for i = 1,3 do
       if z == 1 and x > 0 + (5*(i-1)) and x <= 4 + (5*(i-1)) and y >=5 then
-        if grid.alt == 0 then
-          selected[i].x = x
-          selected[i].y = y
-          selected[i].id = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
-          bank[i].id = selected[i].id
-          which_bank = i
-          if menu == 8 then
-            help_menu = "banks"
-          end
-          clipboard = {}
-          if quantize == 0 then
-            cheat(i, bank[i].id)
-            grid_p[i] = {}
-            grid_p[i].action = "pads"
-            grid_p[i].i = i
-            grid_p[i].id = selected[i].id
-            grid_p[i].x = selected[i].x
-            grid_p[i].y = selected[i].y
-            grid_p[i].rate = bank[i][bank[i].id].rate
-            grid_p[i].start_point = bank[i][bank[i].id].start_point
-            grid_p[i].end_point = bank[i][bank[i].id].end_point
-            grid_p[i].rate_adjusted = false
-            grid_p[i].loop = bank[i][bank[i].id].loop
-            grid_p[i].pause = bank[i][bank[i].id].pause
-            grid_p[i].mode = bank[i][bank[i].id].mode
-            grid_p[i].clip = bank[i][bank[i].id].clip
-            grid_pat[i]:watch(grid_p[i])
-          else
-            table.insert(quantize_events[i],selected[i].id)
-          end
-        else
-          if #clipboard == 0 then
+        if bank[i].focus_hold == 0 then
+          if grid.alt == 0 then
             selected[i].x = x
             selected[i].y = y
             selected[i].id = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
             bank[i].id = selected[i].id
-            clipboard[i] = {}
-            clipboard_copy(
-              bank[i][bank[i].id].start_point,
-              bank[i][bank[i].id].end_point,
-              bank[i][bank[i].id].rate,
-              bank[i][bank[i].id].level,
-              bank[i][bank[i].id].pan,
-              bank[i][bank[i].id].clip,
-              bank[i][bank[i].id].mode,
-              bank[i][bank[i].id].loop,
-              bank[i][bank[i].id].filter_type,
-              bank[i][bank[i].id].fc,
-              bank[i][bank[i].id].q,
-              bank[i][bank[i].id].fifth,
-              bank[i][bank[i].id].enveloped,
-              bank[i][bank[i].id].envelope_time,
-              bank[i][bank[i].id].tilt,
-              bank[i][bank[i].id].tilt_ease_time,
-              bank[i][bank[i].id].tilt_ease_type,
-              bank[i][bank[i].id].offset
-              )
-          else
-            selected[i].x = x
-            selected[i].y = y
-            selected[i].id = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
-            bank[i].id = selected[i].id
-            clipboard_paste(i)
+            which_bank = i
+            if menu == 8 then
+              help_menu = "banks"
+            end
             clipboard = {}
+            if quantize == 0 then
+              cheat(i, bank[i].id)
+              grid_p[i] = {}
+              grid_p[i].action = "pads"
+              grid_p[i].i = i
+              grid_p[i].id = selected[i].id
+              grid_p[i].x = selected[i].x
+              grid_p[i].y = selected[i].y
+              grid_p[i].rate = bank[i][bank[i].id].rate
+              grid_p[i].start_point = bank[i][bank[i].id].start_point
+              grid_p[i].end_point = bank[i][bank[i].id].end_point
+              grid_p[i].rate_adjusted = false
+              grid_p[i].loop = bank[i][bank[i].id].loop
+              grid_p[i].pause = bank[i][bank[i].id].pause
+              grid_p[i].mode = bank[i][bank[i].id].mode
+              grid_p[i].clip = bank[i][bank[i].id].clip
+              grid_pat[i]:watch(grid_p[i])
+            else
+              table.insert(quantize_events[i],selected[i].id)
+            end
+          end
+        elseif bank[i].focus_hold == 1 then
+          if grid.alt == 0 then
+            bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+          elseif grid.alt == 1 then
+            if #clipboard == 0 then
+              bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+              clipboard[i] = {}
+              clipboard_copy(
+                bank[i][bank[i].focus_pad].start_point,
+                bank[i][bank[i].focus_pad].end_point,
+                bank[i][bank[i].focus_pad].rate,
+                bank[i][bank[i].focus_pad].level,
+                bank[i][bank[i].focus_pad].pan,
+                bank[i][bank[i].focus_pad].clip,
+                bank[i][bank[i].focus_pad].mode,
+                bank[i][bank[i].focus_pad].loop,
+                bank[i][bank[i].focus_pad].filter_type,
+                bank[i][bank[i].focus_pad].fc,
+                bank[i][bank[i].focus_pad].q,
+                bank[i][bank[i].focus_pad].fifth,
+                bank[i][bank[i].focus_pad].enveloped,
+                bank[i][bank[i].focus_pad].envelope_time,
+                bank[i][bank[i].focus_pad].tilt,
+                bank[i][bank[i].focus_pad].tilt_ease_time,
+                bank[i][bank[i].focus_pad].tilt_ease_type,
+                bank[i][bank[i].focus_pad].offset
+                )
+            else
+              bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+              clipboard_paste(i)
+              clipboard = {}
+            end
           end
         end
         redraw()
@@ -127,7 +130,6 @@ function grid_actions.init(x,y,z)
     for k = 1,1 do
       for i = 1,3 do
         if z == 0 and x == (k+1)+(5*(i-1)) and y<=k then
-          --if grid_pat_quantize == 0 then
           if grid_pat[i].quantize == 0 then
             if grid.alt == 1 then
               grid_pat[i]:rec_stop()
@@ -145,18 +147,12 @@ function grid_actions.init(x,y,z)
               end
               midi_clock_linearize(i)
               if not clk.externalmidi and not clk.externalcrow then
-                -- does this work??
                 if grid_pat[i].auto_snap == 1 then
                   print("auto-snap")
                   snap_to_bars(i,how_many_bars(i))
                 end
                 grid_pat[i]:start()
                 grid_pat[i].loop = 1
-                --[[if grid_pat[i].count > 0 then
-                  grid_pat[i].tightened_start = 1
-                  snap_to_bars(i,bank[i].snap_to_bars)
-                  butts = "go"
-                end]]--
               else
                 if grid_pat[i].count > 0 then
                   grid_pat[i].external_start = 1
@@ -184,15 +180,10 @@ function grid_actions.init(x,y,z)
             end
           else
             if grid.alt == 1 then
-              --[[grid_pat[i]:rec_stop()
-              grid_pat[i]:stop()
-              grid_pat[i]:clear()
-              pattern_saver[i].load_slot = 0]]--
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
               grid_pat[i].external_start = 0
               grid_pat[i].tightened_start = 0
-              --butts = "no"
               grid_pat[i]:clear()
               pattern_saver[i].load_slot = 0
             else
@@ -409,11 +400,13 @@ function grid_actions.init(x,y,z)
             if y == 2 then
               random_grid_pat(math.ceil(x/4),3)
             end
-            local current = math.floor(x/5)+1
-            bank[current][bank[current].id].rate = 1
-            softcut.rate(current+1,1*bank[current][bank[current].id].offset)
-            if bank[current][bank[current].id].fifth == true then
-              bank[current][bank[current].id].fifth = false
+            if y == 4 then
+              local current = math.floor(x/5)+1
+              bank[current][bank[current].id].rate = 1
+              softcut.rate(current+1,1*bank[current][bank[current].id].offset)
+              if bank[current][bank[current].id].fifth == true then
+                bank[current][bank[current].id].fifth = false
+              end
             end
           end
           ---

@@ -27,32 +27,46 @@ function main_menu.init()
     screen.level(3)
     screen.text("loops")
     if key1_hold then
-      if page.loops_sel < 3 and bank[page.loops_sel+1].id == 16 and grid.alt == 0 then
-        screen.move(0,20)
-        screen.level(6)
-        screen.text("(pad 16 overwrites bank!)")
-      end
+      local id = page.loops_sel+1
+      local focused_pad = nil
       if grid.alt == 1 then
         screen.move(0,20)
         screen.level(6)
         screen.text("(grid-ALT sets offset for all)")
       end
       for i = 1,3 do
+        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and grid_pat[i].external_start == 0 then
+          focused_pad = bank[i].id
+        else
+          focused_pad = bank[i].focus_pad
+        end
+        if page.loops_sel == i-1 then
+          if page.loops_sel < 3 and focused_pad == 16 and grid.alt == 0 then
+            screen.move(0,20)
+            screen.level(6)
+            screen.text("(pad 16 overwrites bank!)")
+          end
+          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or grid_pat[i].external_start == 1 then
+            screen.move(0,10)
+            screen.level(3)
+            screen.text("loops: bank "..i.." is pad-locked")
+          end
+        end
         screen.move(0,20+(i*10))
         screen.level(page.loops_sel == i-1 and 15 or 3)
         if grid.alt == 0 then
           local loops_to_screen_options = {"a", "b", "c"}
-          screen.text(loops_to_screen_options[i]..""..bank[i].id)
+          screen.text(loops_to_screen_options[i]..""..focused_pad)
         else
           local loops_to_screen_options = {"(a)","(b)","(c)"}
           screen.text(loops_to_screen_options[i])
         end
         screen.move(20,20+(i*10))
-        screen.text((bank[i][bank[i].id].mode == 1 and "Live" or "Clip")..":")
+        screen.text((bank[i][focused_pad].mode == 1 and "Live" or "Clip")..":")
         screen.move(40,20+(i*10))
-        screen.text(bank[i][bank[i].id].clip)
+        screen.text(bank[i][focused_pad].clip)
         screen.move(55,20+(i*10))
-        screen.text("offset: "..string.format("%.0f",((math.log(bank[i][bank[i].id].offset)/math.log(0.5))*-12)).." st")
+        screen.text("offset: "..string.format("%.0f",((math.log(bank[i][focused_pad].offset)/math.log(0.5))*-12)).." st")
       end
       screen.level(page.loops_sel == 3 and 15 or 3)
       screen.move(0,60)

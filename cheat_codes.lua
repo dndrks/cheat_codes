@@ -199,7 +199,6 @@ function how_many_bars(bank)
   end
   local time_per_bar = (60/bpm)*4
   local this_many_bars = math.floor((total_pattern_time/time_per_bar)+0.5)
-  --print("bar sentience: "..this_many_bars)
   -- need at least ONE bar, so...
   if this_many_bars == 0 then this_many_bars = 1 end
   return this_many_bars
@@ -381,8 +380,6 @@ function snap_to_bars(bank,bar_count)
       old_pat_time = table.clone(grid_pat[bank].time)
     end
     local bar_time = (((60/bpm)*4)*bar_count)/total_time
-    --local rounded_beats = math.floor(1000*(60/bpm)+0.5)/1000
-    --local bar_time = (((rounded_beats)*4)*bar_count)/total_time
     for k = 1,grid_pat[bank].count do
       grid_pat[bank].time[k] = grid_pat[bank].time[k] * bar_time
     end
@@ -391,7 +388,6 @@ function snap_to_bars(bank,bar_count)
       total_time = total_time + grid_pat[bank].time[i]
     end
     print("after total: "..total_time)
-    --midi_clock_linearize(bank)
     snap_to_bars_midi(bank,bar_count)
   end
 end
@@ -541,26 +537,6 @@ function print_my_g_p_q(bank)
 end
 
 function snap_to_bars_midi(bank,bar_count)
-  --midi_clock_linearize(bank)
-  --[==[print_my_g_p_q(bank)
-  g_p_q[bank].event = {}
-  for i = 1,grid_pat[bank].count do
-    g_p_q[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / ((60/bpm)/4))+0.5)
-    g_p_q[bank].event[i] = {} -- critical
-    if grid_pat[bank].time[i] == 0 or g_p_q[bank].clicks[i] == 0 then
-      g_p_q[bank].event[i][1] = "nothing"
-    else
-      for j = 1,g_p_q[bank].clicks[i] do
-        if j == 1 then
-          g_p_q[bank].event[i][1] = "something"
-        else
-          g_p_q[bank].event[i][j] = "nothing"
-        end
-      end
-    end
-  end
-  g_p_q[bank].current_step = 1
-  g_p_q[bank].sub_step = 1]==]--
   local entry_count = 0
   local target_entry_count = bar_count*16
   for i = 1,#g_p_q[bank].event do
@@ -616,62 +592,8 @@ function snap_to_bars_midi(bank,bar_count)
     end
     g_p_q[bank].current_step = 1
     g_p_q[bank].sub_step = 1
-    
-    --[==[while current_count < distance_count do
-      if last_group > 1 then
-        if #g_p_q[bank].event[last_group] > 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "nothing" then
-          local check_table = #g_p_q[bank].event
-          print("removing "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]])
-          table.remove(g_p_q[bank].event[last_group])
-          current_count = current_count + 1
-          if current_count == distance_count then break end
-          print("current count :" .. current_count)
-          if #g_p_q[bank].event ~= check_table then
-            break
-            print("tables got funky")
-          end
-        elseif g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "something" then
-          print("skip: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]])
-          last_group = last_group - 1
-        end
-      elseif last_group == 1 then
-        print("still got some left!!!"..current_count)
-        table.remove(g_p_q[bank].event)
-        current_count = current_count + 1
-      end
-    end
-    ]==]--
-    
-    
-    
-    --OLD
-    --[==[
-    for j = 1,distance_count do
-      if last_event > 1 then
-        print("loop last event: "..last_event)
-        while #g_p_q[bank].event[last_event] == 1 do
-          print("skip: "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
-          if last_event > 0 then last_event = last_event - 1 end
-          print("minus 1!: "..last_event, j)
-          if last_event == 0 then
-            print("HERY EHY!!!")
-            break
-          end
-        end
-        if #g_p_q[bank].event[last_event] > 1 then
-          print("removing "..g_p_q[bank].event[last_event][#g_p_q[bank].event[last_event]])
-          table.remove(g_p_q[bank].event[last_event])
-        end
-      --elseif last_event == 1 and j ~= distance_count+1 then
-      elseif last_event == 1 then
-        print("still got some left!!!"..j)
-        local total_again = #g_p_q[bank].event
-        table.remove(g_p_q[bank].event)
-      end
-    end
-    ]==]--
-    
   end
+  
   local entry_count = 0
   for i = 1,#g_p_q[bank].event do
     entry_count = entry_count + #g_p_q[bank].event[i]
@@ -1661,7 +1583,8 @@ function reset_all_banks()
     bank[i] = {}
     bank[i].id = 1
     bank[i].ext_clock = 1
-    bank[i].param_latch = 0
+    bank[i].focus_hold = 0
+    bank[i].focus_pad = 1
     bank[i].crow_execute = 1
     bank[i].snap_to_bars = 1
     for k = 1,16 do
@@ -1992,23 +1915,6 @@ if screen_focus == 1 then
       elseif time_nav > 1 and time_nav < 5 then
         if page.time_page_sel[time_nav] == 2 then
           random_grid_pat(id,3)
-          --[[if key1_hold or grid.alt == 1 then
-            for j = 1,3 do
-              sync_pattern_to_bpm(j,params:get("quant_div"))
-            end
-          else
-            sync_pattern_to_bpm(id,params:get("quant_div"))
-          end]]--
-        --[==[
-        elseif page.time_page_sel[time_nav] == 2 then
-          if key1_hold or grid.alt == 1 then
-            for j = 1,3 do
-              snap_to_bars(j,bank[j].snap_to_bars)
-            end
-          else
-            snap_to_bars(id,bank[id].snap_to_bars)
-          end
-        ]==]--
         end
       end
     end
@@ -2187,7 +2093,14 @@ function grid_redraw()
     end
     
     for i = 1,3 do
-      g:led(selected[i].x, selected[i].y, 15)
+      if bank[i].focus_hold == 0 then
+        g:led(selected[i].x, selected[i].y, 15)
+      else
+        local focus_x = (math.ceil(bank[i].focus_pad/4)+(5*(i-1)))
+        local focus_y = 8-((bank[i].focus_pad-1)%4)
+        g:led(selected[i].x, selected[i].y, 5)
+        g:led(focus_x, focus_y, 15)
+      end
       if bank[i][bank[i].id].pause == true then
        g:led(3+(5*(i-1)),1,15)
        g:led(3+(5*(i-1)),2,15)
@@ -2216,6 +2129,11 @@ function grid_redraw()
         g:led(3+(5*(i-1)),4,2)
       elseif bank[i][bank[i].id].loop == true then
         g:led(3+(5*(i-1)),4,4)
+      end
+      if bank[i].focus_hold == 1 then
+        g:led(1+(5*(i-1)),1,10)
+      else
+        g:led(1+(5*(i-1)),1,0)
       end
     end
     
@@ -2407,7 +2325,8 @@ function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r)
 end
 
 function clipboard_paste(i)
-  local d = bank[i].id
+  --local d = bank[i].id
+  local d = bank[i].focus_pad
   bank[i][d].start_point = clipboard[1]
   bank[i][d].end_point = clipboard[2]
   bank[i][d].rate = clipboard[3]
@@ -2427,9 +2346,10 @@ function clipboard_paste(i)
   bank[i][d].tilt_ease_type = clipboard[17]
   bank[i][d].offset = clipboard[18]
   redraw()
-  if bank[i][d].loop == true then
+  -- idk with new approach...
+  --[[if bank[i][d].loop == true then
     cheat(i,d)
-  end
+  end]]--
 end
 
 a = arc.connect()

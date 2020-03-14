@@ -6,10 +6,14 @@ function encoder_actions.init(n,d)
       local id = page.loops_sel + 1
       if id ~= 4 then
         if key1_hold or grid.alt == 1 then
-          bank[id].id = util.clamp(bank[id].id + d,1,16)
-          selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
-          selected[id].y = 8-((bank[id].id-1)%4)
-          cheat(id,bank[id].id)
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+            bank[id].id = util.clamp(bank[id].id + d,1,16)
+            selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
+            selected[id].y = 8-((bank[id].id-1)%4)
+            cheat(id,bank[id].id)
+          else
+            bank[id].focus_pad = util.clamp(bank[id].focus_pad + d,1,16)
+          end
         else
           local current_difference = (bank[id][bank[id].id].end_point - bank[id][bank[id].id].start_point)
           if bank[id][bank[id].id].start_point + current_difference <= (9+(8*(bank[id][bank[id].id].clip-1))) then
@@ -55,21 +59,29 @@ function encoder_actions.init(n,d)
       local id = page.loops_sel + 1
       if id ~=4 then
         if key1_hold and grid.alt == 0 then
-          local pre_adjust = bank[id][bank[id].id].clip
-          local current_difference = (bank[id][bank[id].id].end_point - bank[id][bank[id].id].start_point)
-          if bank[id][bank[id].id].mode == 1 and bank[id][bank[id].id].clip + d > 3 then
-            bank[id][bank[id].id].mode = 2
-            bank[id][bank[id].id].clip = 1
-          elseif bank[id][bank[id].id].mode == 2 and bank[id][bank[id].id].clip + d < 1 then
-            bank[id][bank[id].id].mode = 1
-            bank[id][bank[id].id].clip = 3
+          local focused_pad = nil
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+            focused_pad = bank[id].id
           else
-            bank[id][bank[id].id].clip = util.clamp(bank[id][bank[id].id].clip+d,1,3)
+            focused_pad = bank[id].focus_pad
           end
-          bank[id][bank[id].id].start_point = bank[id][bank[id].id].start_point - ((pre_adjust - bank[id][bank[id].id].clip)*8)
-          bank[id][bank[id].id].end_point = bank[id][bank[id].id].start_point + current_difference
-          cheat(id,bank[id].id)
-          if bank[id].id == 16 then
+          local pre_adjust = bank[id][focused_pad].clip
+          local current_difference = (bank[id][focused_pad].end_point - bank[id][focused_pad].start_point)
+          if bank[id][focused_pad].mode == 1 and bank[id][focused_pad].clip + d > 3 then
+            bank[id][focused_pad].mode = 2
+            bank[id][focused_pad].clip = 1
+          elseif bank[id][focused_pad].mode == 2 and bank[id][focused_pad].clip + d < 1 then
+            bank[id][focused_pad].mode = 1
+            bank[id][focused_pad].clip = 3
+          else
+            bank[id][focused_pad].clip = util.clamp(bank[id][focused_pad].clip+d,1,3)
+          end
+          bank[id][focused_pad].start_point = bank[id][focused_pad].start_point - ((pre_adjust - bank[id][focused_pad].clip)*8)
+          bank[id][focused_pad].end_point = bank[id][focused_pad].start_point + current_difference
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+            cheat(id,bank[id].id)
+          end
+          if focused_pad == 16 then
             for i = 1,15 do
               local pre_adjust = bank[id][i].clip
               bank[id][i].mode = bank[id][16].mode
@@ -137,21 +149,29 @@ function encoder_actions.init(n,d)
       local id = page.loops_sel + 1
       if id ~= 4 then
         if key1_hold or grid.alt == 1 then
-          local current_offset = (math.log(bank[id][bank[id].id].offset)/math.log(0.5))*-12
+          local focused_pad = nil
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+            focused_pad = bank[id].id
+          else
+            focused_pad = bank[id].focus_pad
+          end
+          local current_offset = (math.log(bank[id][focused_pad].offset)/math.log(0.5))*-12
           current_offset = util.clamp(current_offset+d,-36,24)
           if current_offset > -1 and current_offset < 1 then
             current_offset = 0
           end
-          bank[id][bank[id].id].offset = math.pow(0.5, -current_offset / 12)
-          cheat(id,bank[id].id)
-          if bank[id].id == 16 then
+          bank[id][focused_pad].offset = math.pow(0.5, -current_offset / 12)
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+            cheat(id,bank[id].id)
+          end
+          if focused_pad == 16 then
             for i = 1,15 do
               bank[id][i].offset = bank[id][16].offset
             end
           end
           if grid.alt == 1 then
             for i = 1,16 do
-              bank[id][i].offset = bank[id][bank[id].id].offset
+              bank[id][i].offset = bank[id][focused_pad].offset
             end
           end
         else
