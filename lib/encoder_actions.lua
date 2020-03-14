@@ -253,19 +253,32 @@ function encoder_actions.init(n,d)
     end
   end
   if menu == 3 then
+    local focused_pad = nil
+    if bank[n].focus_hold == 1 then
+      focused_pad = bank[n].focus_pad
+    elseif bank[n].focus_hold == 0 then
+      focused_pad = bank[n].id
+    end
     if page.levels_sel == 0 then
       if key1_hold or grid.alt == 1 then
         for i = 1,16 do
           bank[n][i].level = util.clamp(bank[n][i].level+d/10,0,2)
         end
       else
-        bank[n][bank[n].id].level = util.clamp(bank[n][bank[n].id].level+d/10,0,2)
+        --[[if bank[n].focus_hold == 1 then
+          focused_pad = bank[n].focus_pad
+        elseif bank[n].focus_hold == 0 then
+          focused_pad = bank[n].id
+        end]]--
+        bank[n][focused_pad].level = util.clamp(bank[n][focused_pad].level+d/10,0,2)
       end
       if bank[n][bank[n].id].enveloped == false then
-        softcut.level_slew_time(n+1,1.0)
-        softcut.level(n+1,bank[n][bank[n].id].level)
-        softcut.level_cut_cut(n+1,5,util.linlin(-1,1,0,1,bank[n][bank[n].id].pan)*(bank[n][bank[n].id].left_delay_level*bank[n][bank[n].id].level))
-        softcut.level_cut_cut(n+1,6,util.linlin(-1,1,1,0,bank[n][bank[n].id].pan)*(bank[n][bank[n].id].right_delay_level*bank[n][bank[n].id].level))
+        if bank[n].focus_hold == 0 then
+          softcut.level_slew_time(n+1,1.0)
+          softcut.level(n+1,bank[n][bank[n].id].level)
+          softcut.level_cut_cut(n+1,5,util.linlin(-1,1,0,1,bank[n][bank[n].id].pan)*(bank[n][bank[n].id].left_delay_level*bank[n][bank[n].id].level))
+          softcut.level_cut_cut(n+1,6,util.linlin(-1,1,1,0,bank[n][bank[n].id].pan)*(bank[n][bank[n].id].right_delay_level*bank[n][bank[n].id].level))
+        end
       end
     elseif page.levels_sel == 1 then
       if key1_hold or grid.alt == 1 then
@@ -288,19 +301,28 @@ function encoder_actions.init(n,d)
           end
         end
       else
-        local pre_enveloped = bank[n][bank[n].id].enveloped
-        if bank[n][bank[n].id].enveloped then
+        --[[if bank[n].focus_hold == 1 then
+          focused_pad = bank[n].focus_pad
+        elseif bank[n].focus_hold == 0 then
+          focused_pad = bank[n].id
+        end]]--
+        local pre_enveloped = bank[n][focused_pad].enveloped
+        if bank[n][focused_pad].enveloped then
           if d < 0 then
-            bank[n][bank[n].id].enveloped = false
+            bank[n][focused_pad].enveloped = false
             if pre_enveloped ~= bank[n][bank[n].id].enveloped then
-              cheat(n, bank[n].id)
+              if bank[n].focus_hold == 0 then
+                cheat(n, bank[n].id)
+              end
             end
           end
         else
           if d > 0 then
-            bank[n][bank[n].id].enveloped = true
-            if pre_enveloped ~= bank[n][bank[n].id].enveloped then
-              cheat(n, bank[n].id)
+            bank[n][focused_pad].enveloped = true
+            if pre_enveloped ~= bank[n][focused_pad].enveloped then
+              if bank[n].focus_hold == 0 then
+                cheat(n, bank[n].id)
+              end
             end
           end
         end
@@ -315,21 +337,32 @@ function encoder_actions.init(n,d)
           end
         end
       else
-        if bank[n][bank[n].id].enveloped then
-          bank[n][bank[n].id].envelope_time = util.explin(0.1,60,0.1,60,bank[n][bank[n].id].envelope_time)
-          bank[n][bank[n].id].envelope_time = util.clamp(bank[n][bank[n].id].envelope_time+d/10,0.1,60)
-          bank[n][bank[n].id].envelope_time = util.linexp(0.1,60,0.1,60,bank[n][bank[n].id].envelope_time)
+        --[[if bank[n].focus_hold == 1 then
+          focused_pad = bank[n].focus_pad
+        elseif bank[n].focus_hold == 0 then
+          focused_pad = bank[n].id
+        end]]--
+        if bank[n][focused_pad].enveloped then
+          bank[n][focused_pad].envelope_time = util.explin(0.1,60,0.1,60,bank[n][focused_pad].envelope_time)
+          bank[n][focused_pad].envelope_time = util.clamp(bank[n][focused_pad].envelope_time+d/10,0.1,60)
+          bank[n][focused_pad].envelope_time = util.linexp(0.1,60,0.1,60,bank[n][focused_pad].envelope_time)
         end
       end
     end
   end
   if menu == 4 then
+    local focused_pad = nil
     if key1_hold or grid.alt == 1 then
       for i = 1,16 do
         bank[n][i].pan = util.clamp(bank[n][i].pan+d/10,-1,1)
       end
     else
-      bank[n][bank[n].id].pan = util.clamp(bank[n][bank[n].id].pan+d/10,-1,1)
+      if bank[n].focus_hold == 1 then
+        focused_pad = bank[n].focus_pad
+      elseif bank[n].focus_hold == 0 then
+        focused_pad = bank[n].id
+      end
+      bank[n][focused_pad].pan = util.clamp(bank[n][focused_pad].pan+d/10,-1,1)
     end
     softcut.pan(n+1, bank[n][bank[n].id].pan)
   elseif menu == 5 then

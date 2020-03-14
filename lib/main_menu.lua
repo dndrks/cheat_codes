@@ -130,7 +130,13 @@ function main_menu.init()
     screen.text("levels")
     screen.line_width(1)
     local level_options = {"levels","envelope enable","decay"}
+    local focused_pad = nil
     for i = 1,3 do
+      if bank[i].focus_hold == 1 then
+        focused_pad = bank[i].focus_pad
+      elseif bank[i].focus_hold == 0 then
+        focused_pad = bank[i].id
+      end
       screen.level(3)
       screen.move(10,79-(i*20))
       local level_markers = {"0 -", "1 -", "2 -"}
@@ -141,10 +147,10 @@ function main_menu.init()
       if key1_hold or grid.alt == 1 then
         screen.text("("..level_to_screen_options[i]..")")
       else
-        screen.text(level_to_screen_options[i]..""..bank[i].id)
+        screen.text(level_to_screen_options[i]..""..focused_pad)
       end
       screen.move(35+(20*(i-1)),57)
-      local level_to_screen = util.linlin(0,2,0,40,bank[i][bank[i].id].level)
+      local level_to_screen = util.linlin(0,2,0,40,bank[i][focused_pad].level)
       screen.line(35+(20*(i-1)),57-level_to_screen)
       screen.close()
       screen.stroke()
@@ -152,7 +158,7 @@ function main_menu.init()
       screen.move(90,10)
       screen.text("env?")
       screen.move(90+((i-1)*15),20)
-      if bank[i][bank[i].id].enveloped then
+      if bank[i][focused_pad].enveloped then
         screen.text("|\\")
       else
         screen.text("-")
@@ -165,11 +171,11 @@ function main_menu.init()
       if key1_hold or grid.alt == 1 then
         screen.text("("..envelope_to_screen_options[i]..")")
       else
-        screen.text(envelope_to_screen_options[i]..""..bank[i].id)
+        screen.text(envelope_to_screen_options[i]..""..focused_pad)
       end
       screen.move(110,30+((i)*10))
-      if bank[i][bank[i].id].enveloped then
-        screen.text(string.format("%.1f", bank[i][bank[i].id].envelope_time))
+      if bank[i][focused_pad].enveloped then
+        screen.text(string.format("%.1f", bank[i][focused_pad].envelope_time))
       else
         screen.text("---")
       end
@@ -181,19 +187,25 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("panning")
+    local focused_pad = nil
     for i = 1,3 do
+      if bank[i].focus_hold == 1 then
+        focused_pad = bank[i].focus_pad
+      elseif bank[i].focus_hold == 0 then
+        focused_pad = bank[i].id
+      end
       screen.level(3)
       screen.move(10+((i-1)*53),25)
       local pan_options = {"L", "C", "R"}
       screen.text(pan_options[i])
-      local pan_to_screen = util.linlin(-1,1,10,112,bank[i][bank[i].id].pan)
+      local pan_to_screen = util.linlin(-1,1,10,112,bank[i][focused_pad].pan)
       screen.move(pan_to_screen,35+(10*(i-1)))
       local pan_to_screen_options = {"a", "b", "c"}
       screen.level(15)
       if key1_hold or grid.alt == 1 then
         screen.text("("..pan_to_screen_options[i]..")")
       else
-        screen.text(pan_to_screen_options[i]..""..bank[i].id)
+        screen.text(pan_to_screen_options[i]..""..focused_pad)
       end
     end
     screen.level(3)
