@@ -80,28 +80,41 @@ function main_menu.init()
       screen.level(3)
       screen.text(string.format("%0.f",util.linlin(rec.start_point-(8*(rec.clip-1)),rec.end_point-(8*(rec.clip-1)),0,100,(poll_position_new[1] - (8*(rec.clip-1))))).."%")
     else
+      local which_pad = nil
       screen.line_width(1)
       for i = 1,3 do
+        if bank[i].focus_hold == 0 then
+          which_pad = bank[i].id
+        elseif bank[i].focus_hold == 1 then
+          which_pad = bank[i].focus_pad
+        end
         screen.move(0,10+(i*15))
         screen.level(page.loops_sel == i-1 and 15 or 3)
         local loops_to_screen_options = {"a", "b", "c"}
-        screen.text(loops_to_screen_options[i]..""..bank[i].id)
+        screen.text(loops_to_screen_options[i]..""..which_pad)
         screen.move(15,10+(i*15))
         screen.line(120,10+(i*15))
         screen.close()
         screen.stroke()
       end
       for i = 1,3 do
+        if bank[i].focus_hold == 0 then
+          which_pad = bank[i].id
+        elseif bank[i].focus_hold == 1 then
+          which_pad = bank[i].focus_pad
+        end
         screen.level(page.loops_sel == i-1 and 15 or 3)
-        local start_to_screen = util.linlin(1,9,15,120,(bank[i][bank[i].id].start_point - (8*(bank[i][bank[i].id].clip-1))))
+        local start_to_screen = util.linlin(1,9,15,120,(bank[i][which_pad].start_point - (8*(bank[i][which_pad].clip-1))))
         screen.move(start_to_screen,24+(15*(i-1)))
         screen.text("|")
-        local end_to_screen = util.linlin(1,9,15,120,bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1)))
+        local end_to_screen = util.linlin(1,9,15,120,bank[i][which_pad].end_point - (8*(bank[i][which_pad].clip-1)))
         screen.move(end_to_screen,30+(15*(i-1)))
         screen.text("|")
-        local current_to_screen = util.linlin(1,9,15,120,(poll_position_new[i+1] - (8*(bank[i][bank[i].id].clip-1))))
-        screen.move(current_to_screen,27+(15*(i-1)))
-        screen.text("|")
+        if bank[i].focus_hold == 0 or bank[i].id == bank[i].focus_pad then
+          local current_to_screen = util.linlin(1,9,15,120,(poll_position_new[i+1] - (8*(bank[i][bank[i].id].clip-1))))
+          screen.move(current_to_screen,27+(15*(i-1)))
+          screen.text("|")
+        end
       end
       screen.level(page.loops_sel == 3 and 15 or 3)
       local recording_playhead = util.linlin(1,9,15,120,(poll_position_new[1] - (8*(rec.clip-1))))
@@ -232,11 +245,11 @@ function main_menu.init()
         if slew_counter[i].slewedVal >= -0.04 and slew_counter[i].slewedVal <=0.04 then
         screen.text_center(".....|.....")
         elseif slew_counter[i].slewedVal < -0.04 then
-          if slew_counter[i].slewedVal > -0.2 then
+          if slew_counter[i].slewedVal > -0.3 then
             screen.text_center("....||.....")
-          elseif slew_counter[i].slewedVal > -0.4 then
+          elseif slew_counter[i].slewedVal > -0.45 then
             screen.text_center("...|||.....")
-          elseif slew_counter[i].slewedVal > -0.6 then
+          elseif slew_counter[i].slewedVal > -0.65 then
             screen.text_center("..||||.....")
           elseif slew_counter[i].slewedVal > -0.8 then
             screen.text_center(".|||||.....")
@@ -244,13 +257,13 @@ function main_menu.init()
             screen.text_center("||||||.....")
           end
         elseif slew_counter[i].slewedVal > 0 then
-          if slew_counter[i].slewedVal < 0.4 then
+          if slew_counter[i].slewedVal < 0.5 then
             screen.text_center(".....||....")
-          elseif slew_counter[i].slewedVal < 0.6 then
+          elseif slew_counter[i].slewedVal < 0.65 then
             screen.text_center(".....|||...")
           elseif slew_counter[i].slewedVal < 0.8 then
             screen.text_center(".....||||..")
-          elseif slew_counter[i].slewedVal < 0.9 then
+          elseif slew_counter[i].slewedVal < 0.85 then
             screen.text_center(".....|||||.")
           elseif slew_counter[i].slewedVal <= 1.01 then
             screen.text_center(".....||||||")
@@ -325,12 +338,13 @@ function main_menu.init()
     screen.stroke()
     for i = 1,5 do
       screen.level(page.time_sel == i and 15 or 3)
-      local time_options = {"clk","P1","P2","P3","ALL"}
+      --local time_options = {"clk","P1","P2","P3","ALL"}
+      local time_options = {"clk","P1","P2","P3","   "}
       screen.move(15+(23*(i-1)),25)
       screen.text(time_options[i])
       local glb_options = {"bpm","clk source","send crow clk?"}
-      local p_options = {"rec mode","generate","crow output"}
-      local p_options_external_clock = {"rec mode (ext)","generate","crow output"}
+      local p_options = {"rec mode", "shuffle pat","crow output"}
+      local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
       for j = 1,3 do
         screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
         screen.move(15,40+(10*(j-1)))
@@ -341,14 +355,9 @@ function main_menu.init()
           screen.move(85,40+(10*(j-1)))
           screen.text(fine_options[j])
         elseif page.time_sel < 5 then
-          --[[if params:get("clock") == 1 then
-            screen.text(p_options[j])
-          else
-            screen.text(p_options_external_clock[j])
-          end]]--
           screen.text(p_options[j])
           local mode_options = {"loose","distro","quant","quant+trim"}
-          local fine_options = {mode_options[grid_pat[page.time_sel-1].playmode], "[K3]", bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}
+          local fine_options = {mode_options[grid_pat[page.time_sel-1].playmode], grid_pat[page.time_sel-1].count > 0 and grid_pat[page.time_sel-1].rec == 0 and "[K3]" or "(no pat!)", bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}
           screen.move(85,40+(10*(j-1)))
           screen.text(fine_options[j])
           if bank[page.time_sel-1].crow_execute ~= 1 then

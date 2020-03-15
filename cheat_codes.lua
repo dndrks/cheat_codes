@@ -491,6 +491,9 @@ function random_grid_pat(which,mode)
     grid_pat[which].count = count
   end
   --
+  for i = 1,16 do
+    bank[which][i].level = 1
+  end
   midi_clock_linearize(which)
   if grid_pat[which].quantize == 0 then
     if not clk.externalmidi and not clk.externalcrow then
@@ -603,10 +606,6 @@ function snap_to_bars_midi(bank,bar_count)
     --doubletap? is this ok??
     snap_to_bars_midi(bank,bar_count)
   end
-  --[[if entry_count < grid_pat[bank].count then
-    grid_pat[bank].count = entry_count
-    grid_pat[bank].step = 1
-  end]]--
 end
 
 function save_external_timing(bank,slot)
@@ -877,6 +876,8 @@ local function crow_init()
     crow.output[i].action = "{to(5,0),to(0,0.05)}"
     print("output["..i.."] initialized")
   end
+  crow.input[1].mode("change",2,0.1,"rising")
+  crow.input[1].change = buff_freeze
 end
 
 local lit = {}
@@ -971,38 +972,6 @@ function init()
     step_seq[i].meta_meta_duration = 4
     step_seq[i].loop_held = 0
   end
-  
-  --[==[function testing_clocks(bank)
-    local current = g_p_q[bank].current_step
-    local sub_step = g_p_q[bank].sub_step
-    if grid_pat[bank].external_start == 1 and grid_pat[bank].count > 0 then
-      if g_p_q[bank].event[current][sub_step] == "something" then
-        --print(current, sub_step, "+++")
-        if grid_pat[bank].step == 0 then
-          grid_pat[bank].step = 1
-        end
-        grid_pattern_execute(grid_pat[bank].event[grid_pat[bank].step])
-      else
-        -- nothing!
-        if grid_pat[bank].step == 0 then
-          grid_pat[bank].step = 1
-        end
-      end
-      --increase sub_step now
-      if g_p_q[bank].sub_step == #g_p_q[bank].event[grid_pat[bank].step] then
-        g_p_q[bank].sub_step = 0
-        --if we're at the end of the events in this step, move to the next step
-        if grid_pat[bank].step == grid_pat[bank].count then
-          grid_pat[bank].step = 0
-          g_p_q[bank].current_step = 0
-        end
-        grid_pat[bank].step = grid_pat[bank].step + 1
-        --g_p_q[bank].current_step = g_p_q[bank].current_step + 1
-        g_p_q[bank].current_step = grid_pat[bank].step
-      end
-      g_p_q[bank].sub_step = g_p_q[bank].sub_step + 1
-    end
-  end]==]--
   
   function testing_clocks(bank)
     local current = g_p_q[bank].current_step
@@ -1116,19 +1085,10 @@ function init()
         else
           grid_pat[i].led = 0
         end
-        --[[
-        elseif clk.externalcrow then
-          if clk.beat == 0 or clk.beat == 2 then
-            grid_pat[i].led = 1
-          else
-            grid_pat[i].led = 0
-          end
-        end]]--
       end
     end
     --here it is!!
     for i = 1,3 do
-      --if butts == "go" then
       if grid_pat[i].tightened_start == 1 then
         internal_clocking_tightened(i)
       end
@@ -1395,34 +1355,12 @@ function init()
 end
 
 poll_position_new = {}
---[[for i = 1,3 do
-  poll_position_new[i] = {}
-end]]--
 
 phase = function(n, x)
   poll_position_new[n] = x
   if menu == 2 then
     redraw()
   end
-  --[[if rec.state == 1 then
-    for i = 2,4 do
-      local squiggle = tonumber(poll_position_new[i])
-      local other_squiggle = tonumber(poll_position_new[1])
-      if squiggle ~= nil and other_squiggle ~= nil then
-        --if math.floor(((squiggle*10)+0.5))/10 == math.floor(((other_squiggle*10)+0.5))/10 then
-        if math.floor(((squiggle*10)+0.5))/10 > math.floor(((other_squiggle*10)+0.5))/10 - 0.1 and math.floor(((squiggle*10)+0.5))/10 < math.floor(((other_squiggle*10)+0.5))/10 + 0.1 then
-          --softcut.position(i,math.floor(((other_squiggle*10)+0.5))/10-0.05)
-          softcut.level_slew_time(i,0.005)
-          softcut.level(i,0.04)
-        else
-          if not bank[i-1][bank[i-1].id].enveloped then
-            softcut.level_slew_time(i,1.0)
-            softcut.level(i,bank[i-1][bank[i-1].id].level)
-          end
-        end
-      end
-    end
-  end]]--
 end
 
 local tap = 0
@@ -1442,21 +1380,6 @@ function change()
     delay[i].end_point = delay_time
     softcut.loop_end(i+4,delay[i].end_point)
   end
-  --
-  --these are 1/4 notes...i want 1/16th notes...
-  --[[==
-  clk.beat = clk.beat + 1
-  local crow_tap1 = util.time()
-  crow_deltatap = crow_tap1 - crow_tap
-  crow_tap = tap1
-  local crow_tap_tempo = 60/crow_deltatap
-  if crow_tap_tempo >=20 then
-    params:set("bpm",math.floor(crow_tap_tempo+0.5))
-  end
-  if clk.beat == 4 then
-    clk.beat = 0
-  end
-  ==]]--
 
   clk.step = clk.step + 1
   if clk.step == 4 then
@@ -1585,6 +1508,7 @@ function reset_all_banks()
     bank[i].ext_clock = 1
     bank[i].focus_hold = 0
     bank[i].focus_pad = 1
+    bank[i].random_mode = 3
     bank[i].crow_execute = 1
     bank[i].snap_to_bars = 1
     for k = 1,16 do
@@ -1914,7 +1838,7 @@ if screen_focus == 1 then
         end
       elseif time_nav > 1 and time_nav < 5 then
         if page.time_page_sel[time_nav] == 2 then
-          random_grid_pat(id,3)
+          random_grid_pat(id,2)
         end
       end
     end
@@ -1926,7 +1850,7 @@ if screen_focus == 1 then
     if key1_hold == true then key1_hold = false end
   end
   if n == 1 and z == 1 then
-    if menu == 2 then
+    if menu == 2 or menu == 5 then
       local k1_state = key1_hold
       if key1_hold == false then
         key1_hold = true
@@ -1938,7 +1862,7 @@ if screen_focus == 1 then
     end
     
   elseif n == 1 and z == 0 then
-    if menu ~= 2 then
+    if menu ~= 2 and menu ~= 5 then
       key1_hold = false
     end
   end
@@ -2022,30 +1946,17 @@ function grid_redraw()
     end
     
     for i = 1,3 do
-      --if grid_pat[i].led == nil then grid_pat[i].led = 0 end
       if not clk.externalmidi and not clk.externalcrow then
-        --if grid_pat_quantize == 0 then
         if grid_pat[i].quantize == 0 then
           if grid_pat[i].rec == 1 then
-            --[==[grid_pat[i].led = (grid_pat[i].led + 1)
-            if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
-              g:led(2+(5*(i-1)),1,(9))
-            elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
-              g:led(2+(5*(i-1)),1,(0))
-              grid_pat[i].led = 0
-            end]==]--
             g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
           elseif grid_pat[i].play == 1 then
-            --grid_pat[i].led = 0
             g:led(2+(5*(i-1)),1,9)
           elseif grid_pat[i].count > 0 then
-            --grid_pat[i].led = 0
             g:led(2+(5*(i-1)),1,5)
           else
-            --grid_pat[i].led = 0
             g:led(2+(5*(i-1)),1,3)
           end
-        --elseif grid_pat_quantize == 1 then
         elseif grid_pat[i].quantize == 1 then
           if grid_pat[i].rec == 1 then
             g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
@@ -2059,22 +1970,12 @@ function grid_redraw()
         end
       else
         if grid_pat[i].rec == 1 then
-          --[==[grid_pat[i].led = (grid_pat[i].led + 1)
-          if grid_pat[i].led <= math.floor(((60/bpm/2)/0.02)+0.5) then
-            g:led(2+(5*(i-1)),1,(9))
-          elseif grid_pat[i].led >= (math.floor(((60/bpm/2)/0.02)+0.5)*2) then
-            g:led(2+(5*(i-1)),1,(0))
-            grid_pat[i].led = 0
-          end]==]--
           g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
         elseif grid_pat[i].external_start == 1 then
-          --grid_pat[i].led = 0
           g:led(2+(5*(i-1)),1,9)
         elseif grid_pat[i].count > 0 then
-          --grid_pat[i].led = 0
           g:led(2+(5*(i-1)),1,5)
         else
-          --grid_pat[i].led = 0
           g:led(2+(5*(i-1)),1,3)
         end
       end
@@ -2095,18 +1996,25 @@ function grid_redraw()
     for i = 1,3 do
       if bank[i].focus_hold == 0 then
         g:led(selected[i].x, selected[i].y, 15)
+        if bank[i][bank[i].id].pause == true then
+          g:led(3+(5*(i-1)),1,15)
+          g:led(3+(5*(i-1)),2,15)
+        else
+          g:led(3+(5*(i-1)),1,3)
+          g:led(3+(5*(i-1)),2,3)
+        end
       else
         local focus_x = (math.ceil(bank[i].focus_pad/4)+(5*(i-1)))
         local focus_y = 8-((bank[i].focus_pad-1)%4)
         g:led(selected[i].x, selected[i].y, 5)
         g:led(focus_x, focus_y, 15)
-      end
-      if bank[i][bank[i].id].pause == true then
-       g:led(3+(5*(i-1)),1,15)
-       g:led(3+(5*(i-1)),2,15)
-      else
-        g:led(3+(5*(i-1)),1,3)
-        g:led(3+(5*(i-1)),2,3)
+        if bank[i][bank[i].focus_pad].pause == true then
+          g:led(3+(5*(i-1)),1,15)
+          g:led(3+(5*(i-1)),2,15)
+        else
+          g:led(3+(5*(i-1)),1,3)
+          g:led(3+(5*(i-1)),2,3)
+        end
       end
     end
     
@@ -2116,24 +2024,25 @@ function grid_redraw()
     
     g:led(16,8,(grid.alt*12)+3)
     
-    g:led(1,math.abs(bank[1][bank[1].id].clip-5),8)
-    g:led(6,math.abs(bank[2][bank[2].id].clip-5),8)
-    g:led(11,math.abs(bank[3][bank[3].id].clip-5),8)
-    
-    g:led(2,math.abs(bank[1][bank[1].id].mode-5),6)
-    g:led(7,math.abs(bank[2][bank[2].id].mode-5),6)
-    g:led(12,math.abs(bank[3][bank[3].id].mode-5),6)
-    
     for i = 1,3 do
-      if bank[i][bank[i].id].loop == false then
-        g:led(3+(5*(i-1)),4,2)
-      elseif bank[i][bank[i].id].loop == true then
-        g:led(3+(5*(i-1)),4,4)
-      end
-      if bank[i].focus_hold == 1 then
-        g:led(1+(5*(i-1)),1,10)
-      else
+      if bank[i].focus_hold == 0 then
+        g:led(1 + (5*(i-1)), math.abs(bank[i][bank[i].id].clip-5),8)
+        g:led(2 + (5*(i-1)), math.abs(bank[i][bank[i].id].mode-5),6)
         g:led(1+(5*(i-1)),1,0)
+        if bank[i][bank[i].id].loop == false then
+          g:led(3+(5*(i-1)),4,2)
+        elseif bank[i][bank[i].id].loop == true then
+          g:led(3+(5*(i-1)),4,4)
+        end
+      else
+        g:led(1 + (5*(i-1)), math.abs(bank[i][bank[i].focus_pad].clip-5),8)
+        g:led(2 + (5*(i-1)), math.abs(bank[i][bank[i].focus_pad].mode-5),6)
+        g:led(1+(5*(i-1)),1,10)
+        if bank[i][bank[i].focus_pad].loop == false then
+          g:led(3+(5*(i-1)),4,2)
+        elseif bank[i][bank[i].focus_pad].loop == true then
+          g:led(3+(5*(i-1)),4,4)
+        end
       end
     end
     
@@ -2144,6 +2053,8 @@ function grid_redraw()
     end
   
   else
+    
+    -- if we're on page 2...
     
     for i = 1,3 do
       for j = step_seq[i].start_point,step_seq[i].end_point do
@@ -2346,10 +2257,6 @@ function clipboard_paste(i)
   bank[i][d].tilt_ease_type = clipboard[17]
   bank[i][d].offset = clipboard[18]
   redraw()
-  -- idk with new approach...
-  --[[if bank[i][d].loop == true then
-    cheat(i,d)
-  end]]--
 end
 
 a = arc.connect()
@@ -2650,9 +2557,12 @@ function loadstate()
       params:set("zilchmo_patterning",tonumber(io.read()))
       params:set("rec_loop",tonumber(io.read()))
       params:set("live_rec_feedback",tonumber(io.read()))
-      params:set("quantize_pads",tonumber(io.read()))
-      params:set("quantize_pats",tonumber(io.read()))
-      params:set("quant_div",tonumber(io.read()))
+      tonumber(io.read()) -- kill off quantize_pads
+      params:set("quantize_pads",1)
+      tonumber(io.read()) -- kill off quantize_pats
+      params:set("quantize_pats",1)
+      tonumber(io.read()) -- kill off quant_div
+      params:set("quant_div",4)
       params:set("quant_div_pats",tonumber(io.read()))
       params:set("bpm",tonumber(io.read()))
       rec.clip = tonumber(io.read())
@@ -2681,7 +2591,8 @@ function loadstate()
       params:set("midi_device",tonumber(io.read()))
       params:set("loop_enc_resolution",tonumber(io.read()))
       params:set("clock",tonumber(io.read()))
-      params:set("lock_pat",tonumber(io.read()))
+      local squiggleeee = tonumber(io.read())
+      params:set("lock_pat",1)
       for i = 1,3 do
         bank[i].crow_execute = tonumber(io.read())
         bank[i].snap_to_bars = tonumber(io.read())
