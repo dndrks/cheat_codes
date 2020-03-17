@@ -2272,10 +2272,16 @@ end
 
 arc_redraw = function()
   a:all(0)
+  local which_pad = nil
   for i = 1,3 do
+    if bank[arc_control[i]].focus_hold == 0 then
+      which_pad = bank[arc_control[i]].id
+    elseif bank[arc_control[i]].focus_hold == 1 then
+      which_pad = bank[arc_control[i]].focus_pad
+    end
     if arc_param[i] == 1 then
-      local start_to_led = (bank[arc_control[i]][bank[arc_control[i]].id].start_point-1)-(8*(bank[arc_control[i]][bank[arc_control[i]].id].clip-1))
-      local end_to_led = (bank[arc_control[i]][bank[arc_control[i]].id].end_point-1)-(8*(bank[arc_control[i]][bank[arc_control[i]].id].clip-1))
+      local start_to_led = (bank[arc_control[i]][which_pad].start_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
+      local end_to_led = (bank[arc_control[i]][which_pad].end_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
       if start_to_led <= end_to_led then
         a:segment(i, util.linlin(0, 8, tau*(1/4), tau*1.23, start_to_led), util.linlin(0, 8, (tau*(1/4))+0.1, tau*1.249999, end_to_led), 15)
       else
@@ -2283,25 +2289,31 @@ arc_redraw = function()
       end
     end
     if arc_param[i] == 2 then
-      local start_to_led = (bank[arc_control[i]][bank[arc_control[i]].id].start_point-1)-(8*(bank[arc_control[i]][bank[arc_control[i]].id].clip-1))
-      local end_to_led = (bank[arc_control[i]][bank[arc_control[i]].id].end_point-1)-(8*(bank[arc_control[i]][bank[arc_control[i]].id].clip-1))
-      local playhead_to_led = util.linlin(1,9,1,64,(poll_position_new[i+1] - (8*(bank[i][bank[i].id].clip-1))))
+      local start_to_led = (bank[arc_control[i]][which_pad].start_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
+      local end_to_led = (bank[arc_control[i]][which_pad].end_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
+      local playhead_to_led = util.linlin(1,9,1,64,(poll_position_new[i+1] - (8*(bank[i][which_pad].clip-1))))
       a:led(i,(math.floor(playhead_to_led))+16,5)
       a:led(i,(math.floor(util.linlin(0,8,1,64,start_to_led)))+16,15)
       a:led(i,(math.floor(util.linlin(0,8,1,64,end_to_led)))+17,8)
     end
     if arc_param[i] == 3 then
-      local start_to_led = (bank[arc_control[i]][bank[arc_control[i]].id].start_point-1)-(8*(bank[arc_control[i]][bank[arc_control[i]].id].clip-1))
-      local end_to_led = (bank[arc_control[i]][bank[arc_control[i]].id].end_point-1)-(8*(bank[arc_control[i]][bank[arc_control[i]].id].clip-1))
-      local playhead_to_led = util.linlin(1,9,1,64,(poll_position_new[i+1] - (8*(bank[i][bank[i].id].clip-1))))
+      local start_to_led = (bank[arc_control[i]][which_pad].start_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
+      local end_to_led = (bank[arc_control[i]][which_pad].end_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
+      local playhead_to_led = util.linlin(1,9,1,64,(poll_position_new[i+1] - (8*(bank[i][which_pad].clip-1))))
       a:led(i,(math.floor(playhead_to_led))+16,5)
       a:led(i,(math.floor(util.linlin(0,8,1,64,end_to_led)))+17,15)
       a:led(i,(math.floor(util.linlin(0,8,1,64,start_to_led)))+16,8)
     end
     if arc_param[i] == 4 then
       local tilt_to_led = slew_counter[i].slewedVal
+      if bank[i].focus_hold == 1 then
+        which_pad = bank[i].focus_pad
+        tilt_to_led = bank[i][bank[i].focus_pad].tilt
+      else
+        which_pad = bank[i].id
+      end
       if tilt_to_led == nil then
-        tilt_to_led = bank[i][bank[i].id].tilt
+        tilt_to_led = bank[i][which_pad].tilt
         a:led(i,47,5)
         a:led(i,48,10)
         a:led(i,49,15)
@@ -2460,6 +2472,10 @@ function savestate()
       io.write("/home/we/dust/audio/cc_collection-samples/"..params:get("collection").."/".."cc_"..params:get("collection").."-"..i..".wav".."\n")
       collect_samples(i)
     end
+  end
+  io.write("last Pattern playmode".."\n")
+  for i = 1,3 do
+    io.write(grid_pat[i].playmode.."\n")
   end
   io.close(file)
   if selected_coll ~= params:get("collection") then
@@ -2637,6 +2653,11 @@ function loadstate()
         end
       end
     end
+    if io.read() == "last Pattern playmode" then
+      for i = 1,3 do
+        grid_pat[i].playmode = tonumber(io.read())
+      end
+    end
     io.close(file)
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
@@ -2666,7 +2687,6 @@ function test_save(i)
   if grid.alt_pp == 0 then
     if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
       copy_entire_pattern(i)
-      --print(pattern_saver[i].source, pattern_saver[i].save_slot)
       save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
       pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
       pattern_saver[i].load_slot = pattern_saver[i].save_slot
