@@ -11,7 +11,6 @@ function start_up.init()
     softcut.level_input_cut(2, i, 1.0)
     softcut.buffer(i, 1)
     audio.level_adc_cut(1)
-    --softcut.fade_time(i, 0.1)
     softcut.fade_time(i, 0.01)
     softcut.play(i, 1)
     softcut.rate(i, 1)
@@ -86,16 +85,13 @@ function start_up.init()
       softcut.rec_level(1,rec.state)
       if x == 2 then
         rec_state_watcher:start()
-        --softcut.rec_level(1,rec.state)
         softcut.pre_level(1,params:get("live_rec_feedback"))
       elseif x == 1 then
         softcut.pre_level(1,params:get("live_rec_feedback"))
-        --softcut.rec_level(1,rec.state)
       end
     end
   )
-  
-  --offset = 0
+
   params:add_control("offset", "global pitch offset", controlspec.new(-24, 24, 'lin', 1, 0, "st"))
   params:set_action("offset",
     function(value)
@@ -147,7 +143,6 @@ function start_up.init()
       bank[i][bank[i].id].rate = rates[x]
       if bank[i][bank[i].id].pause == false then
         softcut.rate(i+1, bank[i][bank[i].id].rate*bank[i][bank[i].id].offset)
-        --softcut.level(i+1,bank[i][bank[i].id].level)
       end
     end)
     params:add_control("rate slew time "..i, "rate slew time "..banks[i], controlspec.new(0,3,'lin',0,0))
@@ -200,19 +195,19 @@ function start_up.init()
   
   for i = 1,3 do
     local banks = {"a","b","c"}
-    params:add_control("delay L: ("..banks[i]..") send", "delay L: ("..banks[i]..") send", controlspec.new(0,1,'lin',1,1,""))
+    params:add_control("delay L: ("..banks[i]..") send", "delay L: ("..banks[i]..") send", controlspec.new(0,1,'lin',0.1,1,""))
     params:set_action("delay L: ("..banks[i]..") send", function(x)
       if bank[i][bank[i].id].enveloped == false then
-        softcut.level_cut_cut(i+1,5,x)
+        softcut.level_cut_cut(i+1,5,x*bank[i][bank[i].id].level)
       end
       for j = 1,16 do
         bank[i][j].left_delay_level = x
       end
     end)
-    params:add_control("delay R: ("..banks[i]..") send", "delay R: ("..banks[i]..") send", controlspec.new(0,1,'lin',1,1,""))
+    params:add_control("delay R: ("..banks[i]..") send", "delay R: ("..banks[i]..") send", controlspec.new(0,1,'lin',0.1,1,""))
     params:set_action("delay R: ("..banks[i]..") send", function(x)
       if bank[i][bank[i].id].enveloped == false then
-        softcut.level_cut_cut(i+1,6,x)
+        softcut.level_cut_cut(i+1,6,x*bank[i][bank[i].id].level)
       end
       for j = 1,16 do
         bank[i][j].right_delay_level = x

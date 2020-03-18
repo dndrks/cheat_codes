@@ -5,71 +5,79 @@ function grid_actions.init(x,y,z)
   if grid_page == 0 then
     
     for i = 1,3 do
+      if grid.alt == 1 then
+        if x == 1+(5*(i-1)) and y == 1 and z == 1 then
+          bank[i].focus_hold = (bank[i].focus_hold + 1)%2
+        end
+      end
+    end
+    
+    for i = 1,3 do
       if z == 1 and x > 0 + (5*(i-1)) and x <= 4 + (5*(i-1)) and y >=5 then
-        if grid.alt == 0 then
-          selected[i].x = x
-          selected[i].y = y
-          selected[i].id = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
-          bank[i].id = selected[i].id
-          which_bank = i
-          if menu == 8 then
-            help_menu = "banks"
-          end
-          clipboard = {}
-          if quantize == 0 then
-            cheat(i, bank[i].id)
-            grid_p[i] = {}
-            grid_p[i].action = "pads"
-            grid_p[i].i = i
-            grid_p[i].id = selected[i].id
-            grid_p[i].x = selected[i].x
-            grid_p[i].y = selected[i].y
-            grid_p[i].rate = bank[i][bank[i].id].rate
-            grid_p[i].start_point = bank[i][bank[i].id].start_point
-            grid_p[i].end_point = bank[i][bank[i].id].end_point
-            grid_p[i].rate_adjusted = false
-            grid_p[i].loop = bank[i][bank[i].id].loop
-            grid_p[i].pause = bank[i][bank[i].id].pause
-            grid_p[i].mode = bank[i][bank[i].id].mode
-            grid_p[i].clip = bank[i][bank[i].id].clip
-            grid_pat[i]:watch(grid_p[i])
-          else
-            table.insert(quantize_events[i],selected[i].id)
-          end
-        else
-          if #clipboard == 0 then
+        if bank[i].focus_hold == 0 then
+          if grid.alt == 0 then
             selected[i].x = x
             selected[i].y = y
             selected[i].id = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
             bank[i].id = selected[i].id
-            clipboard[i] = {}
-            clipboard_copy(
-              bank[i][bank[i].id].start_point,
-              bank[i][bank[i].id].end_point,
-              bank[i][bank[i].id].rate,
-              bank[i][bank[i].id].level,
-              bank[i][bank[i].id].pan,
-              bank[i][bank[i].id].clip,
-              bank[i][bank[i].id].mode,
-              bank[i][bank[i].id].loop,
-              bank[i][bank[i].id].filter_type,
-              bank[i][bank[i].id].fc,
-              bank[i][bank[i].id].q,
-              bank[i][bank[i].id].fifth,
-              bank[i][bank[i].id].enveloped,
-              bank[i][bank[i].id].envelope_time,
-              bank[i][bank[i].id].tilt,
-              bank[i][bank[i].id].tilt_ease_time,
-              bank[i][bank[i].id].tilt_ease_type,
-              bank[i][bank[i].id].offset
-              )
-          else
-            selected[i].x = x
-            selected[i].y = y
-            selected[i].id = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
-            bank[i].id = selected[i].id
-            clipboard_paste(i)
+            which_bank = i
+            if menu == 8 then
+              help_menu = "banks"
+            end
             clipboard = {}
+            if quantize == 0 then
+              cheat(i, bank[i].id)
+              grid_p[i] = {}
+              grid_p[i].action = "pads"
+              grid_p[i].i = i
+              grid_p[i].id = selected[i].id
+              grid_p[i].x = selected[i].x
+              grid_p[i].y = selected[i].y
+              grid_p[i].rate = bank[i][bank[i].id].rate
+              grid_p[i].start_point = bank[i][bank[i].id].start_point
+              grid_p[i].end_point = bank[i][bank[i].id].end_point
+              grid_p[i].rate_adjusted = false
+              grid_p[i].loop = bank[i][bank[i].id].loop
+              grid_p[i].pause = bank[i][bank[i].id].pause
+              grid_p[i].mode = bank[i][bank[i].id].mode
+              grid_p[i].clip = bank[i][bank[i].id].clip
+              grid_pat[i]:watch(grid_p[i])
+            else
+              table.insert(quantize_events[i],selected[i].id)
+            end
+          end
+        elseif bank[i].focus_hold == 1 then
+          if grid.alt == 0 then
+            bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+          elseif grid.alt == 1 then
+            if #clipboard == 0 then
+              bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+              clipboard[i] = {}
+              clipboard_copy(
+                bank[i][bank[i].focus_pad].start_point,
+                bank[i][bank[i].focus_pad].end_point,
+                bank[i][bank[i].focus_pad].rate,
+                bank[i][bank[i].focus_pad].level,
+                bank[i][bank[i].focus_pad].pan,
+                bank[i][bank[i].focus_pad].clip,
+                bank[i][bank[i].focus_pad].mode,
+                bank[i][bank[i].focus_pad].loop,
+                bank[i][bank[i].focus_pad].filter_type,
+                bank[i][bank[i].focus_pad].fc,
+                bank[i][bank[i].focus_pad].q,
+                bank[i][bank[i].focus_pad].fifth,
+                bank[i][bank[i].focus_pad].enveloped,
+                bank[i][bank[i].focus_pad].envelope_time,
+                bank[i][bank[i].focus_pad].tilt,
+                bank[i][bank[i].focus_pad].tilt_ease_time,
+                bank[i][bank[i].focus_pad].tilt_ease_type,
+                bank[i][bank[i].focus_pad].offset
+                )
+            else
+              bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+              clipboard_paste(i)
+              clipboard = {}
+            end
           end
         end
         redraw()
@@ -122,13 +130,13 @@ function grid_actions.init(x,y,z)
     for k = 1,1 do
       for i = 1,3 do
         if z == 0 and x == (k+1)+(5*(i-1)) and y<=k then
-          if grid_pat_quantize == 0 then
+          if grid_pat[i].quantize == 0 then
             if grid.alt == 1 then
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
               grid_pat[i].external_start = 0
+              grid_pat[i].tightened_start = 0
               grid_pat[i]:clear()
-              --optional?
               pattern_saver[i].load_slot = 0
             elseif grid_pat[i].rec == 1 then
               grid_pat[i]:rec_stop()
@@ -139,10 +147,19 @@ function grid_actions.init(x,y,z)
               end
               midi_clock_linearize(i)
               if not clk.externalmidi and not clk.externalcrow then
+                if grid_pat[i].auto_snap == 1 then
+                  print("auto-snap")
+                  snap_to_bars(i,how_many_bars(i))
+                end
                 grid_pat[i]:start()
+                grid_pat[i].loop = 1
               else
                 if grid_pat[i].count > 0 then
                   grid_pat[i].external_start = 1
+                  if grid_pat[i].auto_snap == 1 then
+                    print("auto-snap")
+                    snap_to_bars(i,how_many_bars(i))
+                  end
                 end
               end
             elseif grid_pat[i].count == 0 then
@@ -165,11 +182,13 @@ function grid_actions.init(x,y,z)
             if grid.alt == 1 then
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
+              grid_pat[i].external_start = 0
+              grid_pat[i].tightened_start = 0
               grid_pat[i]:clear()
-              --optional?
               pattern_saver[i].load_slot = 0
             else
-              table.insert(grid_pat_quantize_events[i],i)
+              --table.insert(grid_pat_quantize_events[i],i)
+              better_grid_pat_q_clock(i)
             end
           end
           if menu == 8 then
@@ -207,24 +226,34 @@ function grid_actions.init(x,y,z)
     for i = 1,3 do
       if x == (3)+(5*(i-1)) and y == 4 and z == 1 then
         which_bank = i
-        if bank[i][bank[i].id].loop == true then
+        local which_pad = nil
+        if bank[i].focus_hold == 0 then
+          which_pad = bank[i].id
+        elseif bank[i].focus_hold == 1 then
+          which_pad = bank[i].focus_pad
+        end
+        if bank[i][which_pad].loop == true then
           if grid.alt == 0 then
-            bank[i][bank[i].id].loop = false
+            bank[i][which_pad].loop = false
           else
             for j = 1,16 do
               bank[i][j].loop = false
             end
           end
-          softcut.loop(i+1,0)
+          if bank[i].focus_hold == 0 then
+            softcut.loop(i+1,0)
+          end
         else
           if grid.alt == 0 then
-            bank[i][bank[i].id].loop = true
+            bank[i][which_pad].loop = true
           else
             for j = 1,16 do
               bank[i][j].loop = true
             end
           end
-          softcut.loop(i+1,1)
+          if bank[i].focus_hold == 0 then
+            softcut.loop(i+1,1)
+          end
         end
         if menu == 8 then
           help_menu = "loop"
@@ -234,11 +263,14 @@ function grid_actions.init(x,y,z)
     end
     
     if x == 16 and y == 8 then
+      if grid.alt_pp == 1 then
+        grid.alt_pp = 0
+      end
       grid.alt = z
       if menu == 8 then
         if grid.alt == 1 then
           help_menu = "alt"
-        else
+        elseif grid.alt == 0 then
           help_menu = "welcome"
         end
       end
@@ -248,9 +280,14 @@ function grid_actions.init(x,y,z)
     
     if y == 4 or y == 3 or y == 2 then
       if x == 1 or x == 6 or x == 11 then
+        local which_pad = nil
         local current = math.sqrt(math.abs(x-2))
         if grid.alt == 0 then
-          clip_jump(current, bank[current].id, y, z)
+          if bank[current].focus_hold == 0 then
+            clip_jump(current, bank[current].id, y, z)
+          elseif bank[current].focus_hold == 1 then
+            clip_jump(current, bank[current].focus_pad, y, z)
+          end
         else
           for j = 1,16 do
             clip_jump(current, j, y, z)
@@ -258,7 +295,9 @@ function grid_actions.init(x,y,z)
         end
         if z == 0 then
           redraw()
-          cheat(current,bank[current].id)
+          if bank[current].focus_hold == 0 then
+            cheat(current,bank[current].id)
+          end
         end
       end
     end
@@ -266,9 +305,14 @@ function grid_actions.init(x,y,z)
     for i = 4,3,-1 do
       for j = 2,12,5 do
         if x == j and y == i and z == 1 then
+          local which_pad = nil
           if grid.alt == 0 then
             local current = math.sqrt(math.abs(x-3))
-            bank[current][bank[current].id].mode = math.abs(i-5)
+            if bank[current].focus_hold == 0 then
+              bank[current][bank[current].id].mode = math.abs(i-5)
+            elseif bank[current].focus_hold == 1 then
+              bank[current][bank[current].focus_pad].mode = math.abs(i-5)
+            end
           else
             for k = 1,16 do
               local current = math.sqrt(math.abs(x-3))
@@ -276,13 +320,20 @@ function grid_actions.init(x,y,z)
             end
           end
           local current = math.sqrt(math.abs(x-3))
-          if bank[current][bank[current].id].mode == 1 then
-            bank[current][bank[current].id].sample_end = 8
-          else
-            bank[current][bank[current].id].sample_end = clip[bank[current][bank[current].id].clip].sample_length
+          if bank[current].focus_hold == 0 then
+            which_pad = bank[current].id
+          elseif bank[current].focus_hold == 1 then
+            which_pad = bank[current].focus_pad
           end
-          local current = math.sqrt(math.abs(x-3))
-          cheat(current,bank[current].id)
+          if bank[current][which_pad].mode == 1 then
+            bank[current][which_pad].sample_end = 8
+          else
+            bank[current][which_pad].sample_end = clip[bank[current][which_pad].clip].sample_length
+          end
+          if bank[current].focus_hold == 0 then
+            local current = math.sqrt(math.abs(x-3))
+            cheat(current,bank[current].id)
+          end
           if menu == 8 then
             which_bank = current
             help_menu = "mode"
@@ -293,9 +344,6 @@ function grid_actions.init(x,y,z)
     
     for i = 7,5,-1 do
       if x == 16 and z == 1 and y == i then
-        --softcut.position(1,1+(8*(7-y)))
-        --softcut.fade_time(1,0.1)
-        --softcut.recpre_slew_time(1,0.1)
         softcut.level_slew_time(1,0.5)
         softcut.fade_time(1,0.01)
         
@@ -330,7 +378,6 @@ function grid_actions.init(x,y,z)
         softcut.loop_end(1,rec.end_point-0.01)
         if rec.loop == 1 then
           if old_clip ~= rec.clip then rec.state = 0 end
-          --if rec.state == 0 then rec.state = 1
           buff_freeze()
           if rec.clear == 1 then
             rec.clear = 0
@@ -343,12 +390,6 @@ function grid_actions.init(x,y,z)
         if menu == 8 then
           help_menu = "buffer switch"
         end
-        buff_key_down = util.time()
-      --[[elseif x == 16 and z == 0 and y == i then
-        local buff_key_up = util.time()
-        if buff_key_up - buff_key_down >=1.5 then
-          buff_flush()
-        end-]]--
       end
     end
     
@@ -373,6 +414,8 @@ function grid_actions.init(x,y,z)
     for k = 4,1,-1 do
       for i = 1,3 do
         if z == 1 and x == k+(5*(i-1)) and y == k then
+          
+          ---
           if grid.alt == 0 then
             menu = 6-y
             if key1_hold == true then key1_hold = false end
@@ -383,16 +426,23 @@ function grid_actions.init(x,y,z)
             end
             redraw()
           else
-            local current = math.floor(x/5)+1
-            bank[current][bank[current].id].rate = 1
-            softcut.rate(current+1,1*bank[current][bank[current].id].offset)
-            if bank[current][bank[current].id].fifth == true then
-              bank[current][bank[current].id].fifth = false
+            if y == 2 then
+              random_grid_pat(math.ceil(x/4),3)
+            end
+            if y == 4 then
+              local current = math.floor(x/5)+1
+              bank[current][bank[current].id].rate = 1
+              softcut.rate(current+1,1*bank[current][bank[current].id].offset)
+              if bank[current][bank[current].id].fifth == true then
+                bank[current][bank[current].id].fifth = false
+              end
             end
           end
+          ---
         end
       end
     end
+    
   else
     
     if grid.loop_mod == 0 then
@@ -533,21 +583,6 @@ function grid_actions.init(x,y,z)
             step_seq[current].loop_held = step_seq[current].loop_held - 1
           end
         end
-        for j = 1,8 do
-          if z == 1 and x == i and y == j then
-            local current = math.floor(x/5)+1
-            --step_seq[current].loop_held = step_seq[current].loop_held + 1
-          elseif z == 0 and x == i and y == j then
-            local current = math.floor(x/5)+1
-            --step_seq[current].loop_held = step_seq[current].loop_held - 1
-          elseif z == 1 and x == i+1 and y == j then
-            local current = math.floor(x/5)+1
-            --step_seq[current].loop_held = step_seq[current].loop_held + 1
-          elseif z == 0 and x == i+1 and y == j then
-            local current = math.floor(x/5)+1
-            --step_seq[current].loop_held = step_seq[current].loop_held - 1
-          end
-        end
       end
     end
     
@@ -556,11 +591,55 @@ function grid_actions.init(x,y,z)
       redraw()
       grid_redraw()
     end
+    
+    if menu == 8 then
+      if x == 1 or x == 6 or x == 11 then
+        help_menu = "meta: slots"
+      elseif x == 2 or x == 7 or x == 12 then
+        help_menu = "meta: clock"
+      elseif x == 3 or x == 4 or x == 8 or x == 9 or x == 13 or x == 14 then
+        if grid.loop_mod == 0 then
+          help_menu = "meta: step"
+        end
+      elseif x == 5 or x == 10 or x == 15 then
+        help_menu = "meta: duration"
+      elseif x == 16 then
+        if y == 8 then
+          if z == 1 then
+            help_menu = "meta: alt"
+          elseif z == 0 then
+            help_menu = "welcome"
+          end
+        elseif y == 7 or y == 6 or y == 5 then
+          help_menu = "meta: toggle"
+        elseif y == 2 then
+          if z == 1 then
+            help_menu = "meta: loop mod"
+          elseif z == 0 then
+            help_menu = "welcome"
+          end
+        end
+      end
+      redraw()
+    end
   
   end
   
   if x == 16 and y == 1 and z == 1 then
-    grid_page = (grid_page + 1)%2
+    if grid.alt == 0 then
+      grid_page = (grid_page + 1)%2
+      if menu == 8 then
+        if grid_page == 1 then
+          help_menu = "meta page"
+        elseif grid_page == 0 then
+          help_menu = "welcome"
+        end
+        redraw()
+      end
+    elseif grid.alt == 1 then
+      clk_midi:stop()
+      clk:reset()
+    end
   end
     
 end
