@@ -1,7 +1,7 @@
 arc_actions = {}
 
 function arc_actions.init(n,d)
-  local which_pad = nil
+  if n == 4 then n = 1 end
   if bank[arc_control[n]].focus_hold == 0 then
     which_pad = bank[arc_control[n]].id
   elseif bank[arc_control[n]].focus_hold == 1 then
@@ -29,7 +29,8 @@ function arc_actions.init(n,d)
         end
       end
     end
-    if bank[arc_control[n]].focus_hold == 0 then
+    if bank[arc_control[n]].focus_hold == 0 or bank[arc_control[n]].focus_pad == bank[arc_control[n]].id then
+    --if bank[arc_control[n]].focus_hold == 0 then
       softcut.loop_start(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].start_point)
       softcut.loop_end(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].end_point)
     end
@@ -43,7 +44,8 @@ function arc_actions.init(n,d)
         bank[arc_control[n]][j].start_point = util.clamp(bank[arc_control[n]][j].start_point + d/80,(1+(8*(bank[arc_control[n]][j].clip-1))),(9+(8*(bank[arc_control[n]][j].clip-1))))
       end
     end
-    if bank[arc_control[n]].focus_hold == 0 then
+    --if bank[arc_control[n]].focus_hold == 0 then
+    if bank[arc_control[n]].focus_hold == 0 or bank[arc_control[n]].focus_pad == bank[arc_control[n]].id then
       softcut.loop_start(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].start_point)
     end
   elseif arc_param[n] == 3 then
@@ -54,7 +56,8 @@ function arc_actions.init(n,d)
         bank[arc_control[n]][j].end_point = util.clamp(bank[arc_control[n]][j].end_point + d/80,(1+(8*(bank[arc_control[n]][j].clip-1))),(9+(8*(bank[arc_control[n]][j].clip-1))))
       end
     end
-    if bank[arc_control[n]].focus_hold == 0 then
+    --if bank[arc_control[n]].focus_hold == 0 then
+    if bank[arc_control[n]].focus_hold == 0 or bank[arc_control[n]].focus_pad == bank[arc_control[n]].id then
       softcut.loop_end(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].end_point)
     end
   elseif arc_param[n] == 4 then
@@ -73,7 +76,8 @@ function arc_actions.init(n,d)
           bank[a_c][which_pad].tilt = 0.0
         end
       end
-      if bank[arc_control[n]].focus_hold == 0 then
+      --if bank[arc_control[n]].focus_hold == 0 then
+      if bank[arc_control[n]].focus_hold == 0 or bank[arc_control[n]].focus_pad == bank[arc_control[n]].id then
         slew_filter(a_c,slew_counter[a_c].prev_tilt,bank[a_c][bank[a_c].id].tilt,bank[a_c][bank[a_c].id].q,bank[a_c][bank[a_c].id].q,15)
       end
     else
@@ -113,8 +117,9 @@ function arc_actions.init(n,d)
     arc_p[n].i = n
     arc_p[n].param = arc_param[n]
     local id = arc_control[n]
-    arc_p[n].start_point = bank[id][bank[id].id].start_point - (8*(bank[id][bank[id].id].clip-1))
-    arc_p[n].end_point = bank[id][bank[id].id].end_point - (8*(bank[id][bank[id].id].clip-1))
+    arc_p[n].pad = bank[id].id
+    arc_p[n].start_point = bank[id][arc_p[n].pad].start_point - (8*(bank[id][arc_p[n].pad].clip-1))
+    arc_p[n].end_point = bank[id][arc_p[n].pad].end_point - (8*(bank[id][arc_p[n].pad].clip-1))
     arc_p[n].prev_tilt = slew_counter[id].prev_tilt
     arc_p[n].tilt = bank[id][bank[id].id].tilt
     arc_pat[n]:watch(arc_p[n])

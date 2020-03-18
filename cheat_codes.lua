@@ -2195,14 +2195,41 @@ function arc_pattern_execute(entry)
   local i = entry.i
   local id = arc_control[i]
   local param = entry.param
-  arc_param[i] = param
-  if arc_param[i] ~= 4 then
-    bank[id][bank[id].id].start_point = (entry.start_point + (8*(bank[id][bank[id].id].clip-1)) + arc_offset)
-    bank[id][bank[id].id].end_point = (entry.end_point + (8*(bank[id][bank[id].id].clip-1)) + arc_offset)
-    softcut.loop_start(id+1, (entry.start_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
-    softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][bank[id].id].clip-1))) + arc_offset)
+  if param ~= 4 then
+    local which_pad = entry.pad
+
+    if arc_pat[i].step ~= 0 then
+      if arc_pat[i].step > 1 then
+        if arc_pat[i].event[arc_pat[i].step].pad ~= arc_pat[i].event[arc_pat[i].step-1].pad then
+          bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
+          selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
+          selected[id].y = 8-((bank[id].id-1)%4)
+          cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
+          slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+        end
+      elseif arc_pat[i].step == 1 then
+        bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
+        selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
+        selected[id].y = 8-((bank[id].id-1)%4)
+        cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
+        slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+      end 
+    elseif arc_pat[i].step == 0 then
+      arc_pat[i].step = 1
+      bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
+      selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
+      selected[id].y = 8-((bank[id].id-1)%4)
+      cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
+      slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+    end
+      
+    bank[id][which_pad].start_point = (entry.start_point + (8*(bank[id][which_pad].clip-1)) + arc_offset)
+    bank[id][which_pad].end_point = (entry.end_point + (8*(bank[id][which_pad].clip-1)) + arc_offset)
+    if bank[id].id == which_pad then
+      softcut.loop_start(id+1, (entry.start_point + (8*(bank[id][which_pad].clip-1))) + arc_offset)
+      softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][which_pad].clip-1))) + arc_offset)
+    end
   else
-    -- DO SOMETHING WITH TILT
     slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
   end
   redraw()
