@@ -117,7 +117,11 @@ function arc_actions.init(n,d)
     arc_p[n].i = n
     arc_p[n].param = arc_param[n]
     local id = arc_control[n]
-    arc_p[n].pad = bank[id].id
+    if bank[id].focus_hold == 0 then
+      arc_p[n].pad = bank[id].id
+    elseif bank[id].focus_hold == 1 then
+      arc_p[n].pad = bank[id].focus_pad
+    end
     arc_p[n].start_point = bank[id][arc_p[n].pad].start_point - (8*(bank[id][arc_p[n].pad].clip-1))
     arc_p[n].end_point = bank[id][arc_p[n].pad].end_point - (8*(bank[id][arc_p[n].pad].clip-1))
     arc_p[n].prev_tilt = slew_counter[id].prev_tilt

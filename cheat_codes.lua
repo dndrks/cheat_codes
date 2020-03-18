@@ -2134,7 +2134,7 @@ function grid_redraw()
     
     if grid.loop_mod == 1 then
       
-    end  
+    end
     
   end
   g:led(16,1,15*grid_page)
