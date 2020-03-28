@@ -7,7 +7,6 @@
 -- for in-app instruction manual
 -- -------------------------------
 
---local pattern_time = require 'pattern_time'
 local pattern_time = include 'lib/cc_pattern_time'
 fileselect = require 'fileselect'
 help_menus = include 'lib/help_menus'
@@ -480,7 +479,6 @@ function random_grid_pat(which,mode)
         grid_pat[which].event[i].y = 5
       end
       grid_pat[which].event[i].action = "pads"
-      --grid_pat[which].event[i].i = original_pattern[source].event[i].i
       grid_pat[which].event[i].i = which
       --grid_pat[bank].event[i].previous_rate = original_pattern[source].event[i].previous_rate
       --grid_pat[bank].event[i].row = original_pattern[source].event[i].row
@@ -895,13 +893,21 @@ function init()
   rec.loop = 1
   rec.clear = 0
   
+  params:add_separator("cheat codes params")
+  
+  params:add_group("collections",4)
+  
+  --start_up.init()
+  
   params:add{type = "trigger", id = "load", name = "load", action = loadstate}
   params:add_number("collection", "collection", 1,100,1)
   params:add_option("collect_live","collect Live buffers?",{"no","yes"})
   --params:set_action("collection", function (x) selected_coll = x end)
   params:add{type = "trigger", id = "save", name = "save", action = savestate}
   
-  params:add_separator()
+  --params:add_separator("clocking")
+  
+  params:add_group("crow utils",2)
   
   params:add{type = "trigger", id = "init_crow", name = "initialize crow", action = crow_init}
   params:add{type = "trigger", id = "clear_crow", name = "(reset/clear crow)", action = crow_flush}
@@ -1161,15 +1167,18 @@ function init()
     crow.input[2].change = change
     clk.step = 0
   end
+  
   clk:add_clock_params()
-  params:add{type = "number", id = "midi_device", name = "midi device", min = 1, max = 4, default = 1, action = function(value)
+  
+  --[[params:add{type = "number", id = "midi_device", name = "midi device", min = 1, max = 4, default = 1, action = function(value)
     clk_midi.event = nil
     clk_midi = midi.connect(value)
     clk_midi.event = function(data) clk:process_midi(data) redraw() end
-  end}
+  end}]]--
   
   params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
   params:set_action("zilchmo_patterning", function() end)
+  params:add_group("hidden [timing]",6)
   params:add_option("quantize_pads", "(see [timing] menu)", { "no", "yes" })
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "(see [timing] menu)", { "no", "yes" })
@@ -1226,6 +1235,8 @@ function init()
   edit = "all"
   
   start_up.init()
+  
+  --clk:add_clock_params()
 
   bank = {}
   reset_all_banks()
@@ -1340,7 +1351,7 @@ function init()
   rec_state_watcher.event = function()
     if rec.loop == 0 then
       if rec.state == 1 then
-        if rec.end_point < poll_position_new[1] +0.01 then
+        if rec.end_point < poll_position_new[1] +0.015 then
           rec.state = 0
           rec_state_watcher:stop()
         end
@@ -1353,6 +1364,81 @@ function init()
   already_saved()
 
 end
+
+local osc_in = function(path, args, from)
+  for i = 1,3 do
+    if path == "/pad_sel_"..i then
+      if args[1] ~= 0 then
+        bank[i].id = util.round(args[1])
+        cheat(i,bank[i].id)
+        redraw()
+        local loop_to_osc = nil
+        if bank[i][bank[i].id].loop == false then
+          loop_to_osc = 0
+        else
+          loop_to_osc = 1
+        end
+        osc.send(dest, "/pad_loop_single_"..i, {loop_to_osc})
+        osc.send(dest, "/rate_"..i, {params:get("rate "..i)})
+        for j = 1,16 do
+          osc.send(dest, "/rate_"..i.."_"..j, {0})
+        end
+        osc.send(dest, "/rate_"..i.."_"..params:get("rate "..i), {1})
+        osc.send(dest, "/pad_start_"..i, {(bank[i][bank[i].id].start_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
+        osc.send(dest, "/pad_start_display_"..i, {(bank[i][bank[i].id].start_point) - (8*(bank[i][bank[i].id].clip-1))})
+        osc.send(dest, "/pad_end_"..i, {(bank[i][bank[i].id].end_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
+        osc.send(dest, "/pad_end_display_"..i, {bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))})
+        for j = 1,16 do
+          osc.send(dest, "/pad_sel_"..i.."_"..j, {0})
+        end
+        osc.send(dest, "/pad_sel_"..i.."_"..bank[i].id, {1})
+      end
+    elseif path == "/rate_"..i then
+      params:set("rate "..i, util.round(args[1]))
+      for j = 1,16 do
+        osc.send(dest, "/rate_"..i.."_"..j, {0})
+      end
+      osc.send(dest, "/rate_"..i.."_"..params:get("rate "..i), {1})
+    elseif path == "/rate_rev_"..i then
+      params:set("rate "..i, math.abs(params:get("rate "..i)-13))
+    elseif path == "/pad_loop_single_"..i then
+      if args[1] == 1 then
+        bank[i][bank[i].id].loop = true
+        softcut.loop(i+1,1)
+      elseif args[1] == 0 then
+        bank[i][bank[i].id].loop = false
+        softcut.loop(i+1,0)
+      end
+    elseif path == "/pad_loop_all_"..i then
+      if args[1] == 1 then
+        for j = 1,16 do
+          bank[i][j].loop = true
+        end
+      elseif args[1] == 0 then
+        for j = 1,16 do
+          bank[i][j].loop = false
+        end
+      end
+      softcut.loop(i+1,bank[i][bank[i].id].loop == true and 1 or 0)
+      local loop_to_osc = nil
+      if bank[i][bank[i].id].loop == false then
+        loop_to_osc = 0
+      else
+        loop_to_osc = 1
+      end
+      osc.send(dest, "/pad_loop_single_"..i, {loop_to_osc})
+    elseif path == "/pad_start_"..i then
+      params:set("start point "..i, util.round(args[1]))
+      osc.send(dest, "/pad_start_display_"..i, {bank[i][bank[i].id].start_point - (8*(bank[i][bank[i].id].clip-1))})
+    elseif path == "/pad_end_"..i then
+      params:set("end point "..i, util.round(args[1]))
+      osc.send(dest, "/pad_end_display_"..i, {bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))})
+    end
+  end
+end
+
+osc.event = osc_in
+dest = {"192.168.1.65",9000}
 
 poll_position_new = {}
 
@@ -1626,6 +1712,14 @@ function cheat(b,i)
   if bank[b].crow_execute == 1 then
     crow.output[b]()
   end
+  --dangerous??
+  local rate_array = {-4.0,-2.0,-1.0,-0.5,-0.25,-0.125,0.125,0.25,0.5,1.0,2.0,4.0}
+  local s = {}
+  for k,v in pairs(rate_array) do
+    s[v]=k
+  end
+  params:set("rate "..tonumber(string.format("%.0f",b)),s[bank[b][i].rate])
+  params:set("level "..tonumber(string.format("%.0f",b)),bank[b][i].level)
 end
 
 function envelope(i)
@@ -2200,6 +2294,7 @@ function arc_pattern_execute(entry)
 
     if arc_pat[i].step ~= 0 then
       if arc_pat[i].step > 1 then
+        --[[
         if arc_pat[i].event[arc_pat[i].step].pad ~= arc_pat[i].event[arc_pat[i].step-1].pad then
           bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
           selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
@@ -2207,20 +2302,25 @@ function arc_pattern_execute(entry)
           cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
           slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
         end
+        ]]--
       elseif arc_pat[i].step == 1 then
+        --[[
         bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
         selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
         selected[id].y = 8-((bank[id].id-1)%4)
         cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
         slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+        ]]--
       end 
     elseif arc_pat[i].step == 0 then
       arc_pat[i].step = 1
+      --[[
       bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
       selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
       selected[id].y = 8-((bank[id].id-1)%4)
       cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
       slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+      ]]--
     end
       
     bank[id][which_pad].start_point = (entry.start_point + (8*(bank[id][which_pad].clip-1)) + arc_offset)

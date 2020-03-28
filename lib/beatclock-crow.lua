@@ -134,6 +134,7 @@ local tap = 0
 local deltatap = 1
 
 function BeatClockCrow:add_clock_params()
+  params:add_group("clocking",6)
   params:add_option("clock", "clock", {"internal", "external: midi", "external: crow (in2)"}, self.externalcrow or 3 and self.externalmidi or 2 and 1)
   params:set_action("clock", function(x) self:clock_source_change(x) end)
   params:add_number("bpm", "bpm", 1, 480, self.bpm)
@@ -153,6 +154,11 @@ function BeatClockCrow:add_clock_params()
       end
     end
   }
+  params:add{type = "number", id = "midi_device", name = "midi device", min = 1, max = 4, default = 1, action = function(value)
+    clk_midi.event = nil
+    clk_midi = midi.connect(value)
+    clk_midi.event = function(data) clk:process_midi(data) redraw() end
+  end}
 end
 
 function BeatClockCrow:enable_midi()
