@@ -7,6 +7,10 @@
 -- for in-app instruction manual
 -- -------------------------------
 
+-- for osc, please replace the next line with your OSC device's IP + port
+dest = {"192.168.1.65",9000}
+--dest = {"10.42.0.184",9000}
+
 local pattern_time = include 'lib/cc_pattern_time'
 fileselect = require 'fileselect'
 help_menus = include 'lib/help_menus'
@@ -1179,6 +1183,7 @@ function init()
   params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
   params:set_action("zilchmo_patterning", function() end)
   params:add_group("hidden [timing]",6)
+  params:hide(53)
   params:add_option("quantize_pads", "(see [timing] menu)", { "no", "yes" })
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "(see [timing] menu)", { "no", "yes" })
@@ -1365,40 +1370,46 @@ function init()
 
 end
 
-local osc_in = function(path, args, from)
+osc_in = function(path, args, from)
   for i = 1,3 do
     if path == "/pad_sel_"..i then
       if args[1] ~= 0 then
         bank[i].id = util.round(args[1])
         cheat(i,bank[i].id)
+        
+        --long shot
+        grid_p[i] = {}
+        grid_p[i].action = "pads"
+        grid_p[i].i = i
+        grid_p[i].id = bank[i].id
+        grid_p[i].x = (math.ceil(bank[i].id/4)+(5*(i-1)))
+        grid_p[i].y = 8-((bank[i].id-1)%4)
+        grid_p[i].rate = bank[i][bank[i].id].rate
+        grid_p[i].start_point = bank[i][bank[i].id].start_point
+        grid_p[i].end_point = bank[i][bank[i].id].end_point
+        grid_p[i].rate_adjusted = false
+        grid_p[i].loop = bank[i][bank[i].id].loop
+        grid_p[i].pause = bank[i][bank[i].id].pause
+        grid_p[i].mode = bank[i][bank[i].id].mode
+        grid_p[i].clip = bank[i][bank[i].id].clip
+        grid_pat[i]:watch(grid_p[i])
+        --
+        
         redraw()
-        local loop_to_osc = nil
-        if bank[i][bank[i].id].loop == false then
-          loop_to_osc = 0
-        else
-          loop_to_osc = 1
-        end
-        osc.send(dest, "/pad_loop_single_"..i, {loop_to_osc})
-        osc.send(dest, "/rate_"..i, {params:get("rate "..i)})
-        for j = 1,16 do
-          osc.send(dest, "/rate_"..i.."_"..j, {0})
-        end
-        osc.send(dest, "/rate_"..i.."_"..params:get("rate "..i), {1})
-        osc.send(dest, "/pad_start_"..i, {(bank[i][bank[i].id].start_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
-        osc.send(dest, "/pad_start_display_"..i, {(bank[i][bank[i].id].start_point) - (8*(bank[i][bank[i].id].clip-1))})
-        osc.send(dest, "/pad_end_"..i, {(bank[i][bank[i].id].end_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
-        osc.send(dest, "/pad_end_display_"..i, {bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))})
-        for j = 1,16 do
-          osc.send(dest, "/pad_sel_"..i.."_"..j, {0})
-        end
-        osc.send(dest, "/pad_sel_"..i.."_"..bank[i].id, {1})
+        osc_redraw(i)
       end
     elseif path == "/rate_"..i then
-      params:set("rate "..i, util.round(args[1]))
-      for j = 1,16 do
+      for j = 7,12 do
         osc.send(dest, "/rate_"..i.."_"..j, {0})
       end
-      osc.send(dest, "/rate_"..i.."_"..params:get("rate "..i), {1})
+      if params:get("rate "..i) > 6 then
+        params:set("rate "..i, util.round(args[1]))
+        osc.send(dest, "/rate_"..i.."_"..params:get("rate "..i), {1})
+      else
+        params:set("rate "..i, math.abs(util.round(args[1])-13))
+        osc.send(dest, "/rate_"..i.."_"..math.abs(params:get("rate "..i)-13), {1})
+      end
+      osc.send(dest, "/rate_"..i, {params:get("rate "..i)})
     elseif path == "/rate_rev_"..i then
       params:set("rate "..i, math.abs(params:get("rate "..i)-13))
     elseif path == "/pad_loop_single_"..i then
@@ -1433,12 +1444,147 @@ local osc_in = function(path, args, from)
     elseif path == "/pad_end_"..i then
       params:set("end point "..i, util.round(args[1]))
       osc.send(dest, "/pad_end_display_"..i, {bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))})
+    elseif path == "/rand_pat_"..i then
+      random_grid_pat(i,3)
+    elseif path == "/stop_pat_"..i then
+      if grid_pat[i].play == 1 then
+        grid_pat[i]:stop()
+      elseif grid_pat[i].external_start == 1 then
+        grid_pat[i].external_start = 0
+        grid_pat[i].step = 1
+        g_p_q[i].current_step = 1
+        g_p_q[i].sub_step = 1
+      elseif grid_pat[i].tightened_start == 1 then
+        grid_pat[i].tightened_start = 0
+        grid_pat[i].step = 1
+        g_p_q[i].current_step = 1
+        g_p_q[i].sub_step = 1
+      end
+    elseif path == "/start_pat_"..i then
+      if grid_pat[i].quantize == 0 then
+        if not clk.externalmidi and not clk.externalcrow then
+          if grid_pat[i].play == 0 then
+            grid_pat[i]:start()
+            osc.send(dest, "/start_pat_"..i, {1})
+          else
+            grid_pat[i]:stop()
+            osc.send(dest, "/start_pat_"..i, {0})
+          end
+        else
+          if grid_pat[i].external_start == 0 then
+            grid_pat[i].external_start = 1
+            osc.send(dest, "/start_pat_"..i, {1})
+          else
+            grid_pat[i].external_start = 0
+            osc.send(dest, "/start_pat_"..i, {0})
+          end
+        end
+      else
+        better_grid_pat_q_clock(i)
+      end
+    elseif path == "/rec_pat_"..i then
+      if grid_pat[i].quantize == 0 then
+        if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
+          --this'll be some sorta clear option
+          grid_pat[i]:rec_stop()
+          grid_pat[i]:stop()
+          grid_pat[i].external_start = 0
+          grid_pat[i].tightened_start = 0
+          grid_pat[i]:clear()
+          pattern_saver[i].load_slot = 0
+          grid_pat[i]:rec_start()
+        elseif grid_pat[i].rec == 1 then
+          grid_pat[i]:rec_stop()
+          if params:get("lock_pat") == 2 and quantize == 1 then
+            sync_pattern_to_bpm(i,params:get("quant_div"))
+          elseif params:get("lock_pat") == 2 and quantize == 0 then
+            sync_pattern_to_bpm(i,params:get("quant_div"))
+          end
+          midi_clock_linearize(i)
+          if not clk.externalmidi and not clk.externalcrow then
+            if grid_pat[i].auto_snap == 1 then
+              print("auto-snap")
+              snap_to_bars(i,how_many_bars(i))
+            end
+            grid_pat[i]:start()
+            osc.send(dest, "/start_pat_"..i, {1})
+            grid_pat[i].loop = 1
+          else
+            if grid_pat[i].count > 0 then
+              grid_pat[i].external_start = 1
+              if grid_pat[i].auto_snap == 1 then
+                print("auto-snap")
+                snap_to_bars(i,how_many_bars(i))
+              end
+            end
+          end
+        elseif grid_pat[i].count == 0 then
+          grid_pat[i]:rec_start()
+        elseif grid_pat[i].play == 1 then
+          grid_pat[i]:stop()
+          osc.send(dest, "/start_pat_"..i, {0})
+        elseif grid_pat[i].external_start == 1 then
+          grid_pat[i].external_start = 0
+          grid_pat[i].step = 1
+          g_p_q[i].current_step = 1
+          g_p_q[i].sub_step = 1
+        else
+          if not clk.externalmidi and not clk.externalcrow then
+            grid_pat[i]:start()
+            osc.send(dest, "/start_pat_"..i, {1})
+          else
+            grid_pat[i].external_start = 1
+            osc.send(dest, "/start_pat_"..i, {1})
+          end
+        end
+      else
+        if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
+          grid_pat[i]:rec_stop()
+          grid_pat[i]:stop()
+          grid_pat[i].external_start = 0
+          grid_pat[i].tightened_start = 0
+          grid_pat[i]:clear()
+          pattern_saver[i].load_slot = 0
+          better_grid_pat_q_clock(i)
+        else
+          --table.insert(grid_pat_quantize_events[i],i)
+          better_grid_pat_q_clock(i)
+        end
+      end
     end
   end
 end
 
 osc.event = osc_in
-dest = {"192.168.1.65",9000}
+
+function osc_redraw(i)
+  local loop_to_osc = nil
+  if bank[i][bank[i].id].loop == false then
+    loop_to_osc = 0
+  else
+    loop_to_osc = 1
+  end
+  osc.send(dest, "/pad_loop_single_"..i, {loop_to_osc})
+  osc.send(dest, "/rate_"..i, {params:get("rate "..i)})
+  for j = 7,12 do
+    osc.send(dest, "/rate_"..i.."_"..j, {0})
+  end
+  if params:get("rate "..i) > 6 then
+    osc.send(dest, "/rate_"..i.."_"..params:get("rate "..i), {1})
+    osc.send(dest, "/rate_rev_"..i,{0})
+  else
+    osc.send(dest, "/rate_"..i.."_"..math.abs(params:get("rate "..i)-13), {1})
+    osc.send(dest, "/rate_rev_"..i,{1})
+  end
+  osc.send(dest, "/pad_start_"..i, {(bank[i][bank[i].id].start_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
+  osc.send(dest, "/pad_start_display_"..i, {(bank[i][bank[i].id].start_point) - (8*(bank[i][bank[i].id].clip-1))})
+  osc.send(dest, "/pad_end_"..i, {(bank[i][bank[i].id].end_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
+  osc.send(dest, "/pad_end_display_"..i, {bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))})
+  for j = 1,16 do
+    osc.send(dest, "/pad_sel_"..i.."_"..j, {0})
+  end
+  osc.send(dest, "/pad_sel_"..i.."_"..bank[i].id, {1})
+end
 
 poll_position_new = {}
 
@@ -1720,6 +1866,7 @@ function cheat(b,i)
   end
   params:set("rate "..tonumber(string.format("%.0f",b)),s[bank[b][i].rate])
   params:set("level "..tonumber(string.format("%.0f",b)),bank[b][i].level)
+  osc_redraw(b)
 end
 
 function envelope(i)
@@ -3277,7 +3424,6 @@ function load_pattern(slot,destination)
         grid_pat[destination].event[i].con = io.read()
         local loaded_bank = tonumber(io.read())
         if loaded_bank ~= nil then
-          --print(loaded_bank)
           if destination < source then
             grid_pat[destination].event[i].bank = loaded_bank - (5*(source-destination))
           elseif destination > source then

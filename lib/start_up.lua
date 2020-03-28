@@ -173,9 +173,11 @@ function start_up.init()
     params:add_control("start point "..i, "start point "..banks[i], controlspec.new(100,890,'lin',1,100))
     params:set_action("start point "..i, function(x)
       -- I think I need "- (8*(bank[i][bank[i].id].clip-1))" in here...
-      if bank[i][bank[i].id].start_point <= x/100 and bank[i][bank[i].id].start_point < (bank[i][bank[i].id].end_point - 0.1) then
+      local s_p = bank[i][bank[i].id].start_point - (8*(bank[i][bank[i].id].clip-1))
+      local e_p = bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))
+      if s_p <= x/100 and s_p < (e_p - 0.1) then
         bank[i][bank[i].id].start_point = x/100+(8*(bank[i][bank[i].id].clip-1))
-      elseif bank[i][bank[i].id].start_point > x/100 then
+      elseif s_p > x/100 then
         bank[i][bank[i].id].start_point = x/100+(8*(bank[i][bank[i].id].clip-1))
       end
       softcut.loop_start(i+1, bank[i][bank[i].id].start_point)
@@ -183,9 +185,11 @@ function start_up.init()
       end)
     params:add_control("end point "..i, "end point "..banks[i], controlspec.new(110,899,'lin',1,150))
     params:set_action("end point "..i, function(x)
-      if bank[i][bank[i].id].end_point >= x/100 and bank[i][bank[i].id].start_point < bank[i][bank[i].id].end_point - 0.1 then
+      local s_p = bank[i][bank[i].id].start_point - (8*(bank[i][bank[i].id].clip-1))
+      local e_p = bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))
+      if e_p >= x/100 and s_p < e_p - 0.1 then
         bank[i][bank[i].id].end_point = x/100+(8*(bank[i][bank[i].id].clip-1))
-      elseif bank[i][bank[i].id].end_point < x/100 then
+      elseif e_p < x/100 then
         bank[i][bank[i].id].end_point = x/100+(8*(bank[i][bank[i].id].clip-1))
       end
       softcut.loop_end(i+1, bank[i][bank[i].id].end_point)
@@ -257,6 +261,7 @@ function start_up.init()
   --params:add_separator()
   
   params:add_group("ignore",18)
+  params:hide(119)
   
   --params:add{type = "trigger", id = "ignore", name = "ignore, data only:"}
   
