@@ -911,11 +911,6 @@ function init()
   
   --params:add_separator("clocking")
   
-  params:add_group("crow utils",2)
-  
-  params:add{type = "trigger", id = "init_crow", name = "initialize crow", action = crow_init}
-  params:add{type = "trigger", id = "clear_crow", name = "(reset/clear crow)", action = crow_flush}
-  
   screen_focus = 1
   
   menu = 1
@@ -1180,10 +1175,8 @@ function init()
     clk_midi.event = function(data) clk:process_midi(data) redraw() end
   end}]]--
   
-  params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
-  params:set_action("zilchmo_patterning", function() end)
   params:add_group("hidden [timing]",6)
-  params:hide(53)
+  params:hide(49)
   params:add_option("quantize_pads", "(see [timing] menu)", { "no", "yes" })
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "(see [timing] menu)", { "no", "yes" })
@@ -1240,6 +1233,11 @@ function init()
   edit = "all"
   
   start_up.init()
+    
+  params:add_group("crow utils",2)
+  
+  params:add{type = "trigger", id = "init_crow", name = "initialize crow", action = crow_init}
+  params:add{type = "trigger", id = "clear_crow", name = "(reset/clear crow)", action = crow_flush}
   
   --clk:add_clock_params()
 

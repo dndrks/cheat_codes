@@ -139,6 +139,9 @@ function start_up.init()
   
   --params:add_separator()
   
+  params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
+  params:set_action("zilchmo_patterning", function() end)
+  
   params:add_group("gridless params",24)
   
   for i = 1,3 do
@@ -261,7 +264,7 @@ function start_up.init()
   --params:add_separator()
   
   params:add_group("ignore",18)
-  params:hide(119)
+  params:hide(116)
   
   --params:add{type = "trigger", id = "ignore", name = "ignore, data only:"}
   
