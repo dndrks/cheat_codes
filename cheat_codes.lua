@@ -903,8 +903,8 @@ function init()
   
   --start_up.init()
   
-  params:add{type = "trigger", id = "load", name = "load", action = loadstate}
   params:add_number("collection", "collection", 1,100,1)
+  params:add{type = "trigger", id = "load", name = "load", action = loadstate}
   params:add_option("collect_live","collect Live buffers?",{"no","yes"})
   --params:set_action("collection", function (x) selected_coll = x end)
   params:add{type = "trigger", id = "save", name = "save", action = savestate}
@@ -1378,6 +1378,7 @@ osc_in = function(path, args, from)
         cheat(i,bank[i].id)
         
         --long shot
+        --[[
         grid_p[i] = {}
         grid_p[i].action = "pads"
         grid_p[i].i = i
@@ -1394,6 +1395,7 @@ osc_in = function(path, args, from)
         grid_p[i].clip = bank[i][bank[i].id].clip
         grid_pat[i]:watch(grid_p[i])
         --
+        ]]--
         
         redraw()
         osc_redraw(i)
@@ -1440,10 +1442,25 @@ osc_in = function(path, args, from)
       osc.send(dest, "/pad_loop_single_"..i, {loop_to_osc})
     elseif path == "/pad_start_"..i then
       params:set("start point "..i, util.round(args[1]))
-      osc.send(dest, "/pad_start_display_"..i, {bank[i][bank[i].id].start_point - (8*(bank[i][bank[i].id].clip-1))})
+      osc.send(dest, "/pad_start_display_"..i, {tonumber(string.format("%.2f",bank[i][bank[i].id].start_point - (8*(bank[i][bank[i].id].clip-1))))})
     elseif path == "/pad_end_"..i then
       params:set("end point "..i, util.round(args[1]))
-      osc.send(dest, "/pad_end_display_"..i, {bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))})
+      osc.send(dest, "/pad_end_display_"..i, {tonumber(string.format("%.2f",bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))))})
+    elseif path == "/pad_window_"..i then
+      local current_difference = (bank[i][bank[i].id].end_point - bank[i][bank[i].id].start_point)
+      if bank[i][bank[i].id].start_point + current_difference <= (9+(8*(bank[i][bank[i].id].clip-1))) then
+        bank[i][bank[i].id].start_point = util.clamp(bank[i][bank[i].id].start_point + args[1]/25,(1+(8*(bank[i][bank[i].id].clip-1))),(9+(8*(bank[i][bank[i].id].clip-1))))
+        bank[i][bank[i].id].end_point = bank[i][bank[i].id].start_point + current_difference
+      else
+        bank[i][bank[i].id].end_point = (9+(8*(bank[i][bank[i].id].clip-1)))
+        bank[i][bank[i].id].start_point = bank[i][bank[i].id].end_point - current_difference
+      end
+      softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+      softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
+      osc.send(dest, "/pad_start_"..i, {(bank[i][bank[i].id].start_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
+      osc.send(dest, "/pad_start_display_"..i, {tonumber(string.format("%.2f",(bank[i][bank[i].id].start_point) - (8*(bank[i][bank[i].id].clip-1))))})
+      osc.send(dest, "/pad_end_"..i, {(bank[i][bank[i].id].end_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
+      osc.send(dest, "/pad_end_display_"..i, {tonumber(string.format("%.2f",bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))))})
     elseif path == "/rand_pat_"..i then
       random_grid_pat(i,3)
     elseif path == "/stop_pat_"..i then
@@ -1551,6 +1568,99 @@ osc_in = function(path, args, from)
           better_grid_pat_q_clock(i)
         end
       end
+    elseif path == "/pad_loop_slice_"..i then
+      local bpm_to_sixteenth = (60/bpm)/4
+      bank[i][bank[i].id].end_point = bank[i][bank[i].id].start_point + bpm_to_sixteenth
+      softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
+      osc_redraw(i)
+    elseif path == "/pad_loop_double_"..i then
+      local which_pad = bank[i].id
+      local double = (bank[i][which_pad].end_point - bank[i][which_pad].start_point)*2
+      local maximum_val = 9+(8*(bank[i][which_pad].clip-1))
+      local minimum_val = 1+(8*(bank[i][which_pad].clip-1))
+      if bank[i][which_pad].start_point - double >= minimum_val then
+        bank[i][which_pad].start_point = bank[i][which_pad].end_point - double
+      elseif bank[i][which_pad].start_point - double < minimum_val then
+        if bank[i][which_pad].end_point + double < maximum_val then
+          bank[i][which_pad].end_point = bank[i][which_pad].end_point + double
+        end
+      end
+      softcut.loop_start(i+1,bank[i][which_pad].start_point)
+      softcut.loop_end(i+1,bank[i][which_pad].end_point)
+      osc_redraw(i)
+    elseif path == "/pad_loop_halve_"..i then
+      local which_pad = bank[i].id
+      local halve = ((bank[i][which_pad].end_point - bank[i][which_pad].start_point)/2)/2
+      bank[i][which_pad].start_point = bank[i][which_pad].start_point + halve
+      bank[i][which_pad].end_point = bank[i][which_pad].end_point - halve
+      softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+      softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
+      osc_redraw(i)
+    elseif path == "/pad_loop_rand_"..i then
+      bank[i][bank[i].id].start_point = (math.random(10,75)/10)+(8*(bank[i][bank[i].id].clip-1))
+      bank[i][bank[i].id].end_point = bank[i][bank[i].id].start_point + (math.random(1,15)/10)
+      softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+      softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
+      osc_redraw(i)
+    elseif path == "/rec_clip_"..i then
+      softcut.level_slew_time(1,0.5)
+      softcut.fade_time(1,0.01)
+      local old_clip = rec.clip
+        
+      for go = 1,2 do
+        local old_min = (1+(8*(rec.clip-1)))
+        local old_max = (9+(8*(rec.clip-1)))
+        local old_range = old_min - old_max
+        rec.clip = i
+        local new_min = (1+(8*(rec.clip-1)))
+        local new_max = (9+(8*(rec.clip-1)))
+        local new_range = new_max - new_min
+        local current_difference = (rec.end_point - rec.start_point)
+        rec.start_point = (((rec.start_point - old_min) * new_range) / old_range) + new_min
+        rec.end_point = rec.start_point + current_difference
+      end
+      
+      for j = 1,3 do
+        if j ~= i then
+          osc.send(dest, "/buffer_LED_"..j, {0})
+        end
+      end
+      
+      osc.send(dest, "/buffer_LED_"..i, {1})
+        
+      if rec.loop == 0 and grid.alt == 0 then
+        softcut.position(1,rec.start_point)
+        if rec.state == 0 then
+          rec.state = 1
+          softcut.rec_level(1,1)
+          rec_state_watcher:start()
+          end
+      if rec.clear == 1 then rec.clear = 0 end
+      --elseif rec.loop == 0 and grid.alt == 1 then
+      --  buff_flush()
+      end
+        
+      softcut.loop_start(1,rec.start_point)
+      softcut.loop_end(1,rec.end_point-0.01)
+      if rec.loop == 1 then
+        if old_clip ~= rec.clip then rec.state = 0 end
+        buff_freeze()
+        if rec.clear == 1 then
+          rec.clear = 0
+        end
+      end
+      
+      local rec_state_to_osc = nil
+      if rec.state == 0 then
+        rec_state_to_osc = "not recording"
+      else
+        rec_state_to_osc = "recording"
+      end
+      osc.send(dest, "/buffer_state", {rec_state_to_osc})
+      
+      --if grid.alt == 1 then
+      --  buff_flush()
+      --end
     end
   end
 end
@@ -1577,13 +1687,27 @@ function osc_redraw(i)
     osc.send(dest, "/rate_rev_"..i,{1})
   end
   osc.send(dest, "/pad_start_"..i, {(bank[i][bank[i].id].start_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
-  osc.send(dest, "/pad_start_display_"..i, {(bank[i][bank[i].id].start_point) - (8*(bank[i][bank[i].id].clip-1))})
+  osc.send(dest, "/pad_start_display_"..i, {tonumber(string.format("%.2f",(bank[i][bank[i].id].start_point) - (8*(bank[i][bank[i].id].clip-1))))})
   osc.send(dest, "/pad_end_"..i, {(bank[i][bank[i].id].end_point*100)-((8*(bank[i][bank[i].id].clip-1))*100)})
-  osc.send(dest, "/pad_end_display_"..i, {bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))})
+  osc.send(dest, "/pad_end_display_"..i, {tonumber(string.format("%.2f",bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))))})
   for j = 1,16 do
     osc.send(dest, "/pad_sel_"..i.."_"..j, {0})
   end
   osc.send(dest, "/pad_sel_"..i.."_"..bank[i].id, {1})
+  local rec_state_to_osc = nil
+  if rec.state == 0 then
+    rec_state_to_osc = "not recording"
+  else
+    rec_state_to_osc = "recording"
+  end
+  osc.send(dest, "/buffer_state", {rec_state_to_osc})
+  for j = 1,3 do
+    if rec.clip ~= j then
+      osc.send(dest, "/buffer_LED_"..j, {0})
+    else
+      osc.send(dest, "/buffer_LED_"..rec.clip, {1})
+    end
+  end
 end
 
 poll_position_new = {}
