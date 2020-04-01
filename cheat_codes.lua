@@ -2888,10 +2888,8 @@ function savestate()
   for i = 1,3 do
     io.write(grid_pat[i].playmode.."\n")
   end
-  io.write("1.2.1: arc patterning + osc settings".."\n")
+  io.write("1.2.1: arc patterning".."\n")
   io.write(params:get("arc_patterning").."\n")
-  io.write(params:get("osc_IP").."\n")
-  io.write(params:get("osc_port").."\n")
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -3074,10 +3072,7 @@ function loadstate()
       end
     end
     if io.read() == "1.2.1: arc patterning + osc settings" then
-      print("yeh!")
       params:set("arc_patterning", tonumber(io.read()))
-      params:set("osc_IP", io.read())
-      params:set("osc_port", tonumber(io.read()))
     end
     io.close(file)
     for i = 1,3 do

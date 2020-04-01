@@ -143,7 +143,7 @@ function start_up.init()
   params:add_option("zilchmo_patterning", "grid pattern style", { "classic", "rad sauce" })
   params:add_option("arc_patterning", "arc pattern style", { "passive", "active" })
   
-  params:add_group("gridless params",24)
+  params:add_group("manual control params",24)
   
   for i = 1,3 do
     banks = {"(a)","(b)","(c)"}
