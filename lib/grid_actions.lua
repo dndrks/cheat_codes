@@ -2,6 +2,8 @@ grid_actions = {}
 
 function grid_actions.init(x,y,z)
   
+  if osc_communication == true then osc_communication = false end
+  
   if grid_page == 0 then
     
     for i = 1,3 do
