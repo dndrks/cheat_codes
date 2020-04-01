@@ -2001,6 +2001,8 @@ function cheat(b,i)
   params:set("rate "..tonumber(string.format("%.0f",b)),s[bank[b][i].rate])
   params:set("level "..tonumber(string.format("%.0f",b)),bank[b][i].level)
   params:set("current pad "..tonumber(string.format("%.0f",b)),i,"true")
+  params:set("start point "..tonumber(string.format("%.0f",b)),bank[b][i].start_point*100,"true")
+  params:set("end point "..tonumber(string.format("%.0f",b)),bank[b][i].end_point*100,"true")
   if osc_communication == true then
     osc_redraw(b)
   end

@@ -184,7 +184,6 @@ function start_up.init()
       end)
     params:add_control("start point "..i, "start point "..banks[i], controlspec.new(100,890,'lin',1,100))
     params:set_action("start point "..i, function(x)
-      -- I think I need "- (8*(bank[i][bank[i].id].clip-1))" in here...
       local s_p = bank[i][bank[i].id].start_point - (8*(bank[i][bank[i].id].clip-1))
       local e_p = bank[i][bank[i].id].end_point - (8*(bank[i][bank[i].id].clip-1))
       if s_p <= x/100 and s_p < (e_p - 0.1) then
