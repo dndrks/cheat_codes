@@ -148,7 +148,15 @@ function start_up.init()
   for i = 1,3 do
     banks = {"(a)","(b)","(c)"}
     params:add_control("current pad "..i, "current pad "..banks[i], controlspec.new(1,16,'lin',1,1))
-    params:set_action("current pad "..i, function(x) if bank[i].id ~= x then bank[i].id = x cheat(i,bank[i].id) redraw() end end)
+    params:set_action("current pad "..i, function(x)
+      if bank[i].id ~= x then
+        bank[i].id = x
+        selected[i].x = (math.ceil(bank[i].id/4)+(5*(i-1)))
+        selected[i].y = 8-((bank[i].id-1)%4)
+        cheat(i,bank[i].id)
+        redraw()
+      end
+    end)
     local rates = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
     --params:add_control("rate "..i, "rate "..banks[i].." (RAW)", controlspec.new(1,12,'lin',1,10))
     params:add_option("rate "..i, "rate "..banks[i], {"-4x","-2x","-1x","-0.5x","-0.25x","-0.125x","0.125x","0.25x","0.5x","1x","2x","4x"}, 10)
