@@ -139,8 +139,9 @@ function start_up.init()
   
   --params:add_separator()
   
-  params:add_option("zilchmo_patterning", "pattern rec style", { "classic", "rad sauce" })
-  params:set_action("zilchmo_patterning", function() end)
+  params:add_group("grid/arc pattern params",2)
+  params:add_option("zilchmo_patterning", "grid pattern style", { "classic", "rad sauce" })
+  params:add_option("arc_patterning", "arc pattern style", { "passive", "active" })
   
   params:add_group("gridless params",24)
   
@@ -264,7 +265,7 @@ function start_up.init()
   --params:add_separator()
   
   params:add_group("ignore",18)
-  params:hide(116)
+  params:hide(118)
   
   --params:add{type = "trigger", id = "ignore", name = "ignore, data only:"}
   

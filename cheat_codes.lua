@@ -7,10 +7,6 @@
 -- for in-app instruction manual
 -- -------------------------------
 
--- for osc, please replace the next line with your OSC device's IP + port
-dest = {"192.168.1.65",9000}
---dest = {"10.42.0.184",9000}
-
 local pattern_time = include 'lib/cc_pattern_time'
 fileselect = require 'fileselect'
 help_menus = include 'lib/help_menus'
@@ -1365,10 +1361,26 @@ function init()
   rec_state_watcher:start()
   
   already_saved()
+  
+  params:add_group("OSC setup",3)
+  params:add_text("osc_IP", "OSC IP", "192.168.")
+  params:set_action("osc_IP", function() dest = {tostring(params:get("osc_IP")), tonumber(params:get("osc_port"))} end)
+  params:add_text("osc_port", "OSC port", "9000")
+  params:set_action("osc_port", function() dest = {tostring(params:get("osc_IP")), tonumber(params:get("osc_port"))} end)
+  params:add{type = "trigger", id = "refresh_osc", name = "refresh OSC [K3]", action = function()
+    params:set("osc_IP","none")
+    params:set("osc_port","none")
+    osc_communication = false
+  end}
 
 end
 
 osc_in = function(path, args, from)
+  if osc_communication ~= true then
+    params:set("osc_IP",from[1])
+    params:set("osc_port",from[2])
+    osc_communication = true
+  end
   for i = 1,3 do
     if path == "/pad_sel_"..i then
       if args[1] ~= 0 then
@@ -1988,7 +2000,9 @@ function cheat(b,i)
   end
   params:set("rate "..tonumber(string.format("%.0f",b)),s[bank[b][i].rate])
   params:set("level "..tonumber(string.format("%.0f",b)),bank[b][i].level)
-  osc_redraw(b)
+  if osc_communication == true then
+    osc_redraw(b)
+  end
 end
 
 function envelope(i)
@@ -2563,33 +2577,34 @@ function arc_pattern_execute(entry)
 
     if arc_pat[i].step ~= 0 then
       if arc_pat[i].step > 1 then
-        --[[
-        if arc_pat[i].event[arc_pat[i].step].pad ~= arc_pat[i].event[arc_pat[i].step-1].pad then
+        if params:get("arc_patterning") == 2 then
+          if arc_pat[i].event[arc_pat[i].step].pad ~= arc_pat[i].event[arc_pat[i].step-1].pad then
+            bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
+            selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
+            selected[id].y = 8-((bank[id].id-1)%4)
+            cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
+            slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+            --slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+          end
+        end
+      elseif arc_pat[i].step == 1 then
+        if params:get("arc_patterning") == 2 then
           bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
           selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
           selected[id].y = 8-((bank[id].id-1)%4)
           cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
-          slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+          slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
         end
-        ]]--
-      elseif arc_pat[i].step == 1 then
-        --[[
+      end 
+    elseif arc_pat[i].step == 0 then
+      arc_pat[i].step = 1
+      if params:get("arc_patterning") == 2 then
         bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
         selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
         selected[id].y = 8-((bank[id].id-1)%4)
         cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
         slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
-        ]]--
-      end 
-    elseif arc_pat[i].step == 0 then
-      arc_pat[i].step = 1
-      --[[
-      bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
-      selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
-      selected[id].y = 8-((bank[id].id-1)%4)
-      cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
-      slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
-      ]]--
+      end
     end
       
     bank[id][which_pad].start_point = (entry.start_point + (8*(bank[id][which_pad].clip-1)) + arc_offset)
@@ -2873,6 +2888,10 @@ function savestate()
   for i = 1,3 do
     io.write(grid_pat[i].playmode.."\n")
   end
+  io.write("1.2.1: arc patterning + osc settings".."\n")
+  io.write(params:get("arc_patterning").."\n")
+  io.write(params:get("osc_IP").."\n")
+  io.write(params:get("osc_port").."\n")
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -3053,6 +3072,12 @@ function loadstate()
       for i = 1,3 do
         grid_pat[i].playmode = tonumber(io.read())
       end
+    end
+    if io.read() == "1.2.1: arc patterning + osc settings" then
+      print("yeh!")
+      params:set("arc_patterning", tonumber(io.read()))
+      params:set("osc_IP", io.read())
+      params:set("osc_port", tonumber(io.read()))
     end
     io.close(file)
     for i = 1,3 do
