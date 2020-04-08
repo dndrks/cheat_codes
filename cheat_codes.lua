@@ -2378,6 +2378,21 @@ function grid_redraw()
       end
     end
     
+    if a.device ~= nil then
+      for i = 1,3 do
+        for j = 5,15,5 do
+          g:led(j,8,arc_param[j/5] == 1 and 5 or 0)
+          g:led(j,7,arc_param[j/5] == 2 and 5 or 0)
+          g:led(j,6,arc_param[j/5] == 3 and 5 or 0)
+          if arc_param[j/5] == 4 then
+            for k = 8,6,-1 do
+              g:led(j,k,5)
+            end
+          end
+        end
+      end
+    end
+    
     for i = 1,3 do
       if bank[i].focus_hold == 0 then
         g:led(selected[i].x, selected[i].y, 15)
