@@ -20,8 +20,10 @@ easingFunctions = include 'lib/easing'
 
 tau = math.pi * 2
 arc_param = {}
+arc_switcher = {}
 for i = 1,3 do
   arc_param[i] = 1
+  arc_switcher[i] = 0
 end
 arc_control = {}
 for i = 1,3 do
@@ -1917,6 +1919,7 @@ function reset_all_banks()
       bank[i][k].envelope_time = 3.0
       bank[i][k].clock_resolution = 4
       bank[i][k].offset = 1.0
+      bank[i][k].crow_pad_execute = 1
     end
     cross_filter[i] = {}
     cross_filter[i].fc = 12000
@@ -1990,7 +1993,9 @@ function cheat(b,i)
   end
   previous_pad = bank[b].id
   if bank[b].crow_execute == 1 then
-    crow.output[b]()
+    if bank[b][i].crow_pad_execute == 1 then
+      crow.output[b]()
+    end
   end
   --dangerous??
   local rate_array = {-4.0,-2.0,-1.0,-0.5,-0.25,-0.125,0.125,0.25,0.5,1.0,2.0,4.0}
@@ -2395,6 +2400,12 @@ function grid_redraw()
           g:led(3+(5*(i-1)),1,3)
           g:led(3+(5*(i-1)),2,3)
         end
+      end
+    end
+    
+    for i = 1,3 do
+      if bank[i].focus_hold == 1 then
+        g:led(5*i,5,(10*bank[i][bank[i].focus_pad].crow_pad_execute)+5)
       end
     end
     
@@ -2900,6 +2911,11 @@ function savestate()
   meta_shadow(params:get("collection"))
   --maybe not this? want to clean up
   selected_coll = params:get("collection")
+  for i = 1,3 do
+    if arc_pat[i].count > 0 then
+      save_arc_pattern(i)
+    end
+  end
 end
 
 function loadstate()
@@ -3100,6 +3116,12 @@ function loadstate()
     cleanup()
   end
   one_point_two()
+  for i = 1,3 do
+    local dirname = _path.data .. "cheat_codes/arc-patterns/collection-"..params:get("collection").."/encoder-"..i..".data"
+    if os.rename(dirname, dirname) ~= nil then
+      load_arc_pattern(i)
+    end
+  end
 end
 
 function test_save(i)
@@ -3645,4 +3667,74 @@ function cleanup()
   --externalshadow/
   
   clear_empty_shadows(selected_coll)
+end
+
+-- arc pattern stuff!
+
+function save_arc_pattern(which)
+  local dirname = _path.data.."cheat_codes/arc-patterns/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+    --print(dirname)
+  end
+  
+  local dirname = _path.data.."cheat_codes/arc-patterns/collection-"..selected_coll.."/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+    --print(dirname)
+  end
+  
+  local file = io.open(_path.data .. "cheat_codes/arc-patterns/collection-"..selected_coll.."/encoder-"..which..".data", "w+")
+  io.output(file)
+  io.write("stored arc pattern: collection "..selected_coll.." + encoder "..which.."\n")
+  io.write(arc_pat[which].count .. "\n")
+  for i = 1,arc_pat[which].count do
+    io.write(arc_pat[which].time[i] .. "\n")
+    io.write(arc_pat[which].event[i].i .. "\n")
+    io.write(arc_pat[which].event[i].param .. "\n")
+    io.write(arc_pat[which].event[i].pad .. "\n")
+    io.write(arc_pat[which].event[i].start_point .. "\n")
+    io.write(arc_pat[which].event[i].end_point .. "\n")
+    io.write(arc_pat[which].event[i].prev_tilt .. "\n")
+    io.write(arc_pat[which].event[i].tilt .. "\n")
+  end
+  io.write(arc_pat[which].metro.props.time .. "\n")
+  io.write(arc_pat[which].prev_time .. "\n")
+  io.close(file)
+  print("saved arc pattern for encoder "..which)
+end
+
+function load_arc_pattern(which)
+  local file = io.open(_path.data .. "cheat_codes/arc-patterns/collection-"..selected_coll.."/encoder-"..which..".data", "r")
+  if file then
+    io.input(file)
+    if io.read() == "stored arc pattern: collection "..selected_coll.." + encoder "..which then
+      arc_pat[which].event = {}
+      arc_pat[which].count = tonumber(io.read())
+      for i = 1,arc_pat[which].count do
+        arc_pat[which].time[i] = tonumber(io.read())
+        arc_pat[which].event[i] = {}
+        arc_pat[which].event[i].i = {}
+        arc_pat[which].event[i].param = {}
+        arc_pat[which].event[i].pad = {}
+        arc_pat[which].event[i].start_point = {}
+        arc_pat[which].event[i].end_point = {}
+        arc_pat[which].event[i].prev_tilt = {}
+        arc_pat[which].event[i].tilt = {}
+        --
+        arc_pat[which].event[i].i = tonumber(io.read())
+        arc_pat[which].event[i].param = tonumber(io.read())
+        arc_pat[which].event[i].pad = tonumber(io.read())
+        arc_pat[which].event[i].start_point = tonumber(io.read())
+        arc_pat[which].event[i].end_point = tonumber(io.read())
+        arc_pat[which].event[i].prev_tilt = tonumber(io.read())
+        arc_pat[which].event[i].tilt = tonumber(io.read())
+      end
+      arc_pat[which].metro.props.time = tonumber(io.read())
+      arc_pat[which].prev_time = tonumber(io.read())
+    end
+    io.close(file)
+  else
+    print("nofile")
+  end
 end
