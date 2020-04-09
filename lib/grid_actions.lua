@@ -395,17 +395,39 @@ function grid_actions.init(x,y,z)
       end
     end
     
-    for i = 8,5,-1 do
-      if z == 1 then
+    for i = 8,6,-1 do
+      --if z == 1 then
         if x == 5 or x == 10 or x == 15 then
           if y == i then
-            if grid.alt == 0 then
-              arc_param[x/5] = 9-y
-              if menu == 8 then
-                which_bank = x/5
-                help_menu = "arc params"
+            if z == 1 then
+              arc_switcher[x/5] = arc_switcher[x/5] + 1
+              if grid.alt == 0 and arc_switcher[x/5] == 1 then
+                arc_param[x/5] = 9-y
+                if menu == 8 then
+                  which_bank = x/5
+                  help_menu = "arc params"
+                end
+                redraw()
+              elseif grid.alt == 0 and arc_switcher[x/5] == 3 then
+                 arc_param[x/5] = 4
               end
-              redraw()
+            elseif z == 0 then
+              arc_switcher[x/5] = arc_switcher[x/5] - 1
+            end
+          end
+        end
+      --end
+    end
+    
+    if y == 5 and z == 1 then
+      for i = 1,3 do
+        if bank[i].focus_hold == 1 then
+          if x == i*5 then
+            bank[i][bank[i].focus_pad].crow_pad_execute = (bank[i][bank[i].focus_pad].crow_pad_execute + 1)%2
+            if grid.alt == 1 then
+              for j = 1,16 do
+                bank[i][j].crow_pad_execute = bank[i][bank[i].focus_pad].crow_pad_execute
+              end
             end
           end
         end
