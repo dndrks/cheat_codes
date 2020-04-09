@@ -2919,6 +2919,12 @@ function savestate()
   end
   io.write("1.2.1: arc patterning".."\n")
   io.write(params:get("arc_patterning").."\n")
+  io.write("1.2.2: crow_pad_execute".."\n")
+  for i = 1,3 do
+    for k = 1,16 do
+      io.write(bank[i][k].crow_pad_execute.."\n")
+    end
+  end
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -3105,8 +3111,15 @@ function loadstate()
         grid_pat[i].playmode = tonumber(io.read())
       end
     end
-    if io.read() == "1.2.1: arc patterning + osc settings" then
+    if io.read() == "1.2.1: arc patterning" then
       params:set("arc_patterning", tonumber(io.read()))
+    end
+    if io.read() == "1.2.2: crow_pad_execute" then
+      for i = 1,3 do
+        for k = 1,16 do
+          bank[i][k].crow_pad_execute = tonumber(io.read())
+        end
+      end
     end
     io.close(file)
     for i = 1,3 do
