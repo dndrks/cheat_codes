@@ -2003,7 +2003,9 @@ function cheat(b,i)
   for k,v in pairs(rate_array) do
     s[v]=k
   end
-  params:set("rate "..tonumber(string.format("%.0f",b)),s[bank[b][i].rate])
+  if bank[b][i].fifth == false then
+    params:set("rate "..tonumber(string.format("%.0f",b)),s[bank[b][i].rate])
+  end
   params:set("level "..tonumber(string.format("%.0f",b)),bank[b][i].level)
   params:set("current pad "..tonumber(string.format("%.0f",b)),i,"true")
   params:set("start point "..tonumber(string.format("%.0f",b)),bank[b][i].start_point*100,"true")
