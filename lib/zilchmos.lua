@@ -414,8 +414,11 @@ function zilchmos.init(k,i)
             bank[i][which_pad].rate = bank[i][which_pad].rate*1.5
             bank[i][which_pad].fifth = true
           else
-            bank[i][which_pad].rate = math.ceil(math.abs(bank[i][which_pad].rate))
+            bank[i][which_pad].rate = bank[i][which_pad].rate < 0 and math.ceil(math.abs(bank[i][which_pad].rate)) * -1 or bank[i][which_pad].rate > 0 and math.ceil(math.abs(bank[i][which_pad].rate))
             bank[i][which_pad].fifth = false
+            if math.abs(bank[i][which_pad].rate) == 3 then
+              bank[i][which_pad].rate = bank[i][which_pad].rate == 3 and 4 or bank[i][which_pad].rate == -3 and -4
+            end
           end
         end
       else
@@ -425,8 +428,11 @@ function zilchmos.init(k,i)
               bank[i][j].rate = bank[i][j].rate*1.5
               bank[i][j].fifth = true
             else
-              bank[i][j].rate = math.ceil(math.abs(bank[i][j].rate))
+              bank[i][j].rate = bank[i][j].rate < 0 and math.ceil(math.abs(bank[i][j].rate)) * -1 or bank[i][j].rate > 0 and math.ceil(math.abs(bank[i][j].rate))
               bank[i][j].fifth = false
+              if math.abs(bank[i][j].rate) == 3 then
+                bank[i][j].rate = bank[i][j].rate == 3 and 4 or bank[i][j].rate == -3 and -4
+              end
             end
           end
         end
