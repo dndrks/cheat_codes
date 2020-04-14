@@ -328,10 +328,18 @@ function main_menu.init()
     screen.text("timing")
     screen.level(3)
     screen.move(115,10)
-    local clork_sterp = clk.step+1
-    --if clork_sterp == 0 then clork_sterp = 4 end
-    local clork_bert = clk.beat + 1
-    screen.text(clork_bert.."."..clork_sterp)
+    local show_me_beats = clock.get_beats() % 4
+    local show_me_frac = math.fmod(clock.get_beats(),1)
+    if show_me_frac <= 0.25 then
+      show_me_frac = 1
+    elseif show_me_frac <= 0.5 then
+      show_me_frac = 2
+    elseif show_me_frac <= 0.75 then
+      show_me_frac = 3
+    else
+      show_me_frac = 4
+    end
+    screen.text((math.modf(show_me_beats)+1).."."..show_me_frac)
     screen.level(10)
     screen.move(15,30)
     screen.line(120,30)

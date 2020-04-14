@@ -1077,6 +1077,10 @@ function init()
     if menu == 7 then
       redraw()
     end
+  --[[
+    if menu == 7 then
+      redraw()
+    end
     grid_redraw()
     update_tempo()
     step_sequence()
@@ -1122,6 +1126,7 @@ function init()
         end
       end
     end
+    --]]
   end
   
   clk.on_select_internal = function()
@@ -1374,7 +1379,77 @@ function init()
     params:set("osc_port","none")
     osc_communication = false
   end}
+  
+  task_id = clock.run(test_step)
 
+end
+
+function test_step()
+  while true do
+    clock.sync(1/4)
+    if bpm ~= clock.get_tempo() then params:set("bpm", clock.get_tempo()) end
+    --if bpm ~= norns.state.clock.tempo then params:set("bpm",norns.state.clock.tempo) end
+    if menu == 7 then
+      redraw()
+    end
+    grid_redraw()
+    update_tempo()
+    step_sequence()
+    ---[[
+    for i = 1,3 do
+      if grid_pat[i].led == nil then grid_pat[i].led = 0 end
+      if grid_pat[i].rec == 1 then
+        local blink = math.fmod(clock.get_beats(),1)
+        if blink <= 0.25 then
+          blink = 1
+        elseif blink <= 0.5 then
+          blink = 2
+        elseif blink <= 0.75 then
+          blink = 3
+        else
+          blink = 4
+        end
+        if blink == 1 then
+          grid_pat[i].led = 1
+        else
+          grid_pat[i].led = 0
+        end
+      end
+    end
+    --]]
+    --here it is!!
+    for i = 1,3 do
+      if grid_pat[i].tightened_start == 1 then
+        internal_clocking_tightened(i)
+      end
+    end
+    if clk.externalmidi or clk.externalcrow then
+      if clk.externalmidi and clk.step == 1 then external_to_bpm() end
+      for i = 1,3 do
+        if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
+          testing_clocks(i)
+        end
+      end
+      if (clk.step+1)%4 == 1 or (clk.step+1)%4 == 3 then
+        for i = 1,3 do
+          cheat_q_clock(i)
+          grid_pat_q_clock(i)
+        end
+      end
+    end
+    if clk.crow_send then
+      crow.output[4]()
+      for i = 1,3 do
+        if bank[i].crow_execute ~= 1 then
+          crow.count[i] = crow.count[i] + 1
+          if crow.count[i] >= crow.count_execute[i] then
+            crow.output[i]()
+            crow.count[i] = 0
+          end
+        end
+      end
+    end
+  end
 end
 
 osc_in = function(path, args, from)
