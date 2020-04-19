@@ -327,7 +327,9 @@ function main_menu.init()
     screen.level(3)
     screen.text("timing")
     screen.level(3)
-    screen.move(115,10)
+    --screen.move(100,10)
+    --screen.text(params:get("bpm") >= 1 and ("bpm: "..params:get("bpm")) or "too slow")
+    screen.move(110,10)
     local show_me_beats = clock.get_beats() % 4
     local show_me_frac = math.fmod(clock.get_beats(),1)
     if show_me_frac <= 0.25 then
@@ -344,11 +346,11 @@ function main_menu.init()
     screen.move(15,30)
     screen.line(120,30)
     screen.stroke()
-    for i = 1,5 do
+    for i = 2,5 do
       screen.level(page.time_sel == i and 15 or 3)
       --local time_options = {"clk","P1","P2","P3","ALL"}
       local time_options = {"clk","P1","P2","P3","   "}
-      screen.move(15+(23*(i-1)),25)
+      screen.move(15+(23*(i-2)),25)
       screen.text(time_options[i])
       local glb_options = {"bpm","clk source","send crow clk?"}
       local p_options = {"rec mode", "shuffle pat","crow output"}
@@ -356,13 +358,15 @@ function main_menu.init()
       for j = 1,3 do
         screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
         screen.move(15,40+(10*(j-1)))
+        --[[
         if page.time_sel == 1 then
           screen.text(glb_options[j])
           local clock_options = {"internal","MIDI","crow"}
-          local fine_options = {params:get("bpm") >= 20 and params:get("bpm") or "too slow", clock_options[params:get("clock")],params:get("crow_clock_out") == 2 and "yes" or "no"}
+          local fine_options = {params:get("bpm") >= 1 and params:get("bpm") or "too slow", clock_options[params:get("clock")],params:get("crow_clock_out") == 2 and "yes" or "no"}
           screen.move(85,40+(10*(j-1)))
           screen.text(fine_options[j])
-        elseif page.time_sel < 5 then
+        --]]
+        if page.time_sel < 5 then
           screen.text(p_options[j])
           local mode_options = {"loose","distro","quant","quant+trim"}
           local fine_options = {mode_options[grid_pat[page.time_sel-1].playmode], grid_pat[page.time_sel-1].count > 0 and grid_pat[page.time_sel-1].rec == 0 and "[K3]" or "(no pat!)", bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}

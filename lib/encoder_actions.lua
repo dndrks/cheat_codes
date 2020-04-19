@@ -57,7 +57,7 @@ function encoder_actions.init(n,d)
     elseif menu == 6 then
       page.delay_sel = util.clamp(page.delay_sel+d,0,4)
     elseif menu == 7 then
-      page.time_sel = util.clamp(page.time_sel+d,1,4)
+      page.time_sel = util.clamp(page.time_sel+d,2,4)
     end
   end
   if n == 2 then
@@ -247,31 +247,23 @@ function encoder_actions.init(n,d)
         elseif page.time_page_sel[page.time_sel] == 3 then
           params:delta("crow_clock_out",d)
         end
-      elseif page.time_sel < 5 then
+      elseif page.time_sel <= 4 then
         if page.time_page_sel[page.time_sel] == 3 then
           bank[page.time_sel-1].crow_execute = util.clamp(bank[page.time_sel-1].crow_execute+d,0,1)
         elseif page.time_page_sel[page.time_sel] == 1 then
           if grid_pat[page.time_sel-1].rec ~= 1 then
+            --[[
             if not clk.externalmidi and not clk.externalcrow then
               grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,1,4)
             else
               grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,3,4)
             end
+            --]]
+            grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,1,4)
             set_pattern_mode(page.time_sel-1)
           end
         elseif page.time_page_sel[page.time_sel] == 4 and bank[page.time_sel-1].crow_execute ~= 1 then
           crow.count_execute[page.time_sel-1] = util.clamp(crow.count_execute[page.time_sel-1]+d,1,16)
-        end
-      elseif page.time_sel == 5 then
-        if page.time_page_sel[page.time_sel] == 1 then
-          params:delta("lock_pat",d)
-        elseif page.time_page_sel[page.time_sel] == 2 then
-          params:delta("quantize_pads",d)
-          if not clk.externalmidi and not clk.externalcrow then
-            params:delta("quantize_pats",d)
-          end
-        elseif page.time_page_sel[page.time_sel] == 3 then
-          params:delta("quant_div",d)
         end
       end
     end
