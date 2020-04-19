@@ -1,4 +1,5 @@
-zilchmos = {}
+local zilchmos = {}
+local z = zilchmos
 
 --[[
     focus_hold is only [0,1] -> change this to a boolean
@@ -8,103 +9,11 @@ zilchmos = {}
 ]]--
 
 
-----------------------------------------
---- helper functions
-
--- this function tanks a single bank, and applies function fn to each pad
--- varargs (...) allows an optional set of args to be applied to all pads
-function zilchmos.map( fn, bank, ... ) -- this is a local bank, represents bank[i]
-  for pad,_ in ipairs( bank ) do -- will execute for each of the 16 elements in bank
-    fn( pad, ... ) -- pass each pad to the supplied function
-  end
-end
-
-
--- FIXME factor out this function and just map over .window
-function zilchmos.map_window( bank )
-  for j = 1,16 do
-    zilchmos.window( b[j], j )
-  end
-end
-
--- FIXME factor out this function and just map over .window
-function zilchmos.map_fixed_window( bank )
-  for j = 1,16 do
-    zilchmos.fixed_window( b[j], j )
-  end
-end
-
-
---------------------------------------
---- actions
-
-
--- pads
-
-function zilchmos.start_point( pad )
-  pad.start_point = (8*(pad.clip-1)) + 1
-end
-
-function zilchmos.pan( pad, position )
-  pad.pan = position
-end
-
-function zilchmos.level_inc( pad, delta )
-  pad.level = util.clamp( pad.level + delta, 0, 2 )
-end
-
-function zilchmos.window( pad, p ) -- TODO can get p from pad? add k to line:1883?
-  -- p represents which # pad it is. this should be inherent to the pad table
-  pad.start_point = 1+((8/16)*(p-1))+(8*(pad.clip-1))
-  pad.end_point   = 1+((8/16)*p)+(8*(pad.clip-1))
-end
-
-function zilchmos.fixed_window( pad, p ) -- TODO can get p from pad? add k to line:1883?
-  pad.start_point = (1+((8/16)*(p-1)))+(8*(pad.clip-1))
-  pad.end_point   = pad.start_point + (60/bpm)/4
-end
-
-function zilchmos.end_point( pad )
-  pad.end_point = (8*pad.clip)+1
-end
-
-
--- softcut
-
-function zilchmos.sc_loop_point( pad, i )
-  softcut.loop_start(i+1,pad.start_point)
-end
-
-function zilchmos.sc_pan( pad, i )
-  softcut.pan(i+1,pad.pan)
-end
-
-function zilchmos.sc_level( pad, i )
-  if not pad.enveloped then
-    softcut.level_slew_time(i+1,1.0)
-    softcut.level(i+1,pad.level)
-    softcut.level_cut_cut(i+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
-    softcut.level_cut_cut(i+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
-  end
-end
-
--- TODO should combine these
-function zilchmos.sc_loop_window( pad, i )
-  softcut.loop_start(i+1,pad.start_point)
-  softcut.loop_end(i+1,pad.end_point)
-end
-
-function zilchmos.sc_loop_end( pad, i )
-  softcut.loop_end(i+1,pad.end_point)
-end
-
-
-
 ---------------------------------------
 --- main function
 
+-- this is the new zilchmos.init
 function zilchmos.init(k,i)
-
   -- TODO remove this global access? at least wrap it in a function
   which_bank = i -- just setting this global? why here?
 
@@ -115,399 +24,289 @@ function zilchmos.init(k,i)
     help_menu = "zilchmo_"..k
   end
 
-  if fingers[k][i].con == "1" then
-    if k == 4 then
-      if grid.alt == 0 then
-        zilchmos.start_point(b[p])
-      else
-        zilchmos.map( zilchmos.start_point, b ) -- map start_point over the whole bank
-      end
-      if b.focus_hold == 0 then
-        zilchmos.sc_loop_point(b[p], i)
-      end
-    elseif k == 3 then
-      if grid.alt == 0 then
-        zilchmos.pan( b[p], -1 )
-      else
-        zilchmos.map( zilchmos.pan, b, -1 )
-      end
-      if b.focus_hold == 0 then
-        zilchmos.sc_pan( b[p], i )
-      end
-    elseif k == 2 then
-      if grid.alt == 0 then
-        zilchmos.level_inc( b[p], -0.125 )
-      else
-        zilchmos.map( zilchmos.level_inc, b, -0.125 )
-      end
-      if b.focus_hold == 0 then
-        zilchmos.sc_level( b[p], i )
-      end
-    end
-  end
-  if fingers[k][i].con == "2" then
-    if k == 4 then
-      if grid.alt == 0 then
-        zilchmos.window( b[p], p )
-      else
-        zilchmos.map_window( b ) -- FIXME update sigs so we can use .map( .window )
-      end
-      if b.focus_hold == 0 then
-        zilchmos.sc_loop_window( b[p], i )
-      end
-    elseif k == 3 then
-      if grid.alt == 0 then
-        zilchmos.pan( b[p], 0 ) -- pan centre
-      else
-        zilchmos.map( zilchmos.pan, b, 0 )
-      end
-      if b.focus_hold == 0 then
-        zilchmos.sc_pan( b[p], i )
-      end
-    elseif k == 2 then
-      if grid.alt == 0 then
-        zilchmos.level_inc( b[p], 0.125 )
-      else
-        zilchmos.map( zilchmos.level_inc, b, 0.125 )
-      end
-      if b.focus_hold == 0 then
-        zilchmos.sc_level( pad, i )
-      end
-    end
-  end
-  if fingers[k][i].con == "3" then
-    if k == 4 then
-      if grid.alt == 0 then
-        zilchmos.fixed_window( b[p], p )
-      else
-        zilchmos.map_fixed_window( b )
-      end
-      if b.focus_hold == 0 then
-        zilchmos.sc_loop_window( b[p], i )
-      end
-    elseif k == 3 then
-      if grid.alt == 0 then
-        zilchmos.pan( b[p], 1 )
-      else
-        zilchmos.map( zilchmos.pan, b, 1 )
-      end
-      if b.focus_hold == 0 then
-        zilchmos.sc_pan( b[p], i )
-      end
-    end
-  end
-  if fingers[k][i].con == "4" then
-    if grid.alt == 0 then
-      zilchmos.end_point( b[p] )
-    else
-      zilchmos.map( zilchmos.end_point, b )
-    end
-    if b.focus_hold == 0 then
-      zilchmos.sc_loop_end( b[p], i )
-    end
-  end
+  -- echoing the layout of the documentation for clarity
+  local finger    = fingers[k][i].con
+  local p_action  = z.actions[k][finger][1]
+  local sc_action = z.actions[k][finger][2]
 
-
-
--- UP TO HERE
-
-
-
-
-  if fingers[k][i].con == "12" then
-    if k == 4 then
-      if grid.alt == 0 then
-        local current_end = math.floor(b[p].end_point * 100)
-        local min_start = math.floor(((8*(b[p].clip-1))+1) * 100)
-        b[p].start_point = math.random(min_start,current_end)/100
-      else
-        for j = 1,16 do
-          local current_end = math.floor(b[j].end_point*100)
-          local min_start = math.floor(((8*(b[j].clip-1))+1) * 100)
-          b[j].start_point = math.random(min_start,current_end)/100
-        end
-      end
-      if b[p].loop == true and b[p].enveloped == false then
-        if b.focus_hold == 0 then
-          cheat(i,p)
-        end
-      end
-    elseif k == 3 then
-      if grid.alt == 0 then
-        if b[p].pan >= -0.9 then
-          b[p].pan = b[p].pan - 0.1
-        end
-      else
-        for j = 1,16 do
-          if b[j].pan >= -0.9 then
-            b[j].pan = b[j].pan - 0.1
-          end
-        end
-      end
-      if b.focus_hold == 0 then
-        softcut.pan(i+1,b[p].pan)
-      end
-    elseif k == 2 then
-      if b[p].pause == false then
-        if grid.alt == 0 then
-          b[p].pause = true
-        else
-          for j = 1,16 do
-            b[j].pause = true
-          end
-        end
-        if b.focus_hold == 0 then
-          softcut.level(i+1,0.0)
-          softcut.rate(i+1,0.0)
-        end
-      else
-        if grid.alt == 0 then
-          b[p].pause = false
-        else
-          for j = 1,16 do
-            b[j].pause = false
-          end
-        end
-        if b.focus_hold == 0 then
-          if not b[p].enveloped then
-            softcut.level(i+1,b[p].level)
-          else
-            cheat(i,p)
-          end
-          softcut.rate(i+1,b[p].rate*b[p].offset)
-        end
-      end
-    end
+  -- here's where we call the action
+  if grid.alt == 0 then
+    p_action( b[p] )
+  else
+    z.map( p_action, b ) -- or map it over the whole bank
   end
-  if fingers[k][i].con == "23" then
-    if k == 4 then
-      if grid.alt == 0 then
-        local jump = math.random(100,900)/100+(8*(b[p].clip-1))
-        local current_difference = (b[p].end_point - b[p].start_point)
-        if jump+current_difference >= 9+(8*(b[p].clip-1)) then
-          b[p].end_point = 9+(8*(b[p].clip-1))
-          b[p].start_point = b[p].end_point - current_difference
-        else
-          b[p].start_point = jump
-          b[p].end_point = b[p].start_point + current_difference
-        end
-      else
-        for j = 1,16 do
-          local jump = math.random(100,900)/100+(8*(b[j].clip-1))
-          local current_difference = (b[j].end_point - b[j].start_point)
-          if jump+current_difference >= 9+(8*(b[j].clip-1)) then
-            b[j].end_point = 9+(8*(b[j].clip-1))
-            b[j].start_point = b[j].end_point - current_difference
-          else
-            b[j].start_point = jump
-            b[j].end_point = b[j].start_point + current_difference
-          end
-        end
-      end
-      -- ok
-      softcut.loop_start(i+1,b[b.id].start_point)
-      softcut.loop_end(i+1,b[b.id].end_point)
-    elseif k == 3 then
-      if grid.alt == 0 then
-        if b[p].pan <= 0.9 then
-          b[p].pan = b[p].pan + 0.1
-        end
-      else
-        for j = 1,16 do
-          if b[j].pan <= 0.9 then
-            b[j].pan = b[j].pan + 0.1
-          end
-        end
-      end
-      softcut.pan(i+1,b[b.id].pan)
-    end
+  if b.focus_hold == 0 then
+    sc_action( b[p], i ) -- and then update softcut if we're in perform mode
   end
-  if fingers[k][i].con == "34" then
-      if grid.alt == 0 then
-        local current_start = math.floor(b[p].start_point * 100)
-        local max_end = math.floor(((8*b[p].clip)+1) * 100)
-        b[p].end_point = math.random(current_start,max_end)/100
-      else
-        for j = 1,16 do
-          local current_start = math.floor(b[j].start_point * 100)
-          local max_end = math.floor(((8*b[j].clip)+1) * 100)
-          b[j].end_point = math.random(current_start,max_end)/100
-        end
-      end
-      softcut.loop_end(i+1,b[b.id].end_point)
-  end
-  if fingers[k][i].con == "13" then
-    if k == 4 then
-      if grid.alt == 0 then
-        local double = (b[p].end_point - b[p].start_point)*2
-        local maximum_val = 9+(8*(b[p].clip-1))
-        local minimum_val = 1+(8*(b[p].clip-1))
-        if b[p].start_point - double >= minimum_val then
-          b[p].start_point = b[p].end_point - double
-          --softcut.loop_start(i+1,b[p].start_point)
-        elseif b[p].start_point - double < minimum_val then
-          if b[p].end_point + double < maximum_val then
-            b[p].end_point = b[p].end_point + double
-            --softcut.loop_end(i+1,b[p].end_point)
-          end
-        end
-      else
-        for j = 1,16 do
-          local double = (b[j].end_point - b[j].start_point)*2
-          local maximum_val = 9+(8*(b[j].clip-1))
-          local minimum_val = 1+(8*(b[j].clip-1))
-          if b[j].start_point - double >= minimum_val then
-            b[j].start_point = b[j].end_point - double
-            --softcut.loop_start(i+1,b[j].start_point)
-          elseif b[j].start_point - double < minimum_val then
-            if b[j].end_point + double < maximum_val then
-              b[j].end_point = b[j].end_point + double
-              --softcut.loop_end(i+1,b[b.id].end_point)
-            end
-          end
-        end
-      end
-      softcut.loop_start(i+1,b[b.id].start_point)
-      softcut.loop_end(i+1,b[b.id].end_point)
-    elseif k == 3 then
-      if grid.alt == 0 then
-        b[p].pan = b[p].pan * -1
-      else
-        for j = 1,16 do
-          b[j].pan = b[j].pan * -1
-        end
-      end
-      softcut.pan(i+1,b[b.id].pan)
-    end
-  end
-  if fingers[k][i].con == "24" then
-    if k == 4 then
-      local halve = ((b[p].end_point - b[p].start_point)/2)/2
-      b[p].start_point = b[p].start_point + halve
-      b[p].end_point = b[p].end_point - halve
-      softcut.loop_start(i+1,b[b.id].start_point)
-      softcut.loop_end(i+1,b[b.id].end_point)
-    end
-  end
-  if fingers[k][i].con == "14" then
-    if grid.alt == 0 then
-      b[p].rate = b[p].rate*-1
-    else
-      for j = 1,16 do
-        b[j].rate = b[j].rate*-1
-      end
-    end
-    if b[b.id].pause == false then
-      softcut.rate(i+1, b[b.id].rate*b[b.id].offset)
-    end
-  end
-  if fingers[k][i].con == "124" then
-    if grid.alt == 0 then
-      if math.abs(b[p].rate) < 4 then
-        b[p].rate = b[p].rate*2
-      end
-    else
-      for j = 1,16 do
-        if math.abs(b[j].rate) < 4 then
-          b[j].rate = b[j].rate*2
-        end
-      end
-    end
-    if b[b.id].pause == false then
-      softcut.rate(i+1, b[b.id].rate*b[b.id].offset)
-    end
-  end
-  if fingers[k][i].con == "134" then
-    if grid.alt == 0 then
-      if math.abs(b[p].rate) > 0.125 then
-        b[p].rate = b[p].rate/2
-      end
-    else
-      for j = 1,16 do
-        if math.abs(b[j].rate) > 0.125 then
-          b[j].rate = b[j].rate/2
-        end
-      end
-    end
-    if b[b.id].pause == false then
-      softcut.rate(i+1, b[b.id].rate*b[b.id].offset)
-    end
-  end
-  if fingers[k][i].con == "123" then
-    if k == 4 then
-      if i == 1 then
-        b[p].start_point = bank[2][bank[2].id].start_point - (8*(bank[2][bank[2].id].clip-1))
-        b[p].end_point = bank[2][bank[2].id].end_point - (8*(bank[2][bank[2].id].clip-1))
-      elseif i == 2 or 3 then
-        b[p].start_point = bank[1][bank[1].id].start_point + (8*(b[p].clip-1))
-        b[p].end_point = bank[1][bank[1].id].end_point + (8*(b[p].clip-1))
-      end
-      if b.focus_hold == 0 then
-        softcut.loop_start(i+1,b[b.id].start_point)
-        softcut.loop_end(i+1,b[b.id].end_point)
-        softcut.position(i+1,b[b.id].start_point)
-      end
-      -- LEFT OFF HERE
-    elseif k == 3 then
-      if grid.alt == 0 then
-        b[p].pan = math.random(-100,100)/100
-      else
-        for j = 1,16 do
-          b[j].pan = math.random(-100,100)/100
-        end
-      end
-      softcut.pan(i+1,b[b.id].pan)
-    end
-  end
-  if fingers[k][i].con == "234" then
-    if k == 4 then
-      if i == 3 then
-        bank[3][bank[3].id].start_point = (bank[2][bank[2].id].start_point - (8*(bank[2][bank[2].id].clip-1))) + (8*(bank[3][bank[3].id].clip-1))
-        bank[3][bank[3].id].end_point = (bank[2][bank[2].id].end_point - (8*(bank[2][bank[2].id].clip-1))) + (8*(bank[3][bank[3].id].clip-1))
-      elseif i == 1 or 2 then
-        b[p].start_point = (bank[3][bank[3].id].start_point - (8*(bank[3][bank[3].id].clip-1))) + (8*(b[p].clip-1))
-        b[p].end_point = (bank[3][bank[3].id].end_point - (8*(bank[3][bank[3].id].clip-1))) + (8*(b[p].clip-1))
-      end
-      softcut.loop_start(i+1,b[b.id].start_point)
-      softcut.loop_end(i+1,b[b.id].end_point)
-      softcut.position(i+1,b[b.id].start_point)
-    end
-  end
-  if fingers[k][i].con == "1234" then
-    if grid.alt == 0 then
-      if math.abs(b[p].rate) < 4 then
-        if b[p].fifth == false then
-          b[p].rate = b[p].rate*1.5
-          b[p].fifth = true
-        else
-          b[p].rate = b[p].rate < 0 and math.ceil(math.abs(b[p].rate)) * -1 or b[p].rate > 0 and math.ceil(math.abs(b[p].rate))
-          b[p].fifth = false
-          if math.abs(b[p].rate) == 3 then
-            b[p].rate = b[p].rate == 3 and 4 or b[p].rate == -3 and -4
-          end
-        end
-      end
-    else
-      for j = 1,16 do
-        if math.abs(b[j].rate) < 4 then
-          if b[j].fifth == false then
-            b[j].rate = b[j].rate*1.5
-            b[j].fifth = true
-          else
-            b[j].rate = b[j].rate < 0 and math.ceil(math.abs(b[j].rate)) * -1 or b[j].rate > 0 and math.ceil(math.abs(b[j].rate))
-            b[j].fifth = false
-            if math.abs(b[j].rate) == 3 then
-              b[j].rate = b[j].rate == 3 and 4 or b[j].rate == -3 and -4
-            end
-          end
-        end
-      end
-    end
-    if b[b.id].pause == false then
-      softcut.rate(i+1, b[b.id].rate*b[b.id].offset)
-    end
-  end
-
 end
+
+
+--------------------------------------
+--- actions
+
+-- mapping of key-combos to pad functions & softcut actions
+-- TODO the softcut actions should occur automatically using metatable over pad{}
+zilchmos.actions =
+{ [2] = -- level & play/pause
+  { ['1']  = { z.level_down   , z.sc.level }
+  , ['2']  = { z.level_up     , z.sc.level }
+  , ['12'] = { z.play_toggle  , z.sc.play_toggle }
+  }
+, [3] = -- panning
+  { ['1']   = { z.pan_left        , z.sc.pan }
+  , ['2']   = { z.pan_center      , z.sc.pan }
+  , ['3']   = { z.pan_right       , z.sc.pan }
+  , ['12']  = { z.pan_nudge_left  , z.sc.pan }
+  , ['23']  = { z.pan_nudge_right , z.sc.pan }
+  , ['13']  = { z.pan_reverse     , z.sc.pan }
+  , ['123'] = { z.pan_random      , z.sc.pan }
+  }
+, [4] = -- start/end points, rate, direction
+  { ['1']    = { z.start_zero           , z.sc.start }
+  , ['2']    = { z.start_end_default    , z.sc.start_end }
+  , ['3']    = { z.start_end_sixteenths , z.sc.start_end }
+  , ['4']    = { z.end_at_eight         , z.sc._end }
+  , ['12']   = { z.start_random         , z.sc.cheat } -- FIXME why is this diff?
+  , ['34']   = { z.end_random           , z.sc._end }
+  , ['23']   = { z.start_end_random     , z.sc.start_end }
+  , ['13']   = { z.loop_double          , z.sc.start_end }
+  , ['24']   = { z.loop_halve           , z.sc.start_end }
+  , ['123']  = { z.loop_sync_left       , z.sc.sync }
+  , ['234']  = { z.loop_sync_right      , z.sc.sync }
+  , ['124']  = { z.rate_double          , z.sc.rate }
+  , ['134']  = { z.rate_halve           , z.sc.rate }
+  , ['14']   = { z.rate_reverse         , z.sc.rate }
+  , ['1234'] = { z.rate_up_fifth        , z.sc.rate }
+  }
+}
+
+-- this function tanks a single bank, and applies function fn to each pad
+-- varargs (...) allows an optional set of args to be applied to all pads
+function zilchmos.map( fn, bank, ... ) -- this is a local bank, represents bank[i]
+  for pad,_ in ipairs( bank ) do -- will execute for each of the 16 elements in bank
+    fn( pad, ... ) -- pass each pad to the supplied function
+  end
+end
+
+
+-- pad helpers
+
+function z.level_down( pad ) z.level_inc( pad, -0.125 ) end
+function z.level_up( pad )   z.level_inc( pad, 0.125 ) end
+function z.pan_left( pad )   z.pan( pad, -1 ) end
+function z.pan_center( pad ) z.pan( pad, 0 ) end
+function z.pan_right( pad )  z.pan( pad, 1 ) end
+function z.pan_nudge_left( pad )  z.pan_nudge( pad, -0.1 ) end
+function z.pan_nudge_right( pad ) z.pan_nudge( pad, 0.1 ) end
+function z.rate_double( pad )  z.rate_mul( pad, 2 ) end
+function z.rate_halve( pad )   z.rate_mul( pad, 0.5 ) end
+function z.rate_reverse( pad ) z.rate_mul( pad, -1 ) end
+
+
+-- core pad modifiers
+
+function zilchmos.level_inc( pad, delta )
+  pad.level = util.clamp( pad.level + delta, 0, 2 )
+end
+
+function zilchmos.pan_reverse( pad )
+  pad.pan = -pad.pan
+end
+
+function zilchmos.play_toggle( pad )
+  pad.pause = not pad.pause
+end
+
+function zilchmos.pan( pad, position )
+  pad.pan = position
+end
+
+function zilchmos.pan_nudge( pad, delta )
+  pad.pan = util.clamp( pad.pan + delta, -1, 1 )
+end
+
+function zilchmos.pan_random( pad )
+  pad.pan = math.random(-100,100)/100
+end
+
+function zilchmos.start_zero( pad )
+  pad.start_point = (8*(pad.clip-1)) + 1
+end
+
+function zilchmos.start_end_default( pad )
+  -- FIXME, need the 'p' value. it's the index in the bank? confirm & put in table
+  pad.start_point = 1+((8/16)*(p-1))+(8*(pad.clip-1))
+  pad.end_point   = 1+((8/16)*p)+(8*(pad.clip-1))
+end
+
+function zilchmos.start_end_sixteenths( pad )
+  -- FIXME, need the 'p' value. it's the index in the bank? confirm & put in table
+  pad.start_point = (1+((8/16)*(p-1)))+(8*(pad.clip-1))
+  pad.end_point   = pad.start_point + (60/bpm)/4
+end
+
+function zilchmos.end_at_eight( pad )
+  pad.end_point = (8*pad.clip)+1
+end
+
+function zilchmos.start_random( pad )
+  local current_end = math.floor(pad.end_point * 100)
+  local min_start = math.floor(((8*(pad.clip-1))+1) * 100)
+  pad.start_point = math.random(min_start,current_end)/100
+end
+
+function zilchmos.end_random( pad )
+  local current_start = math.floor(pad.start_point * 100)
+  local max_end = math.floor(((8*pad.clip)+1) * 100)
+  pad.end_point = math.random(current_start,max_end)/100
+end
+
+function zilchmos.start_end_random( pad )
+  local jump = math.random(100,900)/100+(8*(pad.clip-1))
+  local current_difference = (pad.end_point - pad.start_point)
+  if jump+current_difference >= 9+(8*(pad.clip-1)) then
+    pad.end_point = 9+(8*(pad.clip-1))
+    pad.start_point = pad.end_point - current_difference
+  else
+    pad.start_point = jump
+    pad.end_point = pad.start_point + current_difference
+  end
+end
+
+function zilchmos.loop_double( pad )
+  local double = (pad.end_point - pad.start_point)*2
+  local maximum_val = 9+(8*(pad.clip-1))
+  local minimum_val = 1+(8*(pad.clip-1))
+  if pad.start_point - double >= minimum_val then
+    pad.start_point = pad.end_point - double
+    --softcut.loop_start(i+1,b[p].start_point) -- FIXME what's this?
+  elseif pad.start_point - double < minimum_val then
+    if pad.end_point + double < maximum_val then
+      pad.end_point = pad.end_point + double
+      --softcut.loop_end(i+1,b[p].end_point) -- FIXME what's this?
+    end
+  end
+end
+
+function zilchmos.loop_halve( pad )
+  local quarter = ((pad.end_point - pad.start_point)/2)/2
+  pad.start_point = pad.start_point + quarter
+  pad.end_point   = pad.end_point - quarter
+end
+
+function zilchmos.loop_sync_left( pad )
+  --FIXME need i argument (ie which bank we're in) -> put into pad
+  local b3 = bank[3][bank[3].id]
+  if i == 3 then
+    local b2 = bank[2][bank[2].id]
+    b3.start_point = (b2.start_point - (8*(b2.clip-1))) + (8*(b3.clip-1))
+    b3.end_point   = (b2.end_point   - (8*(b2.clip-1))) + (8*(b3.clip-1))
+  else
+    pad.start_point = (b3.start_point - (8*(b3.clip-1))) + (8*(pad.clip-1))
+    pad.end_point   = (b3.end_point   - (8*(b3.clip-1))) + (8*(pad.clip-1))
+  end
+end
+
+function zilchmos.loop_sync_right( pad )
+  --FIXME need i argument (ie which bank we're in) -> put into pad
+  if i == 1 then
+    local b2 = bank[2][bank[2].id]
+    pad.start_point = b2.start_point - (8*(b2.clip-1))
+    pad.end_point   = b2.end_point   - (8*(b2.clip-1))
+  else
+    local b1 = bank[1][bank[1].id]
+    pad.start_point = b1.start_point + (8*(pad.clip-1))
+    pad.end_point   = b1.end_point   + (8*(pad.clip-1))
+  end
+end
+
+function zilchmos.rate_mul( pad, mul )
+  pad.rate = pad.rate * mul
+  -- NOTE: here we ensure speed doesn't surpass 4, but don't clamp, drop an octave
+  if math.abs(pad.rate) > 4     then pad.rate = pad.rate / 2 end
+  if math.abs(pad.rate) < 0.125 then pad.rate = pad.rate * 2 end
+end
+
+function zilchmos.rate_up_fifth( pad )
+  -- should a 'raise-a-fifth' command fail if exceeds 4x, or raise fifth then drop oct
+  -- how to handle release from raising
+  if math.abs(pad.rate) < 4 then
+    if pad.fifth then
+      pad.rate = pad.rate < 0 and math.ceil(math.abs(pad.rate)) * -1 or pad.rate > 0 and math.ceil(math.abs(pad.rate))
+      pad.fifth = false
+      if math.abs(pad.rate) == 3 then
+        pad.rate = pad.rate == 3 and 4 or pad.rate == -3 and -4
+      end
+    else
+      pad.rate  = pad.rate*1.5
+      pad.fifth = true
+    end
+  end
+end
+
+
+-- softcut
+
+zilchmos.sc = {}
+
+function zilchmos.sc.level( pad, i )
+  if not pad.enveloped then
+    softcut.level_slew_time(i+1,1.0)
+    softcut.level(i+1,pad.level)
+    softcut.level_cut_cut(i+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+    softcut.level_cut_cut(i+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+  end
+end
+
+function zilchmos.sc.play_toggle( pad, i, p )
+  --FIXME need p -> put it into the pad table? -> or refactor cheat?
+  if pad.pause then
+    softcut.level(i+1, 0.0)
+    softcut.rate(i+1, 0.0)
+  else
+    if pad.enveloped then
+      cheat(i,p)
+    else
+      softcut.level(i+1, pad.level)
+    end
+    softcut.rate(i+1, pad.rate * pad.offset)
+  end
+end
+
+function zilchmos.sc.pan( pad, i )
+  softcut.pan(i+1,pad.pan)
+end
+
+function zilchmos.sc.start( pad, i )
+  softcut.loop_start(i+1,pad.start_point)
+end
+
+function zilchmos.sc.start_end( pad, i )
+  softcut.loop_start(i+1,pad.start_point)
+  softcut.loop_end(i+1,pad.end_point)
+end
+
+function zilchmos.sc._end( pad, i )
+  softcut.loop_end(i+1,pad.end_point)
+end
+
+function zilchmos.sc.rate( pad, i )
+  if pad.pause == false then
+    softcut.rate(i+1, pad.rate*pad.offset)
+  end
+end
+
+function zilchmos.sc.sync( pad, i )
+  zilchmos.sc.start_end( pad, i )
+  softcut.position(i+1, pad.start_point )
+end
+
+function zilchmos.sc.cheat( pad, i, p )
+  --FIXME needs p -> refactor cheat?
+  if pad.loop and not pad.enveloped then
+    cheat(i,p)
+  end
+end
+
 
 return zilchmos
