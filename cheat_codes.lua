@@ -601,10 +601,10 @@ key1_hold = false
 
 clipboard = {}
 
-local beatclock = include "lib/beatclock-crow"
-clk = beatclock.new()
-clk_midi = midi.connect()
-clk_midi.event = function(data) clk:process_midi(data) end
+--local beatclock = include "lib/beatclock-crow"
+--clk = beatclock.new()
+--clk_midi = midi.connect()
+--clk_midi.event = function(data) clk:process_midi(data) end
 
 grid.alt = 0
 grid.alt_pp = 0
@@ -763,13 +763,17 @@ function init()
     end
   end
   
+  --[[
   clk.on_step = function()
     if menu == 7 then
       redraw()
     end
   end
+  --]]
   
-  clk:add_clock_params()
+  --clk:add_clock_params()
+
+  params:add_number("bpm", "bpm", 1, 480,80)
   
   params:add_group("hidden [timing]",6)
   params:hide(49)
@@ -791,7 +795,7 @@ function init()
 
   params:default()
 
-  clk:start()
+  --clk:start()
   
   grid_page = 0
   
@@ -1335,6 +1339,20 @@ local tap = 0
 local deltatap = 1
 
 function update_tempo()
+
+  params:set("bpm", util.round(clock.get_tempo()))
+  bpm = params:get("bpm")
+  local t = params:get("bpm")
+  local d = params:get("quant_div")
+  local d_pat = params:get("quant_div_pats")
+  local interval = (60/t) / d
+  local interval_pats = (60/t) / d_pat
+  for i = 1,3 do
+    --quantizer[i].time = interval
+    --grid_pat_quantizer[i].time = interval_pats
+  end
+
+  --[[
   if params:get("clock") == 1 then
     --INTERNAL
     params:set("bpm", util.round(clock.get_tempo()))
@@ -1351,6 +1369,7 @@ function update_tempo()
   else
     bpm = params:get("bpm")
   end
+  --]]
 end
 
 --[[
@@ -2394,7 +2413,8 @@ function savestate()
   io.write(params:get("crow_clock_out") .. "\n")
   io.write(params:get("midi_device") .. "\n")
   io.write(params:get("loop_enc_resolution") .."\n")
-  io.write(params:get("clock") .. "\n")
+  --io.write(params:get("clock") .. "\n")
+  io.write("0".."\n")
   io.write(params:get("lock_pat") .. "\n")
   for i = 1,3 do
     io.write(bank[i].crow_execute .. "\n")

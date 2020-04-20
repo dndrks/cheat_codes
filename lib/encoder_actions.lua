@@ -237,22 +237,7 @@ function encoder_actions.init(n,d)
         params:delta("delay R: global level",d)
       end
     elseif menu == 7 then
-      if page.time_sel == 1 then
-        if page.time_page_sel[page.time_sel] == 1 then
-          params:delta("bpm",d)
-        elseif page.time_page_sel[page.time_sel] == 2 then
-          params:delta("clock",d)
-          for i = 1,3 do
-            grid_pat[i]:rec_stop()
-            grid_pat[i]:stop()
-            --grid_pat[i].external_start = 0
-            grid_pat[i].tightened_start = 0
-            pattern_saver[i].load_slot = 0
-          end
-        elseif page.time_page_sel[page.time_sel] == 3 then
-          params:delta("crow_clock_out",d)
-        end
-      elseif page.time_sel <= 4 then
+      if page.time_sel <= 4 then
         if page.time_page_sel[page.time_sel] == 3 then
           bank[page.time_sel-1].crow_execute = util.clamp(bank[page.time_sel-1].crow_execute+d,0,1)
         elseif page.time_page_sel[page.time_sel] == 1 then
