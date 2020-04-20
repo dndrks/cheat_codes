@@ -109,15 +109,6 @@ quantize_events = {}
 for i = 1,3 do
   quantize_events[i] = {}
 end
-quantizer = {}
-for i = 1,3 do
-  quantizer[i] = {}
-  quantizer[i] = metro.init()
-  quantizer[i].time = 0.25
-  quantizer[i].count = -1
-  quantizer[i].event = function() cheat_q_clock(i) end
-  quantizer[i]:start()
-end
 
 grid_pat_quantize = 1
 grid_pat_quantize_events = {}
@@ -138,7 +129,7 @@ for i = 1,3 do
 end
 --]]
 
-function cheat_q_clock(i)
+function cheat_clock_synced(i)
   if #quantize_events[i] > 0 then
     for k,e in pairs(quantize_events[i]) do
       cheat(i,e)
@@ -977,11 +968,21 @@ function init()
   crow_init()
   
   task_id = clock.run(globally_clocked)
+  pad_press_quant = clock.run(pad_clock)
   
   if params:string("clock_source") == "internal" then
     clock.internal.start(bpm)
   end
 
+end
+
+function pad_clock()
+  while true do
+    clock.sync(1)
+    for i = 1,3 do
+      cheat_clock_synced(i)
+    end
+  end
 end
 
 function globally_clocked()
@@ -1344,7 +1345,7 @@ function update_tempo()
     local interval = (60/t) / d
     local interval_pats = (60/t) / d_pat
     for i = 1,3 do
-      quantizer[i].time = interval
+      --quantizer[i].time = interval
       --grid_pat_quantizer[i].time = interval_pats
     end
   else
@@ -1409,6 +1410,8 @@ function reset_all_banks()
     bank[i].random_mode = 3
     bank[i].crow_execute = 1
     bank[i].snap_to_bars = 1
+    bank[i].quantize_press = 0
+    bank[i].quantize_press_time = 1
     for k = 1,16 do
       bank[i][k] = {}
       bank[i][k].clip = 1

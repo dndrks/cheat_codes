@@ -27,7 +27,7 @@ function grid_actions.init(x,y,z)
               help_menu = "banks"
             end
             clipboard = {}
-            if quantize == 0 then
+            if bank[i].quantize_press == 0 then
               cheat(i, bank[i].id)
               grid_p[i] = {}
               grid_p[i].action = "pads"
