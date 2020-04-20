@@ -2,102 +2,104 @@ arc_actions = {}
 
 function arc_actions.init(n,d)
   --if n == 4 then n = 1 end
+  local this_bank = bank[arc_control[n]]
   if n < 4 then
-    if bank[arc_control[n]].focus_hold == 0 then
-      which_pad = bank[arc_control[n]].id
-    elseif bank[arc_control[n]].focus_hold == 1 then
-      which_pad = bank[arc_control[n]].focus_pad
+    if this_bank.focus_hold == 0 then
+      which_pad = this_bank.id
+    elseif this_bank.focus_hold == 1 then
+      which_pad = this_bank.focus_pad
     end
+    local this_pad = this_bank[which_pad]
     if arc_param[n] == 1 then
       if grid.alt == 0 then
-        local current_difference = (bank[arc_control[n]][which_pad].end_point - bank[arc_control[n]][which_pad].start_point)
-        if bank[arc_control[n]][which_pad].start_point + current_difference <= (9+(8*(bank[arc_control[n]][which_pad].clip-1))) then
-          bank[arc_control[n]][which_pad].start_point = util.clamp(bank[arc_control[n]][which_pad].start_point + d/80,(1+(8*(bank[arc_control[n]][which_pad].clip-1))),(9+(8*(bank[arc_control[n]][which_pad].clip-1))))
-          bank[arc_control[n]][which_pad].end_point = bank[arc_control[n]][which_pad].start_point + current_difference
+        local current_difference = (this_pad.end_point - this_pad.start_point)
+        if this_pad.start_point + current_difference <= (9+(8*(this_pad.clip-1))) then
+          this_pad.start_point = util.clamp(this_pad.start_point + d/80,(1+(8*(this_pad.clip-1))),(9+(8*(this_pad.clip-1))))
+          this_pad.end_point = this_pad.start_point + current_difference
         else
-          bank[arc_control[n]][which_pad].end_point = (9+(8*(bank[arc_control[n]][which_pad].clip-1)))
-          bank[arc_control[n]][which_pad].start_point = bank[arc_control[n]][which_pad].end_point - current_difference
+          this_pad.end_point = (9+(8*(this_pad.clip-1)))
+          this_pad.start_point = this_pad.end_point - current_difference
         end
       else
         for j = 1,16 do
-          local current_difference = (bank[arc_control[n]][j].end_point - bank[arc_control[n]][j].start_point)
-          if bank[arc_control[n]][j].start_point + current_difference <= (9+(8*(bank[arc_control[n]][j].clip-1))) then
-            bank[arc_control[n]][j].start_point = util.clamp(bank[arc_control[n]][j].start_point + d/80,(1+(8*(bank[arc_control[n]][j].clip-1))),(9+(8*(bank[arc_control[n]][j].clip-1))))
-            bank[arc_control[n]][j].end_point = bank[arc_control[n]][j].start_point + current_difference
+          local current_difference = (this_bank[j].end_point - this_bank[j].start_point)
+          if this_bank[j].start_point + current_difference <= (9+(8*(this_bank[j].clip-1))) then
+            this_bank[j].start_point = util.clamp(this_bank[j].start_point + d/80,(1+(8*(this_bank[j].clip-1))),(9+(8*(this_bank[j].clip-1))))
+            this_bank[j].end_point = this_bank[j].start_point + current_difference
           else
-            bank[arc_control[n]][j].end_point = (9+(8*(bank[arc_control[n]][j].clip-1)))
-            bank[arc_control[n]][j].start_point = bank[arc_control[n]][j].end_point - current_difference
+            this_bank[j].end_point = (9+(8*(this_bank[j].clip-1)))
+            this_bank[j].start_point = this_bank[j].end_point - current_difference
           end
         end
       end
-      if bank[arc_control[n]].focus_hold == 0 or bank[arc_control[n]].focus_pad == bank[arc_control[n]].id then
-      --if bank[arc_control[n]].focus_hold == 0 then
-        softcut.loop_start(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].start_point)
-        softcut.loop_end(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].end_point)
+      if this_bank.focus_hold == 0 or this_bank.focus_pad == this_bank.id then
+      --if this_bank.focus_hold == 0 then
+        softcut.loop_start(arc_control[n]+1,this_bank[this_bank.id].start_point)
+        softcut.loop_end(arc_control[n]+1,this_bank[this_bank.id].end_point)
       end
     elseif arc_param[n] == 2 then
       if grid.alt == 0 then
-        if bank[arc_control[n]][which_pad].start_point < (bank[arc_control[n]][which_pad].end_point - d/80) then
-          bank[arc_control[n]][which_pad].start_point = util.clamp(bank[arc_control[n]][which_pad].start_point + d/80,(1+(8*(bank[arc_control[n]][which_pad].clip-1))),(9+(8*(bank[arc_control[n]][which_pad].clip-1))))
+        if this_pad.start_point < (this_pad.end_point - d/80) then
+          this_pad.start_point = util.clamp(this_pad.start_point + d/80,(1+(8*(this_pad.clip-1))),(9+(8*(this_pad.clip-1))))
         end
       else
         for j = 1,16 do
-          bank[arc_control[n]][j].start_point = util.clamp(bank[arc_control[n]][j].start_point + d/80,(1+(8*(bank[arc_control[n]][j].clip-1))),(9+(8*(bank[arc_control[n]][j].clip-1))))
+          this_bank[j].start_point = util.clamp(this_bank[j].start_point + d/80,(1+(8*(this_bank[j].clip-1))),(9+(8*(this_bank[j].clip-1))))
         end
       end
-      --if bank[arc_control[n]].focus_hold == 0 then
-      if bank[arc_control[n]].focus_hold == 0 or bank[arc_control[n]].focus_pad == bank[arc_control[n]].id then
-        softcut.loop_start(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].start_point)
+      --if this_bank.focus_hold == 0 then
+      if this_bank.focus_hold == 0 or this_bank.focus_pad == this_bank.id then
+        softcut.loop_start(arc_control[n]+1,this_bank[this_bank.id].start_point)
       end
     elseif arc_param[n] == 3 then
       if grid.alt == 0 then
-        bank[arc_control[n]][which_pad].end_point = util.clamp(bank[arc_control[n]][which_pad].end_point + d/80,(1+(8*(bank[arc_control[n]][which_pad].clip-1))),(9+(8*(bank[arc_control[n]][which_pad].clip-1))))
+        this_pad.end_point = util.clamp(this_pad.end_point + d/80,(1+(8*(this_pad.clip-1))),(9+(8*(this_pad.clip-1))))
       else
         for j = 1,16 do
-          bank[arc_control[n]][j].end_point = util.clamp(bank[arc_control[n]][j].end_point + d/80,(1+(8*(bank[arc_control[n]][j].clip-1))),(9+(8*(bank[arc_control[n]][j].clip-1))))
+          this_bank[j].end_point = util.clamp(this_bank[j].end_point + d/80,(1+(8*(this_bank[j].clip-1))),(9+(8*(this_bank[j].clip-1))))
         end
       end
-      --if bank[arc_control[n]].focus_hold == 0 then
-      if bank[arc_control[n]].focus_hold == 0 or bank[arc_control[n]].focus_pad == bank[arc_control[n]].id then
-        softcut.loop_end(arc_control[n]+1,bank[arc_control[n]][bank[arc_control[n]].id].end_point)
+      --if this_bank.focus_hold == 0 then
+      if this_bank.focus_hold == 0 or this_bank.focus_pad == this_bank.id then
+        softcut.loop_end(arc_control[n]+1,this_bank[this_bank.id].end_point)
       end
     elseif arc_param[n] == 4 then
       local a_c = arc_control[n]
       if key1_hold or grid.alt == 1 then
         if slew_counter[a_c] ~= nil then
-          slew_counter[a_c].prev_tilt = bank[a_c][which_pad].tilt
+          slew_counter[a_c].prev_tilt = this_pad.tilt
         end
-        bank[a_c][which_pad].tilt = util.explin(1,3,-1,1,bank[a_c][which_pad].tilt+2)
-        bank[a_c][which_pad].tilt = util.clamp(bank[a_c][which_pad].tilt+(d/1000),-1,1)
-        bank[a_c][which_pad].tilt = util.linexp(-1,1,1,3,bank[a_c][which_pad].tilt)-2
+        this_pad.tilt = util.explin(1,3,-1,1,this_pad.tilt+2)
+        this_pad.tilt = util.clamp(this_pad.tilt+(d/1000),-1,1)
+        this_pad.tilt = util.linexp(-1,1,1,3,this_pad.tilt)-2
         if d < 0 then
-          if util.round(bank[a_c][which_pad].tilt*100) < 0 and util.round(bank[a_c][which_pad].tilt*100) > -9 then
-            bank[a_c][which_pad].tilt = -0.10
-          elseif util.round(bank[a_c][which_pad].tilt*100) > 0 and util.round(bank[a_c][which_pad].tilt*100) < 3 then
-            bank[a_c][which_pad].tilt = 0.0
+          if util.round(this_pad.tilt*100) < 0 and util.round(this_pad.tilt*100) > -9 then
+            this_pad.tilt = -0.10
+          elseif util.round(this_pad.tilt*100) > 0 and util.round(this_pad.tilt*100) < 3 then
+            this_pad.tilt = 0.0
           end
         end
-        --if bank[arc_control[n]].focus_hold == 0 then
-        if bank[arc_control[n]].focus_hold == 0 or bank[arc_control[n]].focus_pad == bank[arc_control[n]].id then
-          slew_filter(a_c,slew_counter[a_c].prev_tilt,bank[a_c][bank[a_c].id].tilt,bank[a_c][bank[a_c].id].q,bank[a_c][bank[a_c].id].q,15)
+        --if this_bank.focus_hold == 0 then
+        if this_bank.focus_hold == 0 or this_bank.focus_pad == this_bank.id then
+          slew_filter(a_c,slew_counter[a_c].prev_tilt,this_bank[this_bank.id].tilt,this_bank[this_bank.id].q,this_bank[this_bank.id].q,15)
         end
       else
         if slew_counter[a_c] ~= nil then
-          slew_counter[a_c].prev_tilt = bank[a_c][bank[a_c].id].tilt
+          slew_counter[a_c].prev_tilt = this_bank[this_bank.id].tilt
         end
         for j = 1,16 do
-          bank[a_c][j].tilt = util.explin(1,3,-1,1,bank[a_c][j].tilt+2)
-          bank[a_c][j].tilt = util.clamp(bank[a_c][j].tilt+(d/1000),-1,1)
-          bank[a_c][j].tilt = util.linexp(-1,1,1,3,bank[a_c][j].tilt)-2
+          this_bank[j].tilt = util.explin(1,3,-1,1,this_bank[j].tilt+2)
+          this_bank[j].tilt = util.clamp(this_bank[j].tilt+(d/1000),-1,1)
+          this_bank[j].tilt = util.linexp(-1,1,1,3,this_bank[j].tilt)-2
           if d < 0 then
-            if util.round(bank[a_c][j].tilt*100) < -1 and util.round(bank[a_c][j].tilt*100) > -9 then
-              bank[a_c][j].tilt = -0.10
-            elseif util.round(bank[a_c][j].tilt*100) > 0 and util.round(bank[a_c][j].tilt*100) < 3 then
-              bank[a_c][j].tilt = 0.0
+            if util.round(this_bank[j].tilt*100) < -1 and util.round(this_bank[j].tilt*100) > -9 then
+              this_bank[j].tilt = -0.10
+            elseif util.round(this_bank[j].tilt*100) > 0 and util.round(this_bank[j].tilt*100) < 3 then
+              this_bank[j].tilt = 0.0
             end
           end
         end
-        slew_filter(a_c,slew_counter[a_c].prev_tilt,bank[a_c][bank[a_c].id].tilt,bank[a_c][bank[a_c].id].q,bank[a_c][bank[a_c].id].q,15)
+        slew_filter(a_c,slew_counter[a_c].prev_tilt,this_bank[this_bank.id].tilt,this_bank[this_bank.id].q,this_bank[this_bank.id].q,15)
       end
     end
   end

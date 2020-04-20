@@ -164,8 +164,8 @@ end
 
 function set_pattern_mode(bank)
   grid_pat[bank].step = 1
-  g_p_q[bank].current_step = 1
-  g_p_q[bank].sub_step = 1
+  quantized_grid_pat[bank].current_step = 1
+  quantized_grid_pat[bank].sub_step = 1
   if grid_pat[bank].playmode == 1 then
     grid_pat[bank].quantize = 0
     grid_pat[bank].auto_snap = 0
@@ -212,37 +212,7 @@ end
 function better_grid_pat_q_clock(i)
   if grid_pat[i].rec == 1 then
     grid_pat[i]:rec_stop()
-    --[[
-    if params:get("lock_pat") == 2 and quantize == 1 then
-      sync_pattern_to_bpm(i,params:get("quant_div"))
-    elseif params:get("lock_pat") == 2 and quantize == 0 then
-      sync_pattern_to_bpm(i,params:get("quant_div"))
-    end
-    --]]
     midi_clock_linearize(i)
-    --[[
-    if not clk.externalmidi and not clk.externalcrow then
-      --grid_pat[i]:start()
-      grid_pat[i].loop = 1
-      if grid_pat[i].count > 0 then
-        grid_pat[i].tightened_start = 1
-        --snap_to_bars(i,bank[i].snap_to_bars)
-        if grid_pat[i].auto_snap == 1 then
-          print("auto-snap")
-          snap_to_bars(i,how_many_bars(i))
-        end
-        --butts = "go"
-      end
-    else
-      if grid_pat[i].count > 0 then
-        grid_pat[i].external_start = 1
-        if grid_pat[i].auto_snap == 1 then
-          print("auto-snap")
-          snap_to_bars(i,how_many_bars(i))
-        end
-      end
-    end
-    ]]--
     grid_pat[i].loop = 1
     if grid_pat[i].count > 0 then
       grid_pat[i].tightened_start = 1
@@ -255,121 +225,15 @@ function better_grid_pat_q_clock(i)
     grid_pat[i]:rec_start()
   elseif grid_pat[i].play == 1 then
     grid_pat[i]:stop()
-  elseif grid_pat[i].external_start == 1 then
-    grid_pat[i].external_start = 0
-    grid_pat[i].step = 1
-    g_p_q[i].current_step = 1
-    g_p_q[i].sub_step = 1
   elseif grid_pat[i].tightened_start == 1 then
     grid_pat[i].tightened_start = 0
     grid_pat[i].step = 1
-    g_p_q[i].current_step = 1
-    g_p_q[i].sub_step = 1
+    quantized_grid_pat[i].current_step = 1
+    quantized_grid_pat[i].sub_step = 1
   else
-    --[[
-    if not clk.externalmidi and not clk.externalcrow then
-      grid_pat[i].tightened_start = 1
-    else
-      grid_pat[i].external_start = 1
-    end
-    ]]--
     grid_pat[i].tightened_start = 1
   end
 end
-
---[[
-function grid_pat_q_clock(i)
-  if #grid_pat_quantize_events[i] > 0 then
-    for k,e in pairs(grid_pat_quantize_events[i]) do
-      if grid.alt == 1 then
-        grid_pat[i]:rec_stop()
-        grid_pat[i]:stop()
-        grid_pat[i].external_start = 0
-        grid_pat[i]:clear()
-      elseif grid_pat[i].rec == 1 then
-        grid_pat[i]:rec_stop()
-        if params:get("lock_pat") == 2 and quantize == 1 then
-          sync_pattern_to_bpm(i,params:get("quant_div"))
-        elseif params:get("lock_pat") == 2 and quantize == 0 then
-          sync_pattern_to_bpm(i,4)
-        end
-        midi_clock_linearize(i)
-        if not clk.externalmidi and not clk.externalcrow then
-          grid_pat[i]:start()
-        else
-          if grid_pat[i].count > 0 then
-            grid_pat[i].external_start = 1
-          end
-        end
-      elseif grid_pat[i].count == 0 then
-        grid_pat[i]:rec_start()
-      elseif grid_pat[i].play == 1 then
-        grid_pat[i]:stop()
-      elseif grid_pat[i].external_start == 1 then
-        grid_pat[i].external_start = 0
-        grid_pat[i].step = 1
-        g_p_q[i].current_step = 1
-        g_p_q[i].sub_step = 1
-      else
-        if not clk.externalmidi and not clk.externalcrow then
-          grid_pat[i]:start()
-        else
-          grid_pat[i].external_start = 1
-        end
-      end
-    end
-    grid_pat_quantize_events[i] = {}
-  end
-end
---]]
-
---[[ -- this can be removed!
-function linearize_grid_pat(bank, mode, resolution)
-  if mode == "small" then
-    for k = 1,grid_pat[bank].count do
-        grid_pat[bank].time[k] = quantizer[bank].time * math.floor((grid_pat[bank].time[k] / quantizer[bank].time) + 0.5)
-    end
-  elseif mode == "quantize" then
-    local quarter_note = 60 / bpm
-    local eighth_note = (60 / bpm)/2
-    local eighth_triplet_note = (60 / bpm) / 3
-    local sixteenth_note = (60 / bpm) / 4
-    local thirtysecond_note = (60 / bpm) / 8
-    local resolutions = {quarter_note, eighth_note, eighth_triplet_note, sixteenth_note, thirtysecond_note}
-    for k = 1,grid_pat[bank].count do
-      grid_pat[bank].time[k] = resolutions[resolution] * math.floor((grid_pat[bank].time[k] / resolutions[resolution]) + 0.5)
-      if grid_pat[bank].time[k] == 0 then
-        if quantize == 1 then
-          grid_pat[bank].time[k] = 0
-        elseif quantize == 0 then
-          grid_pat[bank].time[k] = resolutions[resolution]
-        end
-      end
-    end
-  end
-end
---]]
-
---[[ -- i think this can be removed!
-function sync_pattern_to_bpm(bank, resolution)
-  if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
-    local total_time = 0
-    synced_to_bpm = bpm
-    for i = 1,#grid_pat[bank].event do
-      total_time = total_time + grid_pat[bank].time[i]
-    end
-    print("before total: "..total_time)
-    old_pat_time = table.clone(grid_pat[bank].time)
-    linearize_grid_pat(bank, "quantize", resolution)
-    total_time = 0
-    for i = 1,#grid_pat[bank].event do
-      total_time = total_time + grid_pat[bank].time[i]
-    end
-    print("after total: "..total_time)
-    midi_clock_linearize(bank)
-  end
-end
---]]
 
 function snap_to_bars(bank,bar_count)
   if grid_pat[bank].rec == 0 and grid_pat[bank].count > 0 then 
@@ -458,7 +322,6 @@ function random_grid_pat(which,mode)
     if grid_pat[which].count > 0 then
       grid_pat[which]:rec_stop()
       grid_pat[which]:stop()
-      grid_pat[which].external_start = 0
       grid_pat[which].tightened_start = 0
       grid_pat[which]:clear()
       pattern_saver[which].load_slot = 0
@@ -483,10 +346,6 @@ function random_grid_pat(which,mode)
       end
       grid_pat[which].event[i].action = "pads"
       grid_pat[which].event[i].i = which
-      --grid_pat[bank].event[i].previous_rate = original_pattern[source].event[i].previous_rate
-      --grid_pat[bank].event[i].row = original_pattern[source].event[i].row
-      --grid_pat[bank].event[i].con = original_pattern[source].event[i].con
-      --grid_pat[which].event[i].bank = bank
       grid_pat[which].time[i] = (60/bpm) / math.pow(2,math.random(-2,2))
     end
     grid_pat[which].count = count
@@ -498,22 +357,6 @@ function random_grid_pat(which,mode)
   end
   midi_clock_linearize(which)
   if grid_pat[which].quantize == 0 then
-    --[[
-    if not clk.externalmidi and not clk.externalcrow then
-      if grid_pat[which].auto_snap == 1 then
-        print("auto-snap")
-        snap_to_bars(which,how_many_bars(which))
-      end
-      grid_pat[which]:start()
-      grid_pat[which].loop = 1
-    else
-      grid_pat[which].external_start = 1
-      if grid_pat[which].auto_snap == 1 then
-        print("auto-snap")
-        snap_to_bars(which,how_many_bars(which))
-      end
-    end
-    --]]
     if grid_pat[which].auto_snap == 1 then
       print("auto-snap")
       snap_to_bars(which,how_many_bars(which))
@@ -521,26 +364,6 @@ function random_grid_pat(which,mode)
     grid_pat[which]:start()
     grid_pat[which].loop = 1
   else
-    --[[
-    if not clk.externalmidi and not clk.externalcrow then
-      grid_pat[which].loop = 1
-      if grid_pat[which].count > 0 then
-        grid_pat[which].tightened_start = 1
-        if grid_pat[which].auto_snap == 1 then
-          print("auto-snap")
-          snap_to_bars(which,how_many_bars(which))
-        end
-      end
-    else
-      if grid_pat[which].count > 0 then
-        grid_pat[which].external_start = 1
-        if grid_pat[which].auto_snap == 1 then
-          print("auto-snap")
-          snap_to_bars(which,how_many_bars(which))
-        end
-      end
-    end
-    --]]
     grid_pat[which].loop = 1
     if grid_pat[which].count > 0 then
       grid_pat[which].tightened_start = 1
@@ -553,73 +376,71 @@ function random_grid_pat(which,mode)
 end
 
 function print_my_g_p_q(bank)
-  for i = #g_p_q[bank].event,1,-1 do
+  for i = #quantized_grid_pat[bank].event,1,-1 do
     print(i)
-    tab.print(g_p_q[bank].event[i])
+    tab.print(quantized_grid_pat[bank].event[i])
   end
 end
 
 function snap_to_bars_midi(bank,bar_count)
   local entry_count = 0
   local target_entry_count = bar_count*16
-  for i = 1,#g_p_q[bank].event do
-    entry_count = entry_count + #g_p_q[bank].event[i]
+  for i = 1,#quantized_grid_pat[bank].event do
+    entry_count = entry_count + #quantized_grid_pat[bank].event[i]
   end
   print("before trimming midi event count: "..entry_count)
   if entry_count < target_entry_count then
     for i = 1,target_entry_count-entry_count do
-      table.insert(g_p_q[bank].event[#g_p_q[bank].event],"nothing")
+      table.insert(quantized_grid_pat[bank].event[#quantized_grid_pat[bank].event],"nothing")
     end
   elseif entry_count > target_entry_count then
     --print("subtracting...")
-    local last_event = #g_p_q[bank].event
-    local last_group = #g_p_q[bank].event
+    local last_event = #quantized_grid_pat[bank].event
+    local last_group = #quantized_grid_pat[bank].event
     --print("last event: "..last_event)
     local distance_count = entry_count - target_entry_count
     print("removing "..distance_count.." event")
     local current_count = 0
     
-    --print_my_g_p_q(bank)
-    
     while current_count < distance_count do
       if last_group > 0 then
-        if #g_p_q[bank].event[last_group] > 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "nothing" then
-          local check_table = #g_p_q[bank].event
-          --print("removing: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]].." from group "..last_group..", entry "..#g_p_q[bank].event[last_group])
-          table.remove(g_p_q[bank].event[last_group])
+        if #quantized_grid_pat[bank].event[last_group] > 1 and quantized_grid_pat[bank].event[last_group][#quantized_grid_pat[bank].event[last_group]] == "nothing" then
+          local check_table = #quantized_grid_pat[bank].event
+          --print("removing: "..quantized_grid_pat[bank].event[last_group][#quantized_grid_pat[bank].event[last_group]].." from group "..last_group..", entry "..#quantized_grid_pat[bank].event[last_group])
+          table.remove(quantized_grid_pat[bank].event[last_group])
           current_count = current_count + 1
           if current_count == distance_count then print("done now!") break end
           --print("current count :" .. current_count)
-        elseif #g_p_q[bank].event[last_group] == 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "something" then
-          --print("skipping: "..g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]].." from group "..last_group..", entry "..#g_p_q[bank].event[last_group])
+        elseif #quantized_grid_pat[bank].event[last_group] == 1 and quantized_grid_pat[bank].event[last_group][#quantized_grid_pat[bank].event[last_group]] == "something" then
+          --print("skipping: "..quantized_grid_pat[bank].event[last_group][#quantized_grid_pat[bank].event[last_group]].." from group "..last_group..", entry "..#quantized_grid_pat[bank].event[last_group])
           last_group = last_group - 1
-        elseif #g_p_q[bank].event[last_group] == 1 and g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == "nothing" then
+        elseif #quantized_grid_pat[bank].event[last_group] == 1 and quantized_grid_pat[bank].event[last_group][#quantized_grid_pat[bank].event[last_group]] == "nothing" then
           --print("there's only nothing in group "..last_group..", but removing it")
-          table.remove(g_p_q[bank].event[last_group])
+          table.remove(quantized_grid_pat[bank].event[last_group])
           print_my_g_p_q(1)
           current_count = current_count + 1
           if current_count == distance_count then print("done now!") break end
           --print("current count :" .. current_count)
           last_group = last_group - 1
-        elseif g_p_q[bank].event[last_group][#g_p_q[bank].event[last_group]] == nil then
+        elseif quantized_grid_pat[bank].event[last_group][#quantized_grid_pat[bank].event[last_group]] == nil then
           --print("A NIL IN"..last_group)
-          table.remove(g_p_q[bank].event,last_group)
+          table.remove(quantized_grid_pat[bank].event,last_group)
           last_group = last_group - 1
           --break
         end
       elseif last_group == 0 then
         --print("still got some left!!!: "..current_count.." / "..distance_count)
-        table.remove(g_p_q[bank].event)
+        table.remove(quantized_grid_pat[bank].event)
         current_count = current_count + 1
       end
     end
-    g_p_q[bank].current_step = 1
-    g_p_q[bank].sub_step = 1
+    quantized_grid_pat[bank].current_step = 1
+    quantized_grid_pat[bank].sub_step = 1
   end
   
   local entry_count = 0
-  for i = 1,#g_p_q[bank].event do
-    entry_count = entry_count + #g_p_q[bank].event[i]
+  for i = 1,#quantized_grid_pat[bank].event do
+    entry_count = entry_count + #quantized_grid_pat[bank].event[i]
   end
   print("after trimming midi event count: "..entry_count)
   if entry_count ~= target_entry_count then
@@ -639,17 +460,17 @@ function save_external_timing(bank,slot)
   io.output(file)
   io.write("external clock timing for stored pad pattern: collection "..selected_coll.." + slot "..slot.."\n")
   local total_entry_count = 0
-  local number_of_events = #g_p_q[bank].event
+  local number_of_events = #quantized_grid_pat[bank].event
   for i = 1,number_of_events do
-    total_entry_count = total_entry_count + #g_p_q[bank].event[i]
+    total_entry_count = total_entry_count + #quantized_grid_pat[bank].event[i]
   end
   io.write(total_entry_count.."\n")
   io.write(number_of_events.."\n")
   for i = 1,number_of_events do
     io.write("event: "..i.."\n")
-    io.write("total entries: "..#g_p_q[bank].event[i].."\n")
-    for j = 1,#g_p_q[bank].event[i] do
-      io.write(g_p_q[bank].event[i][j].."\n")
+    io.write("total entries: "..#quantized_grid_pat[bank].event[i].."\n")
+    for j = 1,#quantized_grid_pat[bank].event[i] do
+      io.write(quantized_grid_pat[bank].event[i][j].."\n")
     end
   end
   io.close(file)
@@ -661,15 +482,15 @@ function load_external_timing(bank,slot)
   if file then
     io.input(file)
     if io.read() == "external clock timing for stored pad pattern: collection "..selected_coll.." + slot "..slot then
-      g_p_q[bank].event = {}
+      quantized_grid_pat[bank].event = {}
       local total_entry_count = tonumber(io.read())
       local number_of_events = tonumber(io.read())
       for i = 1,number_of_events do
         local event_id = tonumber(string.match(io.read(), '%d+'))
         local entry_count = tonumber(string.match(io.read(), '%d+'))
-        g_p_q[bank].event[i] = {}
+        quantized_grid_pat[bank].event[i] = {}
         for j = 1,entry_count do
-          g_p_q[bank].event[i][j] = io.read()
+          quantized_grid_pat[bank].event[i][j] = io.read()
         end
       end
     end
@@ -704,7 +525,6 @@ function copy_entire_pattern(bank)
     original_pattern[bank].event[i].previous_rate = {}
     original_pattern[bank].event[i].row = {}
     original_pattern[bank].event[i].con = {}
-    --original_pattern[bank].event[i].bank = {}
     original_pattern[bank].event[i].bank = nil
   end
   for i = 1,#grid_pat[bank].event do
@@ -746,46 +566,25 @@ function table.clone(org)
   return {table.unpack(org)}
 end
 
---[[
-function es_linearize(bank,mode)
-  -- modes: standard linearization, quarter, eighth, eighth triplet, sixteenth, random
-  if #grid_pat[bank].event > 1 then
-    if mode <= 5 then
-      local modes = {grid_pat[bank].time[1], 60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
-      for k = 1,#grid_pat[bank].event do
-        grid_pat[bank].time[k] = modes[mode]
-        --print(modes[mode])
-      end
-    else
-      local modes = {60/bpm, (60 / bpm) / 2, (60 / bpm) / 3, (60 / bpm) / 4}
-      for k = 1,#grid_pat[bank].event do
-        grid_pat[bank].time[k] = modes[math.random(4)]
-        --print(modes[mode])
-      end
-    end
-  end
-end
---]]
-
 function midi_clock_linearize(bank)
-  g_p_q[bank].event = {}
+  quantized_grid_pat[bank].event = {}
   for i = 1,grid_pat[bank].count do
-    g_p_q[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / ((60/bpm)/4))+0.5)
-    g_p_q[bank].event[i] = {} -- critical
-    if grid_pat[bank].time[i] == 0 or g_p_q[bank].clicks[i] == 0 then
-      g_p_q[bank].event[i][1] = "nothing"
+    quantized_grid_pat[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / ((60/bpm)/4))+0.5)
+    quantized_grid_pat[bank].event[i] = {} -- critical
+    if grid_pat[bank].time[i] == 0 or quantized_grid_pat[bank].clicks[i] == 0 then
+      quantized_grid_pat[bank].event[i][1] = "nothing"
     else
-      for j = 1,g_p_q[bank].clicks[i] do
+      for j = 1,quantized_grid_pat[bank].clicks[i] do
         if j == 1 then
-          g_p_q[bank].event[i][1] = "something"
+          quantized_grid_pat[bank].event[i][1] = "something"
         else
-          g_p_q[bank].event[i][j] = "nothing"
+          quantized_grid_pat[bank].event[i][j] = "nothing"
         end
       end
     end
   end
-  g_p_q[bank].current_step = 1
-  g_p_q[bank].sub_step = 1
+  quantized_grid_pat[bank].current_step = 1
+  quantized_grid_pat[bank].sub_step = 1
 end
 
 function pattern_timing_to_clock_resolution(i)
@@ -853,15 +652,10 @@ function init()
   
   params:add_group("collections",4)
   
-  --start_up.init()
-  
   params:add_number("collection", "collection", 1,100,1)
   params:add{type = "trigger", id = "load", name = "load", action = loadstate}
   params:add_option("collect_live","collect Live buffers?",{"no","yes"})
-  --params:set_action("collection", function (x) selected_coll = x end)
   params:add{type = "trigger", id = "save", name = "save", action = savestate}
-  
-  --params:add_separator("clocking")
   
   menu = 1
   
@@ -887,20 +681,19 @@ function init()
   for i = 1,3 do
     grid_pat[i] = pattern_time.new()
     grid_pat[i].process = grid_pattern_execute
-    grid_pat[i].external_start = 0
     grid_pat[i].tightened_start = 0
     grid_pat[i].auto_snap = 0
     grid_pat[i].quantize = 0
     grid_pat[i].playmode = 1
   end
   
-  g_p_q = {}
+  quantized_grid_pat = {}
   for i = 1,3 do
-    g_p_q[i] = {}
-    g_p_q[i].clicks = {}
-    g_p_q[i].event = {}
-    g_p_q[i].sub_step = 1
-    g_p_q[i].current_step = 1
+    quantized_grid_pat[i] = {}
+    quantized_grid_pat[i].clicks = {}
+    quantized_grid_pat[i].event = {}
+    quantized_grid_pat[i].sub_step = 1
+    quantized_grid_pat[i].current_step = 1
   end
   
   step_seq = {}
@@ -929,53 +722,53 @@ function init()
   end
   
   function internal_clocking_tightened(bank)
-    local current = g_p_q[bank].current_step
-    local sub_step = g_p_q[bank].sub_step
+    local current = quantized_grid_pat[bank].current_step
+    local sub_step = quantized_grid_pat[bank].sub_step
     if grid_pat[bank].tightened_start == 1 and grid_pat[bank].count > 0 then
-      if g_p_q[bank].event[current][sub_step] == "something" then
+      if quantized_grid_pat[bank].event[current][sub_step] == "something" then
         --print(current, sub_step, "+++")
         if grid_pat[bank].step == 0 then
           grid_pat[bank].step = 1
         end
-        if g_p_q[bank].current_step == 0 then
-          g_p_q[bank].current_step = 1
+        if quantized_grid_pat[bank].current_step == 0 then
+          quantized_grid_pat[bank].current_step = 1
         end
-        grid_pattern_execute(grid_pat[bank].event[g_p_q[bank].current_step])
-      elseif g_p_q[bank].event[current][sub_step] == "nothing" then
+        grid_pattern_execute(grid_pat[bank].event[quantized_grid_pat[bank].current_step])
+      elseif quantized_grid_pat[bank].event[current][sub_step] == "nothing" then
         -- nothing!
         if grid_pat[bank].step == 0 then
           grid_pat[bank].step = 1
         end
-        if g_p_q[bank].current_step == 0 then
-          g_p_q[bank].current_step = 1
+        if quantized_grid_pat[bank].current_step == 0 then
+          quantized_grid_pat[bank].current_step = 1
         end
-      elseif g_p_q[bank].event[current][sub_step] == nil then
+      elseif quantized_grid_pat[bank].event[current][sub_step] == nil then
         print(current.." is nil!")
-        table.remove(g_p_q[bank].event,current)
-        g_p_q[bank].current_step = g_p_q[bank].current_step + 1
-        g_p_q[bank].sub_step = 1
+        table.remove(quantized_grid_pat[bank].event,current)
+        quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step + 1
+        quantized_grid_pat[bank].sub_step = 1
       end
       --increase sub_step now
-      --if g_p_q[bank].current_step > #g_p_q[bank].event or g_p_q[bank].current_step > #grid_pat[bank].event then
-      if g_p_q[bank].current_step > #g_p_q[bank].event then
+      --if quantized_grid_pat[bank].current_step > #quantized_grid_pat[bank].event or quantized_grid_pat[bank].current_step > #grid_pat[bank].event then
+      if quantized_grid_pat[bank].current_step > #quantized_grid_pat[bank].event then
         print("HOW DID THIS HAPPEN?")
-        g_p_q[bank].current_step = 1
+        quantized_grid_pat[bank].current_step = 1
       end
-      if g_p_q[bank].sub_step == #g_p_q[bank].event[g_p_q[bank].current_step] then
-        g_p_q[bank].sub_step = 0
+      if quantized_grid_pat[bank].sub_step == #quantized_grid_pat[bank].event[quantized_grid_pat[bank].current_step] then
+        quantized_grid_pat[bank].sub_step = 0
         --if we're at the end of the events in this step, move to the next step
         if grid_pat[bank].step == grid_pat[bank].count then
           grid_pat[bank].step = 0
-          --g_p_q[bank].current_step = 0
+          --quantized_grid_pat[bank].current_step = 0
         end
-        if g_p_q[bank].current_step == #g_p_q[bank].event then
-          g_p_q[bank].current_step = 0
+        if quantized_grid_pat[bank].current_step == #quantized_grid_pat[bank].event then
+          quantized_grid_pat[bank].current_step = 0
         end
         grid_pat[bank].step = grid_pat[bank].step + 1
-        g_p_q[bank].current_step = g_p_q[bank].current_step +1
-        --g_p_q[bank].current_step = g_p_q[bank].current_step + 1
+        quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step +1
+        --quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step + 1
       end
-      g_p_q[bank].sub_step = g_p_q[bank].sub_step + 1
+      quantized_grid_pat[bank].sub_step = quantized_grid_pat[bank].sub_step + 1
     end
   end
   
@@ -1050,8 +843,6 @@ function init()
   
   params:add{type = "trigger", id = "init_crow", name = "initialize crow", action = crow_init}
   params:add{type = "trigger", id = "clear_crow", name = "(reset/clear crow)", action = crow_flush}
-  
-  --clk:add_clock_params()
 
   bank = {}
   reset_all_banks()
@@ -1080,7 +871,6 @@ function init()
       fingers[k][i].con = {}
     end
   end
-  --counter_four= {}
   counter_four.key_up = metro.init()
   counter_four.key_up.time = 0.05
   counter_four.key_up.count = 1
@@ -1091,22 +881,17 @@ function init()
     zilchmo_p1.con = fingers[4][selected_zilchmo_bank].con
     zilchmo_p1.row = 4
     zilchmo_p1.bank = selected_zilchmo_bank
-    --zilchmo_pat[1]:watch(zilchmo_p1)
-    --try this
     grid_p[selected_zilchmo_bank] = {}
     grid_p[selected_zilchmo_bank].i = selected_zilchmo_bank
     grid_p[selected_zilchmo_bank].action = "zilchmo_4"
-    --new
     grid_p[selected_zilchmo_bank].con = fingers[4][selected_zilchmo_bank].con
     grid_p[selected_zilchmo_bank].row = 4
     grid_p[selected_zilchmo_bank].bank = selected_zilchmo_bank
-    --/new
     grid_p[selected_zilchmo_bank].id = selected[selected_zilchmo_bank].id
     grid_p[selected_zilchmo_bank].x = selected[selected_zilchmo_bank].x
     grid_p[selected_zilchmo_bank].y = selected[selected_zilchmo_bank].y
     grid_p[selected_zilchmo_bank].previous_rate = previous_rate
     grid_p[selected_zilchmo_bank].rate = previous_rate
-    --
     grid_p[selected_zilchmo_bank].start_point = bank[selected_zilchmo_bank][bank[selected_zilchmo_bank].id].start_point
     grid_p[selected_zilchmo_bank].end_point = bank[selected_zilchmo_bank][bank[selected_zilchmo_bank].id].end_point
     grid_pat[selected_zilchmo_bank]:watch(grid_p[selected_zilchmo_bank])
@@ -1129,13 +914,13 @@ function init()
   end
   counter_two.key_up:stop()
   
-  g_p_q = {}
+  quantized_grid_pat = {}
   for i = 1,3 do
-    g_p_q[i] = {}
-    g_p_q[i].clicks = {}
-    g_p_q[i].event = {}
-    g_p_q[i].sub_step = 1
-    g_p_q[i].current_step = 1
+    quantized_grid_pat[i] = {}
+    quantized_grid_pat[i].clicks = {}
+    quantized_grid_pat[i].event = {}
+    quantized_grid_pat[i].sub_step = 1
+    quantized_grid_pat[i].current_step = 1
   end
   
   arc_pat = {}
@@ -1210,7 +995,6 @@ function globally_clocked()
     grid_redraw()
     update_tempo()
     step_sequence()
-    ---[[
     for i = 1,3 do
       if grid_pat[i].led == nil then grid_pat[i].led = 0 end
       if grid_pat[i].rec == 1 then
@@ -1231,8 +1015,6 @@ function globally_clocked()
         end
       end
     end
-    --]]
-    --here it is!!
     for i = 1,3 do
       if grid_pat[i].tightened_start == 1 then
         internal_clocking_tightened(i)
@@ -1342,38 +1124,14 @@ osc_in = function(path, args, from)
     elseif path == "/stop_pat_"..i then
       if grid_pat[i].play == 1 then
         grid_pat[i]:stop()
-      elseif grid_pat[i].external_start == 1 then
-        grid_pat[i].external_start = 0
-        grid_pat[i].step = 1
-        g_p_q[i].current_step = 1
-        g_p_q[i].sub_step = 1
       elseif grid_pat[i].tightened_start == 1 then
         grid_pat[i].tightened_start = 0
         grid_pat[i].step = 1
-        g_p_q[i].current_step = 1
-        g_p_q[i].sub_step = 1
+        quantized_grid_pat[i].current_step = 1
+        quantized_grid_pat[i].sub_step = 1
       end
     elseif path == "/start_pat_"..i then
       if grid_pat[i].quantize == 0 then
-        --[[
-        if not clk.externalmidi and not clk.externalcrow then
-          if grid_pat[i].play == 0 then
-            grid_pat[i]:start()
-            osc.send(dest, "/start_pat_"..i, {1})
-          else
-            grid_pat[i]:stop()
-            osc.send(dest, "/start_pat_"..i, {0})
-          end
-        else
-          if grid_pat[i].external_start == 0 then
-            grid_pat[i].external_start = 1
-            osc.send(dest, "/start_pat_"..i, {1})
-          else
-            grid_pat[i].external_start = 0
-            osc.send(dest, "/start_pat_"..i, {0})
-          end
-        end
-        --]]
         if grid_pat[i].play == 0 then
           grid_pat[i]:start()
           osc.send(dest, "/start_pat_"..i, {1})
@@ -1390,40 +1148,13 @@ osc_in = function(path, args, from)
           --this'll be some sorta clear option
           grid_pat[i]:rec_stop()
           grid_pat[i]:stop()
-          grid_pat[i].external_start = 0
           grid_pat[i].tightened_start = 0
           grid_pat[i]:clear()
           pattern_saver[i].load_slot = 0
           grid_pat[i]:rec_start()
         elseif grid_pat[i].rec == 1 then
           grid_pat[i]:rec_stop()
-          --[[
-          if params:get("lock_pat") == 2 and quantize == 1 then
-            sync_pattern_to_bpm(i,params:get("quant_div"))
-          elseif params:get("lock_pat") == 2 and quantize == 0 then
-            sync_pattern_to_bpm(i,params:get("quant_div"))
-          end
-          --]]
           midi_clock_linearize(i)
-          --[[
-          if not clk.externalmidi and not clk.externalcrow then
-            if grid_pat[i].auto_snap == 1 then
-              print("auto-snap")
-              snap_to_bars(i,how_many_bars(i))
-            end
-            grid_pat[i]:start()
-            osc.send(dest, "/start_pat_"..i, {1})
-            grid_pat[i].loop = 1
-          else
-            if grid_pat[i].count > 0 then
-              grid_pat[i].external_start = 1
-              if grid_pat[i].auto_snap == 1 then
-                print("auto-snap")
-                snap_to_bars(i,how_many_bars(i))
-              end
-            end
-          end
-          --]]
           if grid_pat[i].auto_snap == 1 then
             print("auto-snap")
             snap_to_bars(i,how_many_bars(i))
@@ -1436,21 +1167,7 @@ osc_in = function(path, args, from)
         elseif grid_pat[i].play == 1 then
           grid_pat[i]:stop()
           osc.send(dest, "/start_pat_"..i, {0})
-        elseif grid_pat[i].external_start == 1 then
-          grid_pat[i].external_start = 0
-          grid_pat[i].step = 1
-          g_p_q[i].current_step = 1
-          g_p_q[i].sub_step = 1
         else
-          --[[
-          if not clk.externalmidi and not clk.externalcrow then
-            grid_pat[i]:start()
-            osc.send(dest, "/start_pat_"..i, {1})
-          else
-            grid_pat[i].external_start = 1
-            osc.send(dest, "/start_pat_"..i, {1})
-          end
-          ]]--
           grid_pat[i]:start()
           osc.send(dest, "/start_pat_"..i, {1})
         end
@@ -1458,7 +1175,6 @@ osc_in = function(path, args, from)
         if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
           grid_pat[i]:rec_stop()
           grid_pat[i]:stop()
-          grid_pat[i].external_start = 0
           grid_pat[i].tightened_start = 0
           grid_pat[i]:clear()
           pattern_saver[i].load_slot = 0
@@ -1536,8 +1252,6 @@ osc_in = function(path, args, from)
           rec_state_watcher:start()
           end
       if rec.clear == 1 then rec.clear = 0 end
-      --elseif rec.loop == 0 and grid.alt == 1 then
-      --  buff_flush()
       end
         
       softcut.loop_start(1,rec.start_point)
@@ -1557,10 +1271,7 @@ osc_in = function(path, args, from)
         rec_state_to_osc = "recording"
       end
       osc.send(dest, "/buffer_state", {rec_state_to_osc})
-      
-      --if grid.alt == 1 then
-      --  buff_flush()
-      --end
+
     end
   end
 end
@@ -1622,60 +1333,6 @@ end
 local tap = 0
 local deltatap = 1
 
---local crow_tap = 0
---local crow_deltatap = 1
-
---[[
-
-function change()
-  local tap1 = util.time()
-  deltatap = tap1 - tap
-  tap = tap1
-  local tap_tempo = 60/deltatap
-  for i = 1,2 do
-    local delay_rate_to_time = (tap_tempo) * delay[i].rate
-    local delay_time = delay_rate_to_time + (41 + (30*(i-1)))
-    delay[i].end_point = delay_time
-    softcut.loop_end(i+4,delay[i].end_point)
-  end
-
-  clk.step = clk.step + 1
-  if clk.step == 4 then
-    clk.step = 0
-    clk.beat = clk.beat + 1
-    if clk.beat == 4 then
-      clk.beat = 0
-    end
-  end
-  
-  if clk.step == 0 then
-    local crow_tap1 = util.time()
-    crow_deltatap = crow_tap1 - crow_tap
-    crow_tap = tap1
-    local crow_tap_tempo = 60/crow_deltatap
-    if crow_tap_tempo >=1 then
-      params:set("bpm",math.floor(crow_tap_tempo+0.5))
-    else
-      params:set("bpm",1)
-      print("is it here?")
-    end
-  end
-  
-  clk.on_step()
-end
-
---]]
-
-function external_to_bpm()
-  local tap1 = util.time()
-  deltatap = tap1 - tap
-  tap = tap1
-  local tap_tempo = 60/deltatap
-  if tap_tempo >=1 then
-    params:set("bpm",math.floor(tap_tempo+0.5))
-  end
-end
-
 function update_tempo()
   if params:get("clock") == 1 then
     --INTERNAL
@@ -1696,38 +1353,14 @@ function update_tempo()
 end
 
 --[[
-function slide_to_tempo()
-  if synced_to_bpm == nil then
-    for i = 1,3 do
-      if grid_pat[i].rec == 0 and grid_pat[i].count > 0 then
-        sync_pattern_to_bpm(i,4)
-      end
-    end
-  end
-  local remembered = synced_to_bpm
-  for i = 1,3 do
-    if remembered >= params:get("bpm") then
-      for j = remembered,params:get("bpm"),-1 do
-        bpm = j
-        sync_pattern_to_bpm(i,4)
-      end
-    elseif remembered < params:get("bpm") then
-      for j = remembered,params:get("bpm") do
-        bpm = j
-        sync_pattern_to_bpm(i,4)
-      end
-    end
-  end
-  bpm = params:get("bpm")
-end
-]]--
-
-function random_clock_resolution(bank)
+  function random_clock_resolution(bank)
   for i = 1,16 do
     bank[bank][i].clock_resolution = math.random(1,4)
   end
 end
+--]]
 
+--[[
 function slice()
   for i = 1,3 do
     for j = 1,16 do
@@ -1736,6 +1369,7 @@ function slice()
     end
   end
 end
+--]]
 
 function rec_count()
   rec_time = rec_time + 0.01
@@ -1829,67 +1463,68 @@ end
 
 function cheat(b,i)
   env_counter[b]:stop()
-  if bank[b][i].enveloped then
-    env_counter[b].butt = bank[b][i].level
-    softcut.level(b+1,bank[b][i].level)
-    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*(bank[b][i].left_delay_level*bank[b][i].level))
-    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*(bank[b][i].right_delay_level*bank[b][i].level))
-    env_counter[b].time = (bank[b][i].envelope_time/(bank[b][i].level/0.05))
+  local pad = bank[b][i]
+  if pad.enveloped then
+    env_counter[b].butt = pad.level
+    softcut.level(b+1,pad.level)
+    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+    env_counter[b].time = (pad.envelope_time/(pad.level/0.05))
     env_counter[b]:start()
   else
     softcut.level_slew_time(b+1,0.1)
-    softcut.level(b+1,bank[b][i].level)
-    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,bank[b][i].pan)*(bank[b][i].left_delay_level*bank[b][i].level))
-    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,bank[b][i].pan)*(bank[b][i].right_delay_level*bank[b][i].level))
+    softcut.level(b+1,pad.level)
+    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
   end
-  if bank[b][i].end_point == 9 or bank[b][i].end_point == 17 or bank[b][i].end_point == 25 then
-    bank[b][i].end_point = bank[b][i].end_point-0.01
+  if pad.end_point == 9 or pad.end_point == 17 or pad.end_point == 25 then
+    pad.end_point = pad.end_point-0.01
   end
-  softcut.loop_start(b+1,bank[b][i].start_point)
-  softcut.loop_end(b+1,bank[b][i].end_point)
-  softcut.buffer(b+1,bank[b][i].mode)
-  if bank[b][i].pause == false then
-    softcut.rate(b+1,bank[b][i].rate*bank[b][i].offset)
+  softcut.loop_start(b+1,pad.start_point)
+  softcut.loop_end(b+1,pad.end_point)
+  softcut.buffer(b+1,pad.mode)
+  if pad.pause == false then
+    softcut.rate(b+1,pad.rate*pad.offset)
   else
     softcut.rate(b+1,0)
   end
-  if bank[b][i].loop == false then
+  if pad.loop == false then
     softcut.loop(b+1,0)
   else
     softcut.loop(b+1,1)
   end
   softcut.fade_time(b+1,0.01)
-  if bank[b][i].rate > 0 then
-      softcut.position(b+1,bank[b][i].start_point+0.05)
-  elseif bank[b][i].rate < 0 then
-      softcut.position(b+1,bank[b][i].end_point-0.05)
+  if pad.rate > 0 then
+      softcut.position(b+1,pad.start_point+0.05)
+  elseif pad.rate < 0 then
+      softcut.position(b+1,pad.end_point-0.05)
   end
   if slew_counter[b] ~= nil then
-    slew_counter[b].next_tilt = bank[b][i].tilt
-    slew_counter[b].next_q = bank[b][i].q
-    if bank[b][i].tilt_ease_type == 1 then
+    slew_counter[b].next_tilt = pad.tilt
+    slew_counter[b].next_q = pad.q
+    if pad.tilt_ease_type == 1 then
       if slew_counter[b].slewedVal ~= nil and math.floor(slew_counter[b].slewedVal*10000) ~= math.floor(slew_counter[b].next_tilt*10000) then
         if math.floor(slew_counter[b].prev_tilt*10000) ~= math.floor(slew_counter[b].slewedVal*10000) then
           slew_counter[b].interrupted = 1
-          slew_filter(util.round(b),slew_counter[b].slewedVal,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
+          slew_filter(util.round(b),slew_counter[b].slewedVal,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,pad.tilt_ease_time)
         else
           slew_counter[b].interrupted = 0
-          slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
+          slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,pad.tilt_ease_time)
         end
       end
-    elseif bank[b][i].tilt_ease_type == 2 then
-      slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,bank[b][i].tilt_ease_time)
+    elseif pad.tilt_ease_type == 2 then
+      slew_filter(util.round(b),slew_counter[b].prev_tilt,slew_counter[b].next_tilt,slew_counter[b].prev_q,slew_counter[b].next_q,pad.tilt_ease_time)
     end
   end
-  softcut.pan(b+1,bank[b][i].pan)
+  softcut.pan(b+1,pad.pan)
   update_delays()
   if slew_counter[b] ~= nil then
-    slew_counter[b].prev_tilt = bank[b][i].tilt
-    slew_counter[b].prev_q = bank[b][i].q
+    slew_counter[b].prev_tilt = pad.tilt
+    slew_counter[b].prev_q = pad.q
   end
   previous_pad = bank[b].id
   if bank[b].crow_execute == 1 then
-    if bank[b][i].crow_pad_execute == 1 then
+    if pad.crow_pad_execute == 1 then
       crow.output[b]()
     end
   end
@@ -1899,13 +1534,13 @@ function cheat(b,i)
   for k,v in pairs(rate_array) do
     s[v]=k
   end
-  if bank[b][i].fifth == false then
-    params:set("rate "..tonumber(string.format("%.0f",b)),s[bank[b][i].rate])
+  if pad.fifth == false then
+    params:set("rate "..tonumber(string.format("%.0f",b)),s[pad.rate])
   end
-  params:set("level "..tonumber(string.format("%.0f",b)),bank[b][i].level)
+  params:set("level "..tonumber(string.format("%.0f",b)),pad.level)
   params:set("current pad "..tonumber(string.format("%.0f",b)),i,"true")
-  params:set("start point "..tonumber(string.format("%.0f",b)),bank[b][i].start_point*100,"true")
-  params:set("end point "..tonumber(string.format("%.0f",b)),bank[b][i].end_point*100,"true")
+  params:set("start point "..tonumber(string.format("%.0f",b)),pad.start_point*100,"true")
+  params:set("end point "..tonumber(string.format("%.0f",b)),pad.end_point*100,"true")
   if osc_communication == true then
     osc_redraw(b)
   end
@@ -2225,41 +1860,6 @@ function grid_redraw()
     end
     
     for i = 1,3 do
-      --[[
-      if not clk.externalmidi and not clk.externalcrow then
-        if grid_pat[i].quantize == 0 then
-          if grid_pat[i].rec == 1 then
-            g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
-          elseif grid_pat[i].play == 1 then
-            g:led(2+(5*(i-1)),1,9)
-          elseif grid_pat[i].count > 0 then
-            g:led(2+(5*(i-1)),1,5)
-          else
-            g:led(2+(5*(i-1)),1,3)
-          end
-        elseif grid_pat[i].quantize == 1 then
-          if grid_pat[i].rec == 1 then
-            g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
-          elseif grid_pat[i].tightened_start == 1 then
-            g:led(2+(5*(i-1)),1,9)
-          elseif grid_pat[i].count > 0 then
-            g:led(2+(5*(i-1)),1,5)
-          else
-            g:led(2+(5*(i-1)),1,3)
-          end
-        end
-      else
-        if grid_pat[i].rec == 1 then
-          g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
-        elseif grid_pat[i].external_start == 1 then
-          g:led(2+(5*(i-1)),1,9)
-        elseif grid_pat[i].count > 0 then
-          g:led(2+(5*(i-1)),1,5)
-        else
-          g:led(2+(5*(i-1)),1,3)
-        end
-      end
-      --]]
       if grid_pat[i].quantize == 0 then
         if grid_pat[i].rec == 1 then
           g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
@@ -2530,7 +2130,6 @@ function arc_pattern_execute(entry)
             selected[id].y = 8-((bank[id].id-1)%4)
             cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
             slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
-            --slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
           end
         end
       elseif arc_pat[i].step == 1 then
@@ -2593,7 +2192,6 @@ function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r)
 end
 
 function clipboard_paste(i)
-  --local d = bank[i].id
   local d = bank[i].focus_pad
   bank[i][d].start_point = clipboard[1]
   bank[i][d].end_point = clipboard[2]
@@ -3102,33 +2700,13 @@ function test_load(slot,destination)
   if pattern_saver[destination].saved[slot-((destination-1)*8)] == 1 then
     if grid_pat[destination].play == 1 then
       grid_pat[destination]:stop()
-    elseif grid_pat[destination].external_start == 1 then
-      grid_pat[destination].external_start = 0
-      grid_pat[destination].step = 1
-      g_p_q[destination].current_step = 1
-      g_p_q[destination].sub_step = 1
     elseif grid_pat[destination].tightened_start == 1 then
       grid_pat[destination].tightened_start = 0
       grid_pat[destination].step = 1
-      g_p_q[destination].current_step = 1
-      g_p_q[destination].sub_step = 1
+      quantized_grid_pat[destination].current_step = 1
+      quantized_grid_pat[destination].sub_step = 1
     end
     load_pattern(slot,destination)
-    --[[
-    if not clk.externalmidi and not clk.externalcrow then
-      --if grid_pat_quantize == 0 then
-      if grid_pat[destination].quantize == 0 then
-        grid_pat[destination]:start()
-      --elseif grid_pat_quantize == 1 then
-      elseif grid_pat[destination].quantize == 1 then
-        grid_pat[destination].tightened_start = 1
-      end
-    else
-      if grid_pat[destination].count > 0 then
-        grid_pat[destination].external_start = 1
-      end
-    end
-    --]]
     if grid_pat[destination].quantize == 0 then
       grid_pat[destination]:start()
     elseif grid_pat[destination].quantize == 1 then
@@ -3243,7 +2821,6 @@ function one_point_two()
   for i = 1,3 do
     grid_pat[i]:rec_stop()
     grid_pat[i]:stop()
-    grid_pat[i].external_start = 0
     grid_pat[i].tightened_start = 0
     grid_pat[i]:clear()
     pattern_saver[i].load_slot = 0
@@ -3565,7 +3142,6 @@ function load_pattern(slot,destination)
       end
       set_pattern_mode(destination)
     end
-    --midi_clock_linearize(destination)
     io.close(file)
     load_external_timing(destination,slot)
   else
@@ -3580,7 +3156,6 @@ function cleanup()
       shadow_to_play(selected_coll,j+(8*(i-1)))
     end
   end
-  --print(selected_coll)
   
   --need all this to just happen at cleanup after save
   for i = 1,24 do
@@ -3631,13 +3206,11 @@ function save_arc_pattern(which)
   local dirname = _path.data.."cheat_codes/arc-patterns/"
   if os.rename(dirname, dirname) == nil then
     os.execute("mkdir " .. dirname)
-    --print(dirname)
   end
   
   local dirname = _path.data.."cheat_codes/arc-patterns/collection-"..selected_coll.."/"
   if os.rename(dirname, dirname) == nil then
     os.execute("mkdir " .. dirname)
-    --print(dirname)
   end
   
   local file = io.open(_path.data .. "cheat_codes/arc-patterns/collection-"..selected_coll.."/encoder-"..which..".data", "w+")

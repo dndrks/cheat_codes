@@ -113,15 +113,6 @@ function start_up.init()
     end
   )
   
-  --[[for i = 1,3 do
-    params:add_file("clip "..i.." sample", "clip "..i.." sample")
-    params:set_action("clip "..i.." sample", function(file) load_sample(file,i) end)
-  end]]--
-  
-  --[[for i = 1,3 do
-    params:add{type = "trigger", id = "save_buffer"..i, name = "save live buffer "..i, action = function() save_sample(i) end}
-  end]]--
-  
   params:add_option("loop_enc_resolution", "loop encoder resolution", {"0.1","0.01"}, 1)
   params:set_action("loop_enc_resolution", function(x)
     if x == 1 then

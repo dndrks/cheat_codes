@@ -35,7 +35,8 @@ function main_menu.init()
         screen.text("(grid-ALT sets offset for all)")
       end
       for i = 1,3 do
-        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and grid_pat[i].external_start == 0 then
+        --if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and grid_pat[i].external_start == 0 then
+        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 then
           focused_pad = bank[i].id
         else
           focused_pad = bank[i].focus_pad
@@ -46,7 +47,8 @@ function main_menu.init()
             screen.level(6)
             screen.text("(pad 16 overwrites bank!)")
           end
-          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or grid_pat[i].external_start == 1 then
+          --if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or grid_pat[i].external_start == 1 then
+          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 then
             screen.move(0,10)
             screen.level(3)
             screen.text("loops: bank "..i.." is pad-locked")
@@ -358,14 +360,6 @@ function main_menu.init()
       for j = 1,3 do
         screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
         screen.move(15,40+(10*(j-1)))
-        --[[
-        if page.time_sel == 1 then
-          screen.text(glb_options[j])
-          local clock_options = {"internal","MIDI","crow"}
-          local fine_options = {params:get("bpm") >= 1 and params:get("bpm") or "too slow", clock_options[params:get("clock")],params:get("crow_clock_out") == 2 and "yes" or "no"}
-          screen.move(85,40+(10*(j-1)))
-          screen.text(fine_options[j])
-        --]]
         if page.time_sel < 5 then
           screen.text(p_options[j])
           local mode_options = {"loose","distro","quant","quant+trim"}

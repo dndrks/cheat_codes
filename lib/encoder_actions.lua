@@ -6,7 +6,8 @@ function encoder_actions.init(n,d)
       local id = page.loops_sel + 1
       if id ~= 4 then
         if key1_hold or grid.alt == 1 then
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             bank[id].id = util.clamp(bank[id].id + d,1,16)
             selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
             selected[id].y = 8-((bank[id].id-1)%4)
@@ -68,7 +69,8 @@ function encoder_actions.init(n,d)
       if id ~=4 then
         if key1_hold and grid.alt == 0 then
           local focused_pad = nil
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             focused_pad = bank[id].id
           else
             focused_pad = bank[id].focus_pad
@@ -86,7 +88,8 @@ function encoder_actions.init(n,d)
           end
           bank[id][focused_pad].start_point = bank[id][focused_pad].start_point - ((pre_adjust - bank[id][focused_pad].clip)*8)
           bank[id][focused_pad].end_point = bank[id][focused_pad].start_point + current_difference
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             cheat(id,bank[id].id)
           end
           if focused_pad == 16 then
@@ -166,7 +169,8 @@ function encoder_actions.init(n,d)
       if id ~= 4 then
         if key1_hold or grid.alt == 1 then
           local focused_pad = nil
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             focused_pad = bank[id].id
           else
             focused_pad = bank[id].focus_pad
@@ -177,7 +181,8 @@ function encoder_actions.init(n,d)
             current_offset = 0
           end
           bank[id][focused_pad].offset = math.pow(0.5, -current_offset / 12)
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             cheat(id,bank[id].id)
           end
           if focused_pad == 16 then
@@ -240,7 +245,7 @@ function encoder_actions.init(n,d)
           for i = 1,3 do
             grid_pat[i]:rec_stop()
             grid_pat[i]:stop()
-            grid_pat[i].external_start = 0
+            --grid_pat[i].external_start = 0
             grid_pat[i].tightened_start = 0
             pattern_saver[i].load_slot = 0
           end
@@ -252,13 +257,6 @@ function encoder_actions.init(n,d)
           bank[page.time_sel-1].crow_execute = util.clamp(bank[page.time_sel-1].crow_execute+d,0,1)
         elseif page.time_page_sel[page.time_sel] == 1 then
           if grid_pat[page.time_sel-1].rec ~= 1 then
-            --[[
-            if not clk.externalmidi and not clk.externalcrow then
-              grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,1,4)
-            else
-              grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,3,4)
-            end
-            --]]
             grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,1,4)
             set_pattern_mode(page.time_sel-1)
           end

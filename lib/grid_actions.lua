@@ -136,38 +136,13 @@ function grid_actions.init(x,y,z)
             if grid.alt == 1 then -- still relevant
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
-              grid_pat[i].external_start = 0
+              --grid_pat[i].external_start = 0
               grid_pat[i].tightened_start = 0
               grid_pat[i]:clear()
               pattern_saver[i].load_slot = 0
             elseif grid_pat[i].rec == 1 then -- still relevant
               grid_pat[i]:rec_stop()
-              --[[ --not relevant...
-              if params:get("lock_pat") == 2 and quantize == 1 then
-                sync_pattern_to_bpm(i,params:get("quant_div"))
-              elseif params:get("lock_pat") == 2 and quantize == 0 then
-                sync_pattern_to_bpm(i,params:get("quant_div"))
-              end
-              --]]
               midi_clock_linearize(i)
-              --[[
-              if not clk.externalmidi and not clk.externalcrow then -- not relevant to do comparison
-                if grid_pat[i].auto_snap == 1 then
-                  print("auto-snap")
-                  snap_to_bars(i,how_many_bars(i))
-                end
-                grid_pat[i]:start()
-                grid_pat[i].loop = 1
-              else
-                if grid_pat[i].count > 0 then
-                  grid_pat[i].external_start = 1
-                  if grid_pat[i].auto_snap == 1 then
-                    print("auto-snap")
-                    snap_to_bars(i,how_many_bars(i))
-                  end
-                end
-              end
-              --]]
               if grid_pat[i].auto_snap == 1 then
                 print("auto-snap")
                 snap_to_bars(i,how_many_bars(i))
@@ -178,28 +153,13 @@ function grid_actions.init(x,y,z)
               grid_pat[i]:rec_start()
             elseif grid_pat[i].play == 1 then
               grid_pat[i]:stop()
-            --[[
-            elseif grid_pat[i].external_start == 1 then
-              grid_pat[i].external_start = 0
-              grid_pat[i].step = 1
-              g_p_q[i].current_step = 1
-              g_p_q[i].sub_step = 1
-              --]]
             else
-              --[[
-              if not clk.externalmidi and not clk.externalcrow then
-                grid_pat[i]:start()
-              else
-                grid_pat[i].external_start = 1
-              end
-              --]]
               grid_pat[i]:start()
             end
           else
             if grid.alt == 1 then
               grid_pat[i]:rec_stop()
               grid_pat[i]:stop()
-              grid_pat[i].external_start = 0
               grid_pat[i].tightened_start = 0
               grid_pat[i]:clear()
               pattern_saver[i].load_slot = 0
