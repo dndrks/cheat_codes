@@ -9,14 +9,14 @@ function grid_actions.init(x,y,z)
     for i = 1,3 do
       if grid.alt == 1 then
         if x == 1+(5*(i-1)) and y == 1 and z == 1 then
-          bank[i].focus_hold = (bank[i].focus_hold + 1)%2
+          bank[i].focus_hold = not bank[i].focus_hold
         end
       end
     end
     
     for i = 1,3 do
       if z == 1 and x > 0 + (5*(i-1)) and x <= 4 + (5*(i-1)) and y >=5 then
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           if grid.alt == 0 then
             selected[i].x = x
             selected[i].y = y
@@ -48,7 +48,7 @@ function grid_actions.init(x,y,z)
               table.insert(quantize_events[i],selected[i].id)
             end
           end
-        elseif bank[i].focus_hold == 1 then
+        else
           if grid.alt == 0 then
             bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
           elseif grid.alt == 1 then
@@ -204,9 +204,9 @@ function grid_actions.init(x,y,z)
       if x == (3)+(5*(i-1)) and y == 4 and z == 1 then
         which_bank = i
         local which_pad = nil
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           which_pad = bank[i].id
-        elseif bank[i].focus_hold == 1 then
+        else
           which_pad = bank[i].focus_pad
         end
         if bank[i][which_pad].loop == true then
@@ -217,7 +217,7 @@ function grid_actions.init(x,y,z)
               bank[i][j].loop = false
             end
           end
-          if bank[i].focus_hold == 0 then
+          if bank[i].focus_hold == false then
             softcut.loop(i+1,0)
           end
         else
@@ -228,7 +228,7 @@ function grid_actions.init(x,y,z)
               bank[i][j].loop = true
             end
           end
-          if bank[i].focus_hold == 0 then
+          if bank[i].focus_hold == false then
             softcut.loop(i+1,1)
           end
         end
@@ -260,9 +260,9 @@ function grid_actions.init(x,y,z)
         local which_pad = nil
         local current = math.sqrt(math.abs(x-2))
         if grid.alt == 0 then
-          if bank[current].focus_hold == 0 then
+          if bank[current].focus_hold == false then
             clip_jump(current, bank[current].id, y, z)
-          elseif bank[current].focus_hold == 1 then
+          else
             clip_jump(current, bank[current].focus_pad, y, z)
           end
         else
@@ -272,7 +272,7 @@ function grid_actions.init(x,y,z)
         end
         if z == 0 then
           redraw()
-          if bank[current].focus_hold == 0 then
+          if bank[current].focus_hold == false then
             cheat(current,bank[current].id)
           end
         end
@@ -285,9 +285,9 @@ function grid_actions.init(x,y,z)
           local which_pad = nil
           if grid.alt == 0 then
             local current = math.sqrt(math.abs(x-3))
-            if bank[current].focus_hold == 0 then
+            if bank[current].focus_hold == false then
               bank[current][bank[current].id].mode = math.abs(i-5)
-            elseif bank[current].focus_hold == 1 then
+            else
               bank[current][bank[current].focus_pad].mode = math.abs(i-5)
             end
           else
@@ -297,9 +297,9 @@ function grid_actions.init(x,y,z)
             end
           end
           local current = math.sqrt(math.abs(x-3))
-          if bank[current].focus_hold == 0 then
+          if bank[current].focus_hold == false then
             which_pad = bank[current].id
-          elseif bank[current].focus_hold == 1 then
+          else
             which_pad = bank[current].focus_pad
           end
           if bank[current][which_pad].mode == 1 then
@@ -307,7 +307,7 @@ function grid_actions.init(x,y,z)
           else
             bank[current][which_pad].sample_end = clip[bank[current][which_pad].clip].sample_length
           end
-          if bank[current].focus_hold == 0 then
+          if bank[current].focus_hold == false then
             local current = math.sqrt(math.abs(x-3))
             cheat(current,bank[current].id)
           end
@@ -396,7 +396,7 @@ function grid_actions.init(x,y,z)
     
     if y == 5 and z == 1 then
       for i = 1,3 do
-        if bank[i].focus_hold == 1 then
+        if bank[i].focus_hold == true then
           if x == i*5 then
             bank[i][bank[i].focus_pad].crow_pad_execute = (bank[i][bank[i].focus_pad].crow_pad_execute + 1)%2
             if grid.alt == 1 then

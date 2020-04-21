@@ -85,9 +85,9 @@ function main_menu.init()
       local which_pad = nil
       screen.line_width(1)
       for i = 1,3 do
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           which_pad = bank[i].id
-        elseif bank[i].focus_hold == 1 then
+        else
           which_pad = bank[i].focus_pad
         end
         screen.move(0,10+(i*15))
@@ -100,9 +100,9 @@ function main_menu.init()
         screen.stroke()
       end
       for i = 1,3 do
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           which_pad = bank[i].id
-        elseif bank[i].focus_hold == 1 then
+        else
           which_pad = bank[i].focus_pad
         end
         screen.level(page.loops_sel == i-1 and 15 or 3)
@@ -112,7 +112,7 @@ function main_menu.init()
         local end_to_screen = util.linlin(1,9,15,120,bank[i][which_pad].end_point - (8*(bank[i][which_pad].clip-1)))
         screen.move(end_to_screen,30+(15*(i-1)))
         screen.text("|")
-        if bank[i].focus_hold == 0 or bank[i].id == bank[i].focus_pad then
+        if bank[i].focus_hold == false or bank[i].id == bank[i].focus_pad then
           local current_to_screen = util.linlin(1,9,15,120,(poll_position_new[i+1] - (8*(bank[i][bank[i].id].clip-1))))
           screen.move(current_to_screen,27+(15*(i-1)))
           screen.text("|")
@@ -147,9 +147,9 @@ function main_menu.init()
     local level_options = {"levels","envelope enable","decay"}
     local focused_pad = nil
     for i = 1,3 do
-      if bank[i].focus_hold == 1 then
+      if bank[i].focus_hold == true then
         focused_pad = bank[i].focus_pad
-      elseif bank[i].focus_hold == 0 then
+      else
         focused_pad = bank[i].id
       end
       screen.level(3)
@@ -204,9 +204,9 @@ function main_menu.init()
     screen.text("panning")
     local focused_pad = nil
     for i = 1,3 do
-      if bank[i].focus_hold == 1 then
+      if bank[i].focus_hold == true then
         focused_pad = bank[i].focus_pad
-      elseif bank[i].focus_hold == 0 then
+      else
         focused_pad = bank[i].id
       end
       screen.level(3)

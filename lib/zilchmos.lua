@@ -6,9 +6,9 @@ function zilchmos.init(k,i)
 
   local alt = grid.alt
   
-  if bank[i].focus_hold == 0 then
+  if bank[i].focus_hold == false then
     which_pad = bank[i].id
-  elseif bank[i].focus_hold == 1 then
+  else
     which_pad = bank[i].focus_pad
   end
 
@@ -28,7 +28,7 @@ function zilchmos.init(k,i)
               bank[i][j].start_point = (8*(bank[i][j].clip-1)) + 1
             end
           end
-          if bank[i].focus_hold == 0 then
+          if bank[i].focus_hold == false then
             softcut.loop_start(i+1,pad.start_point)
           end
         --end
@@ -40,7 +40,7 @@ function zilchmos.init(k,i)
             bank[i][j].pan = -1
           end
         end
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           softcut.pan(i+1,-1)
         end
       elseif k == 2 then
@@ -56,7 +56,7 @@ function zilchmos.init(k,i)
           end
         end
         if not pad.enveloped then
-          if bank[i].focus_hold == 0 then
+          if bank[i].focus_hold == false then
             softcut.level_slew_time(i+1,1.0)
             softcut.level(i+1,pad.level)
             softcut.level_cut_cut(i+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
@@ -76,7 +76,7 @@ function zilchmos.init(k,i)
             bank[i][j].end_point = 1+((8/16)*j)+(8*(pad.clip-1))
           end
         end
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           softcut.loop_start(i+1,pad.start_point)
           softcut.loop_end(i+1,pad.end_point)
         end
@@ -88,7 +88,7 @@ function zilchmos.init(k,i)
             bank[i][j].pan = 0
           end
         end
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           softcut.pan(i+1,0)
         end
       elseif k == 2 then
@@ -104,7 +104,7 @@ function zilchmos.init(k,i)
           end
         end
         if not pad.enveloped then
-          if bank[i].focus_hold == 0 then
+          if bank[i].focus_hold == false then
             softcut.level_slew_time(i+1,1.0)
             softcut.level(i+1,pad.level)
             softcut.level_cut_cut(i+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
@@ -125,7 +125,7 @@ function zilchmos.init(k,i)
             bank[i][j].end_point = bank[i][j].start_point + bpm_to_sixteenth
           end
         end
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           softcut.loop_start(i+1,pad.start_point)
           softcut.loop_end(i+1,pad.end_point)
         end
@@ -137,7 +137,7 @@ function zilchmos.init(k,i)
             bank[i][j].pan = 1
           end
         end
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           softcut.pan(i+1,1)
         end
       end
@@ -150,7 +150,7 @@ function zilchmos.init(k,i)
           bank[i][j].end_point = (8*bank[i][j].clip)+1
         end
       end
-      if bank[i].focus_hold == 0 then
+      if bank[i].focus_hold == false then
         softcut.loop_end(i+1,pad.end_point)
       end
     end
@@ -168,7 +168,7 @@ function zilchmos.init(k,i)
           end
         end
         if pad.loop == true and pad.enveloped == false then
-          if bank[i].focus_hold == 0 then
+          if bank[i].focus_hold == false then
             cheat(i,which_pad)
           end
         end
@@ -184,7 +184,7 @@ function zilchmos.init(k,i)
             end
           end
         end
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           softcut.pan(i+1,pad.pan)
         end
       elseif k == 2 then
@@ -196,7 +196,7 @@ function zilchmos.init(k,i)
               bank[i][j].pause = true
             end
           end
-          if bank[i].focus_hold == 0 then
+          if bank[i].focus_hold == false then
             softcut.level(i+1,0.0)
             softcut.rate(i+1,0.0)
           end
@@ -208,7 +208,7 @@ function zilchmos.init(k,i)
               bank[i][j].pause = false
             end
           end
-          if bank[i].focus_hold == 0 then
+          if bank[i].focus_hold == false then
             if not pad.enveloped then
               softcut.level(i+1,pad.level)
             else
@@ -284,11 +284,9 @@ function zilchmos.init(k,i)
           local minimum_val = 1+(8*(pad.clip-1))
           if pad.start_point - double >= minimum_val then
             pad.start_point = pad.end_point - double
-            --softcut.loop_start(i+1,pad.start_point)
           elseif pad.start_point - double < minimum_val then
             if pad.end_point + double < maximum_val then
               pad.end_point = pad.end_point + double
-              --softcut.loop_end(i+1,pad.end_point)
             end
           end
         else
@@ -298,11 +296,9 @@ function zilchmos.init(k,i)
             local minimum_val = 1+(8*(bank[i][j].clip-1))
             if bank[i][j].start_point - double >= minimum_val then
               bank[i][j].start_point = bank[i][j].end_point - double
-              --softcut.loop_start(i+1,bank[i][j].start_point)
             elseif bank[i][j].start_point - double < minimum_val then
               if bank[i][j].end_point + double < maximum_val then
                 bank[i][j].end_point = bank[i][j].end_point + double
-                --softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
               end
             end
           end
@@ -382,7 +378,7 @@ function zilchmos.init(k,i)
           pad.start_point = bank[1][bank[1].id].start_point + (8*(pad.clip-1))
           pad.end_point = bank[1][bank[1].id].end_point + (8*(pad.clip-1))
         end
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
           softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
           softcut.position(i+1,bank[i][bank[i].id].start_point)

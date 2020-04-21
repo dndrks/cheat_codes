@@ -17,9 +17,9 @@ function encoder_actions.init(n,d)
           end
         else
           local which_pad = nil
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             which_pad = bank[id].id
-          elseif bank[id].focus_hold == 1 then
+          else
             which_pad = bank[id].focus_pad
           end
           local current_difference = (bank[id][which_pad].end_point - bank[id][which_pad].start_point)
@@ -31,7 +31,7 @@ function encoder_actions.init(n,d)
             bank[id][which_pad].start_point = bank[id][which_pad].end_point - current_difference
           end
         end
-        if bank[id].focus_hold == 0 then
+        if bank[id].focus_hold == false then
           softcut.loop_start(id+1,bank[id][bank[id].id].start_point)
           softcut.loop_end(id+1,bank[id][bank[id].id].end_point)
         end
@@ -104,9 +104,9 @@ function encoder_actions.init(n,d)
           end
         elseif key1_hold == false and grid.alt == 0 then
           local which_pad = nil
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             which_pad = bank[id].id
-          elseif bank[id].focus_hold == 1 then
+          else
             which_pad = bank[id].focus_pad
           end
           if d >= 0 and bank[id][which_pad].start_point < (bank[id][which_pad].end_point - d/loop_enc_resolution) then
@@ -114,7 +114,7 @@ function encoder_actions.init(n,d)
           elseif d < 0 then
             bank[id][which_pad].start_point = util.clamp(bank[id][which_pad].start_point+d/loop_enc_resolution,(1+(8*(bank[id][which_pad].clip-1))),(8.9+(8*(bank[id][which_pad].clip-1))))
           end
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             softcut.loop_start(id+1, bank[id][bank[id].id].start_point)
           end
         end
@@ -197,9 +197,9 @@ function encoder_actions.init(n,d)
           end
         else
           local which_pad = nil
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             which_pad = bank[id].id
-          elseif bank[id].focus_hold == 1 then
+          else
             which_pad = bank[id].focus_pad
           end
           if d <= 0 and bank[id][which_pad].start_point < bank[id][which_pad].end_point + d/loop_enc_resolution then
@@ -207,7 +207,7 @@ function encoder_actions.init(n,d)
           elseif d > 0 then
             bank[id][which_pad].end_point = util.clamp(bank[id][which_pad].end_point+d/loop_enc_resolution,(1+(8*(bank[id][which_pad].clip-1))),(9+(8*(bank[id][which_pad].clip-1))))
           end
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
           end
         end
@@ -253,9 +253,9 @@ function encoder_actions.init(n,d)
   end
   if menu == 3 then
     local focused_pad = nil
-    if bank[n].focus_hold == 1 then
+    if bank[n].focus_hold == true then
       focused_pad = bank[n].focus_pad
-    elseif bank[n].focus_hold == 0 then
+    else
       focused_pad = bank[n].id
     end
     if page.levels_sel == 0 then
@@ -267,7 +267,7 @@ function encoder_actions.init(n,d)
         bank[n][focused_pad].level = util.clamp(bank[n][focused_pad].level+d/10,0,2)
       end
       if bank[n][bank[n].id].enveloped == false then
-        if bank[n].focus_hold == 0 then
+        if bank[n].focus_hold == false then
           softcut.level_slew_time(n+1,1.0)
           softcut.level(n+1,bank[n][bank[n].id].level)
           softcut.level_cut_cut(n+1,5,util.linlin(-1,1,0,1,bank[n][bank[n].id].pan)*(bank[n][bank[n].id].left_delay_level*bank[n][bank[n].id].level))
@@ -300,7 +300,7 @@ function encoder_actions.init(n,d)
           if d < 0 then
             bank[n][focused_pad].enveloped = false
             if pre_enveloped ~= bank[n][bank[n].id].enveloped then
-              if bank[n].focus_hold == 0 then
+              if bank[n].focus_hold == false then
                 cheat(n, bank[n].id)
               end
             end
@@ -309,7 +309,7 @@ function encoder_actions.init(n,d)
           if d > 0 then
             bank[n][focused_pad].enveloped = true
             if pre_enveloped ~= bank[n][focused_pad].enveloped then
-              if bank[n].focus_hold == 0 then
+              if bank[n].focus_hold == false then
                 cheat(n, bank[n].id)
               end
             end
@@ -341,9 +341,9 @@ function encoder_actions.init(n,d)
         bank[n][i].pan = util.clamp(bank[n][i].pan+d/10,-1,1)
       end
     else
-      if bank[n].focus_hold == 1 then
+      if bank[n].focus_hold == true then
         focused_pad = bank[n].focus_pad
-      elseif bank[n].focus_hold == 0 then
+      else
         focused_pad = bank[n].id
       end
       bank[n][focused_pad].pan = util.clamp(bank[n][focused_pad].pan+d/10,-1,1)

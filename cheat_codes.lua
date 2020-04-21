@@ -1424,7 +1424,7 @@ function reset_all_banks()
     bank[i] = {}
     bank[i].id = 1
     bank[i].ext_clock = 1
-    bank[i].focus_hold = 0
+    bank[i].focus_hold = false
     bank[i].focus_pad = 1
     bank[i].random_mode = 3
     bank[i].crow_execute = 1
@@ -1933,7 +1933,7 @@ function grid_redraw()
     end
     
     for i = 1,3 do
-      if bank[i].focus_hold == 0 then
+      if bank[i].focus_hold == false then
         g:led(selected[i].x, selected[i].y, 15)
         if bank[i][bank[i].id].pause == true then
           g:led(3+(5*(i-1)),1,15)
@@ -1958,7 +1958,7 @@ function grid_redraw()
     end
     
     for i = 1,3 do
-      if bank[i].focus_hold == 1 then
+      if bank[i].focus_hold == true then
         g:led(5*i,5,(10*bank[i][bank[i].focus_pad].crow_pad_execute)+5)
       end
     end
@@ -1970,7 +1970,7 @@ function grid_redraw()
     g:led(16,8,(grid.alt*12)+3)
     
     for i = 1,3 do
-      if bank[i].focus_hold == 0 then
+      if bank[i].focus_hold == false then
         g:led(1 + (5*(i-1)), math.abs(bank[i][bank[i].id].clip-5),8)
         g:led(2 + (5*(i-1)), math.abs(bank[i][bank[i].id].mode-5),6)
         g:led(1+(5*(i-1)),1,0)
@@ -2251,9 +2251,9 @@ arc_redraw = function()
   a:all(0)
   local which_pad = nil
   for i = 1,3 do
-    if bank[arc_control[i]].focus_hold == 0 then
+    if bank[arc_control[i]].focus_hold == false then
       which_pad = bank[arc_control[i]].id
-    elseif bank[arc_control[i]].focus_hold == 1 then
+    else
       which_pad = bank[arc_control[i]].focus_pad
     end
     if arc_param[i] == 1 then
@@ -2283,7 +2283,7 @@ arc_redraw = function()
     end
     if arc_param[i] == 4 then
       local tilt_to_led = slew_counter[i].slewedVal
-      if bank[i].focus_hold == 1 then
+      if bank[i].focus_hold == true then
         which_pad = bank[i].focus_pad
         tilt_to_led = bank[i][bank[i].focus_pad].tilt
       else
