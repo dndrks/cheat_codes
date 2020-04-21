@@ -35,7 +35,8 @@ function main_menu.init()
         screen.text("(grid-ALT sets offset for all)")
       end
       for i = 1,3 do
-        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and grid_pat[i].external_start == 0 then
+        --if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and grid_pat[i].external_start == 0 then
+        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 then
           focused_pad = bank[i].id
         else
           focused_pad = bank[i].focus_pad
@@ -46,7 +47,8 @@ function main_menu.init()
             screen.level(6)
             screen.text("(pad 16 overwrites bank!)")
           end
-          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or grid_pat[i].external_start == 1 then
+          --if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or grid_pat[i].external_start == 1 then
+          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 then
             screen.move(0,10)
             screen.level(3)
             screen.text("loops: bank "..i.." is pad-locked")
@@ -83,9 +85,9 @@ function main_menu.init()
       local which_pad = nil
       screen.line_width(1)
       for i = 1,3 do
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           which_pad = bank[i].id
-        elseif bank[i].focus_hold == 1 then
+        else
           which_pad = bank[i].focus_pad
         end
         screen.move(0,10+(i*15))
@@ -98,9 +100,9 @@ function main_menu.init()
         screen.stroke()
       end
       for i = 1,3 do
-        if bank[i].focus_hold == 0 then
+        if bank[i].focus_hold == false then
           which_pad = bank[i].id
-        elseif bank[i].focus_hold == 1 then
+        else
           which_pad = bank[i].focus_pad
         end
         screen.level(page.loops_sel == i-1 and 15 or 3)
@@ -110,7 +112,7 @@ function main_menu.init()
         local end_to_screen = util.linlin(1,9,15,120,bank[i][which_pad].end_point - (8*(bank[i][which_pad].clip-1)))
         screen.move(end_to_screen,30+(15*(i-1)))
         screen.text("|")
-        if bank[i].focus_hold == 0 or bank[i].id == bank[i].focus_pad then
+        if bank[i].focus_hold == false or bank[i].id == bank[i].focus_pad then
           local current_to_screen = util.linlin(1,9,15,120,(poll_position_new[i+1] - (8*(bank[i][bank[i].id].clip-1))))
           screen.move(current_to_screen,27+(15*(i-1)))
           screen.text("|")
@@ -145,9 +147,9 @@ function main_menu.init()
     local level_options = {"levels","envelope enable","decay"}
     local focused_pad = nil
     for i = 1,3 do
-      if bank[i].focus_hold == 1 then
+      if bank[i].focus_hold == true then
         focused_pad = bank[i].focus_pad
-      elseif bank[i].focus_hold == 0 then
+      else
         focused_pad = bank[i].id
       end
       screen.level(3)
@@ -202,9 +204,9 @@ function main_menu.init()
     screen.text("panning")
     local focused_pad = nil
     for i = 1,3 do
-      if bank[i].focus_hold == 1 then
+      if bank[i].focus_hold == true then
         focused_pad = bank[i].focus_pad
-      elseif bank[i].focus_hold == 0 then
+      else
         focused_pad = bank[i].id
       end
       screen.level(3)
@@ -327,20 +329,30 @@ function main_menu.init()
     screen.level(3)
     screen.text("timing")
     screen.level(3)
-    screen.move(115,10)
-    local clork_sterp = clk.step+1
-    --if clork_sterp == 0 then clork_sterp = 4 end
-    local clork_bert = clk.beat + 1
-    screen.text(clork_bert.."."..clork_sterp)
+    --screen.move(100,10)
+    --screen.text(params:get("bpm") >= 1 and ("bpm: "..params:get("bpm")) or "too slow")
+    screen.move(110,10)
+    local show_me_beats = clock.get_beats() % 4
+    local show_me_frac = math.fmod(clock.get_beats(),1)
+    if show_me_frac <= 0.25 then
+      show_me_frac = 1
+    elseif show_me_frac <= 0.5 then
+      show_me_frac = 2
+    elseif show_me_frac <= 0.75 then
+      show_me_frac = 3
+    else
+      show_me_frac = 4
+    end
+    screen.text((math.modf(show_me_beats)+1).."."..show_me_frac)
     screen.level(10)
     screen.move(15,30)
     screen.line(120,30)
     screen.stroke()
-    for i = 1,5 do
+    for i = 2,5 do
       screen.level(page.time_sel == i and 15 or 3)
       --local time_options = {"clk","P1","P2","P3","ALL"}
       local time_options = {"clk","P1","P2","P3","   "}
-      screen.move(15+(23*(i-1)),25)
+      screen.move(15+(23*(i-2)),25)
       screen.text(time_options[i])
       local glb_options = {"bpm","clk source","send crow clk?"}
       local p_options = {"rec mode", "shuffle pat","crow output"}
@@ -348,13 +360,7 @@ function main_menu.init()
       for j = 1,3 do
         screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
         screen.move(15,40+(10*(j-1)))
-        if page.time_sel == 1 then
-          screen.text(glb_options[j])
-          local clock_options = {"internal","MIDI","crow"}
-          local fine_options = {params:get("bpm") >= 20 and params:get("bpm") or "too slow", clock_options[params:get("clock")],params:get("crow_clock_out") == 2 and "yes" or "no"}
-          screen.move(85,40+(10*(j-1)))
-          screen.text(fine_options[j])
-        elseif page.time_sel < 5 then
+        if page.time_sel < 5 then
           screen.text(p_options[j])
           local mode_options = {"loose","distro","quant","quant+trim"}
           local fine_options = {mode_options[grid_pat[page.time_sel-1].playmode], grid_pat[page.time_sel-1].count > 0 and grid_pat[page.time_sel-1].rec == 0 and "[K3]" or "(no pat!)", bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}
