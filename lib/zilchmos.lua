@@ -14,17 +14,17 @@ local z = zilchmos
 
 -- this is the new zilchmos.init
 function zilchmos.init(k,i)
-  -- TODO remove this global access? at least wrap it in a function
-  which_bank = i -- just setting this global? why here?
-
-  local b = bank[i] -- just alias for shorter lines
-  local p = (b.focus_hold == 1) and b.focus_pad or b.id -- was 'which_pad'
-
+  -- for .help functionality
+  which_bank = i -- FIXME should be in the help. namespace
   if menu == 8 then
     help_menu = "zilchmo_"..k
   end
 
-  -- echoing the layout of the documentation for clarity
+
+  local b = bank[i] -- just alias for shorter lines
+  local p = (b.focus_hold == 1) and b.focus_pad or b.id -- was 'which_pad'
+
+  -- TODO fingers should be passed in as an argument, not globally accessed
   local finger    = fingers[k][i].con
   local p_action  = z.actions[k][finger][1]
   local sc_action = z.actions[k][finger][2]
@@ -66,7 +66,7 @@ zilchmos.actions =
   , ['2']    = { z.start_end_default    , z.sc.start_end }
   , ['3']    = { z.start_end_sixteenths , z.sc.start_end }
   , ['4']    = { z.end_at_eight         , z.sc._end }
-  , ['12']   = { z.start_random         , z.sc.cheat } -- FIXME why is this diff?
+  , ['12']   = { z.start_random         , z.sc.cheat }
   , ['34']   = { z.end_random           , z.sc._end }
   , ['23']   = { z.start_end_random     , z.sc.start_end }
   , ['13']   = { z.loop_double          , z.sc.start_end }
@@ -101,6 +101,9 @@ function z.pan_nudge_right( pad ) z.pan_nudge( pad, 0.1 ) end
 function z.rate_double( pad )  z.rate_mul( pad, 2 ) end
 function z.rate_halve( pad )   z.rate_mul( pad, 0.5 ) end
 function z.rate_reverse( pad ) z.rate_mul( pad, -1 ) end
+function z.loop_sync_left( pad )  z.loop_sync( pad, -1 ) end
+function z.loop_sync_right( pad ) z.loop_sync( pad, 1 ) end
+
 
 
 -- core pad modifiers
@@ -134,14 +137,13 @@ function zilchmos.start_zero( pad )
 end
 
 function zilchmos.start_end_default( pad )
-  -- FIXME, need the 'p' value. it's the index in the bank? confirm & put in table
-  pad.start_point = 1+((8/16)*(p-1))+(8*(pad.clip-1))
-  pad.end_point   = 1+((8/16)*p)+(8*(pad.clip-1))
+  pad.start_point = 1+((8/16) * (pad.pad_id-1)) + (8*(pad.clip-1))
+  pad.end_point   = 1+((8/16) *  pad.pad_id)    + (8*(pad.clip-1))
 end
 
 function zilchmos.start_end_sixteenths( pad )
-  -- FIXME, need the 'p' value. it's the index in the bank? confirm & put in table
-  pad.start_point = (1+((8/16)*(p-1)))+(8*(pad.clip-1))
+  -- FIXME bpm is global
+  pad.start_point = (1+((8/16)*(pad.pad_id-1)))+(8*(pad.clip-1))
   pad.end_point   = pad.start_point + (60/bpm)/4
 end
 
@@ -179,11 +181,9 @@ function zilchmos.loop_double( pad )
   local minimum_val = 1+(8*(pad.clip-1))
   if pad.start_point - double >= minimum_val then
     pad.start_point = pad.end_point - double
-    --softcut.loop_start(i+1,b[p].start_point) -- FIXME what's this?
   elseif pad.start_point - double < minimum_val then
     if pad.end_point + double < maximum_val then
       pad.end_point = pad.end_point + double
-      --softcut.loop_end(i+1,b[p].end_point) -- FIXME what's this?
     end
   end
 end
@@ -194,30 +194,13 @@ function zilchmos.loop_halve( pad )
   pad.end_point   = pad.end_point - quarter
 end
 
-function zilchmos.loop_sync_left( pad )
-  --FIXME need i argument (ie which bank we're in) -> put into pad
-  local b3 = bank[3][bank[3].id]
-  if i == 3 then
-    local b2 = bank[2][bank[2].id]
-    b3.start_point = (b2.start_point - (8*(b2.clip-1))) + (8*(b3.clip-1))
-    b3.end_point   = (b2.end_point   - (8*(b2.clip-1))) + (8*(b3.clip-1))
-  else
-    pad.start_point = (b3.start_point - (8*(b3.clip-1))) + (8*(pad.clip-1))
-    pad.end_point   = (b3.end_point   - (8*(b3.clip-1))) + (8*(pad.clip-1))
-  end
-end
-
-function zilchmos.loop_sync_right( pad )
-  --FIXME need i argument (ie which bank we're in) -> put into pad
-  if i == 1 then
-    local b2 = bank[2][bank[2].id]
-    pad.start_point = b2.start_point - (8*(b2.clip-1))
-    pad.end_point   = b2.end_point   - (8*(b2.clip-1))
-  else
-    local b1 = bank[1][bank[1].id]
-    pad.start_point = b1.start_point + (8*(pad.clip-1))
-    pad.end_point   = b1.end_point   + (8*(pad.clip-1))
-  end
+function zilchmos.loop_sync( pad, dir )
+  local src_bank_num = (pad.bank_id-1 + dir)%3 + 1
+  local src_bank     = bank[src_bank_num] -- FIXME global access of bank
+  local src_pad      = src_bank[src_bank.id]
+  -- shift start/end by the difference between clips
+  pad.start_point = src_pad.start_point + 8*(pad.clip - src_pad.clip)
+  pad.end_point   = src_pad.end_point   + 8*(pad.clip - src_pad.clip)
 end
 
 function zilchmos.rate_mul( pad, mul )
@@ -258,14 +241,13 @@ function zilchmos.sc.level( pad, i )
   end
 end
 
-function zilchmos.sc.play_toggle( pad, i, p )
-  --FIXME need p -> put it into the pad table? -> or refactor cheat?
+function zilchmos.sc.play_toggle( pad, i )
   if pad.pause then
     softcut.level(i+1, 0.0)
     softcut.rate(i+1, 0.0)
   else
     if pad.enveloped then
-      cheat(i,p)
+      cheat( i, pad.id )
     else
       softcut.level(i+1, pad.level)
     end
@@ -302,9 +284,8 @@ function zilchmos.sc.sync( pad, i )
 end
 
 function zilchmos.sc.cheat( pad, i, p )
-  --FIXME needs p -> refactor cheat?
   if pad.loop and not pad.enveloped then
-    cheat(i,p)
+    cheat( i, pad.id )
   end
 end
 
