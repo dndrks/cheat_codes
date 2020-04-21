@@ -41,10 +41,9 @@ function zilchmos.init(k,i)
 end
 
 -- this function tanks a single bank, and applies function fn to each pad
--- varargs (...) allows an optional set of args to be applied to all pads
-function zilchmos.map( fn, bank, ... ) -- this is a local bank, represents bank[i]
-  for pad,_ in ipairs( bank ) do -- will execute for each of the 16 elements in bank
-    fn( pad, ... ) -- pass each pad to the supplied function
+function zilchmos.map( fn, bank ) -- this is a local bank, represents bank[i]
+  for i=1,16 do -- will execute for each of the 16 elements in bank
+    fn( bank[i] ) -- pass each pad to the supplied function
   end
 end
 
