@@ -2,12 +2,12 @@ local zilchmos = {}
 local z = zilchmos
 
 --[[
-    focus_hold is only [0,1] -> change this to a boolean
     which_bank is a global & being set from inside of here
     bpm
     grid_alt should be boolean
 ]]--
 
+zilchmos.sc = {}
 
 ---------------------------------------
 --- main function
@@ -22,7 +22,7 @@ function zilchmos.init(k,i)
 
 
   local b = bank[i] -- just alias for shorter lines
-  local p = (b.focus_hold == 1) and b.focus_pad or b.id -- was 'which_pad'
+  local p = b.focus_hold and b.focus_pad or b.id -- was 'which_pad'
 
   -- TODO fingers should be passed in as an argument, not globally accessed
   local finger    = fingers[k][i].con
@@ -35,50 +35,10 @@ function zilchmos.init(k,i)
   else
     z.map( p_action, b ) -- or map it over the whole bank
   end
-  if b.focus_hold == 0 then
+  if not b.focus_hold then
     sc_action( b[p], i ) -- and then update softcut if we're in perform mode
   end
 end
-
-
---------------------------------------
---- actions
-
--- mapping of key-combos to pad functions & softcut actions
--- TODO the softcut actions should occur automatically using metatable over pad{}
-zilchmos.actions =
-{ [2] = -- level & play/pause
-  { ['1']  = { z.level_down   , z.sc.level }
-  , ['2']  = { z.level_up     , z.sc.level }
-  , ['12'] = { z.play_toggle  , z.sc.play_toggle }
-  }
-, [3] = -- panning
-  { ['1']   = { z.pan_left        , z.sc.pan }
-  , ['2']   = { z.pan_center      , z.sc.pan }
-  , ['3']   = { z.pan_right       , z.sc.pan }
-  , ['12']  = { z.pan_nudge_left  , z.sc.pan }
-  , ['23']  = { z.pan_nudge_right , z.sc.pan }
-  , ['13']  = { z.pan_reverse     , z.sc.pan }
-  , ['123'] = { z.pan_random      , z.sc.pan }
-  }
-, [4] = -- start/end points, rate, direction
-  { ['1']    = { z.start_zero           , z.sc.start }
-  , ['2']    = { z.start_end_default    , z.sc.start_end }
-  , ['3']    = { z.start_end_sixteenths , z.sc.start_end }
-  , ['4']    = { z.end_at_eight         , z.sc._end }
-  , ['12']   = { z.start_random         , z.sc.cheat }
-  , ['34']   = { z.end_random           , z.sc._end }
-  , ['23']   = { z.start_end_random     , z.sc.start_end }
-  , ['13']   = { z.loop_double          , z.sc.start_end }
-  , ['24']   = { z.loop_halve           , z.sc.start_end }
-  , ['123']  = { z.loop_sync_left       , z.sc.sync }
-  , ['234']  = { z.loop_sync_right      , z.sc.sync }
-  , ['124']  = { z.rate_double          , z.sc.rate }
-  , ['134']  = { z.rate_halve           , z.sc.rate }
-  , ['14']   = { z.rate_reverse         , z.sc.rate }
-  , ['1234'] = { z.rate_up_fifth        , z.sc.rate }
-  }
-}
 
 -- this function tanks a single bank, and applies function fn to each pad
 -- varargs (...) allows an optional set of args to be applied to all pads
@@ -230,8 +190,6 @@ end
 
 -- softcut
 
-zilchmos.sc = {}
-
 function zilchmos.sc.level( pad, i )
   if not pad.enveloped then
     softcut.level_slew_time(i+1,1.0)
@@ -288,6 +246,47 @@ function zilchmos.sc.cheat( pad, i, p )
     cheat( i, pad.id )
   end
 end
+
+
+--------------------------------------
+--- actions
+
+
+-- mapping of key-combos to pad functions & softcut actions
+-- TODO the softcut actions should occur automatically using metatable over pad{}
+zilchmos.actions =
+{ [2] = -- level & play/pause
+  { ['1']  = { z.level_down   , z.sc.level }
+  , ['2']  = { z.level_up     , z.sc.level }
+  , ['12'] = { z.play_toggle  , z.sc.play_toggle }
+  }
+, [3] = -- panning
+  { ['1']   = { z.pan_left        , z.sc.pan }
+  , ['2']   = { z.pan_center      , z.sc.pan }
+  , ['3']   = { z.pan_right       , z.sc.pan }
+  , ['12']  = { z.pan_nudge_left  , z.sc.pan }
+  , ['23']  = { z.pan_nudge_right , z.sc.pan }
+  , ['13']  = { z.pan_reverse     , z.sc.pan }
+  , ['123'] = { z.pan_random      , z.sc.pan }
+  }
+, [4] = -- start/end points, rate, direction
+  { ['1']    = { z.start_zero           , z.sc.start }
+  , ['2']    = { z.start_end_default    , z.sc.start_end }
+  , ['3']    = { z.start_end_sixteenths , z.sc.start_end }
+  , ['4']    = { z.end_at_eight         , z.sc._end }
+  , ['12']   = { z.start_random         , z.sc.cheat }
+  , ['34']   = { z.end_random           , z.sc._end }
+  , ['23']   = { z.start_end_random     , z.sc.start_end }
+  , ['13']   = { z.loop_double          , z.sc.start_end }
+  , ['24']   = { z.loop_halve           , z.sc.start_end }
+  , ['123']  = { z.loop_sync_left       , z.sc.sync }
+  , ['234']  = { z.loop_sync_right      , z.sc.sync }
+  , ['124']  = { z.rate_double          , z.sc.rate }
+  , ['134']  = { z.rate_halve           , z.sc.rate }
+  , ['14']   = { z.rate_reverse         , z.sc.rate }
+  , ['1234'] = { z.rate_up_fifth        , z.sc.rate }
+  }
+}
 
 
 return zilchmos
