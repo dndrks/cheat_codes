@@ -840,7 +840,7 @@ function init()
   params:add{type = "trigger", id = "clear_crow", name = "(reset/clear crow)", action = crow_flush}
 
   bank = {}
-  reset_all_banks()
+  reset_all_banks(bank)
   
   params:bang()
   
@@ -1341,7 +1341,7 @@ local deltatap = 1
 function update_tempo()
 
   params:set("bpm", util.round(clock.get_tempo()))
-  bpm = params:get("bpm")
+  bpm = params:get("bpm") -- FIXME this is where the global bpm is defined
   local t = params:get("bpm")
   local d = params:get("quant_div")
   local d_pat = params:get("quant_div_pats")
@@ -1418,66 +1418,73 @@ function step_sequence()
   end
 end
 
-function reset_all_banks()
-  cross_filter = {}
+function reset_all_banks( banks )
+  cross_filter = {} -- TODO put into the banks
   for i = 1,3 do
-    bank[i] = {}
-    bank[i].id = 1
-    bank[i].ext_clock = 1
-    bank[i].focus_hold = false
-    bank[i].focus_pad = 1
-    bank[i].random_mode = 3
-    bank[i].crow_execute = 1
-    bank[i].snap_to_bars = 1
-    bank[i].quantize_press = 0
-    bank[i].quantize_press_time = 1
+    banks[i] = {}
+    local b = banks[i] -- alias
+    b.id = 1 -- currently playing pad_id
+    b.ext_clock = 1
+    b.focus_hold = false
+    b.focus_pad = 1
+    b.random_mode = 3
+    b.crow_execute = 1
+    b.snap_to_bars = 1
+    b.quantize_press = 0
+    b.quantize_press_time = 1
     for k = 1,16 do
-      bank[i][k] = {}
-      bank[i][k].clip = 1
-      bank[i][k].mode = 1
-      bank[i][k].start_point = 1+((8/16)*(k-1))
-      bank[i][k].end_point = 1+((8/16)*k)
-      bank[i][k].sample_end = 8
-      bank[i][k].rate = 1.0
-      bank[i][k].left_delay_time = 0.5
-      bank[i][k].right_delay_time = 0.5
-      bank[i][k].pause = false
-      bank[i][k].play_mode = "latch"
-      bank[i][k].level = 1.0
-      bank[i][k].left_delay_level = 1
-      bank[i][k].right_delay_level = 1
-      bank[i][k].loop = true
-      bank[i][k].fifth = false
-      bank[i][k].pan = 0.0
-      bank[i][k].left_delay_pan = util.linlin(-1,1,0,1,bank[i][k].pan)*bank[i][k].left_delay_level
-      bank[i][k].right_delay_pan = util.linlin(-1,1,1,0,bank[i][k].pan)*bank[i][k].right_delay_level
-      bank[i][k].fc = 12000
-      bank[i][k].q = 2.0
-      bank[i][k].lp = 1.0
-      bank[i][k].hp = 0.0
-      bank[i][k].bp = 0.0
-      bank[i][k].fd = 0.0
-      bank[i][k].br = 0.0
-      bank[i][k].tilt = 0
-      bank[i][k].tilt_ease_type = 1
-      bank[i][k].tilt_ease_time = 50
-      bank[i][k].cf_fc = 12000
-      bank[i][k].cf_lp = 0
-      bank[i][k].cf_hp = 0
-      bank[i][k].cf_dry = 1
-      bank[i][k].cf_exp_dry = 1
-      bank[i][k].filter_type = 4
-      bank[i][k].enveloped = false
-      bank[i][k].envelope_time = 3.0
-      bank[i][k].clock_resolution = 4
-      bank[i][k].offset = 1.0
-      bank[i][k].crow_pad_execute = 1
+-- TODO suggest nesting tables for delay,filter,tilt etc
+      b[k] = {}
+      local pad = b[k] --alias
+      pad.bank_id           = i -- capture which bank we're in
+      pad.pad_id            = k -- capture which pad of 16
+      pad.clip              = 1 -- TODO make this a table with length for start/end calculation
+      pad.mode              = 1
+        -- TODO these are both identical to zilchmos.start_end_default()
+      pad.start_point       = 1+((8/16) * (pad.pad_id-1))
+      pad.end_point         = 1+((8/16) *  pad.pad_id)
+      pad.sample_end        = 8
+      pad.rate              = 1.0
+      pad.left_delay_time   = 0.5
+      pad.right_delay_time  = 0.5
+      pad.pause             = false
+      pad.play_mode         = "latch"
+      pad.level             = 1.0
+      pad.left_delay_level  = 1
+      pad.right_delay_level = 1
+      pad.loop              = true
+      pad.fifth             = false
+      pad.pan               = 0.0
+      -- FIXME these are both just 0.5. why compute them? could instead call that fn?
+      pad.left_delay_pan    = util.linlin(-1,1,0,1,pad.pan) * pad.left_delay_level
+      pad.right_delay_pan   = util.linlin(-1,1,1,0,pad.pan) * pad.right_delay_level
+      pad.fc                = 12000
+      pad.q                 = 2.0
+      pad.lp                = 1.0
+      pad.hp                = 0.0
+      pad.bp                = 0.0
+      pad.fd                = 0.0
+      pad.br                = 0.0
+      pad.tilt              = 0
+      pad.tilt_ease_type    = 1
+      pad.tilt_ease_time    = 50
+      pad.cf_fc             = 12000
+      pad.cf_lp             = 0
+      pad.cf_hp             = 0
+      pad.cf_dry            = 1
+      pad.cf_exp_dry        = 1
+      pad.filter_type       = 4
+      pad.enveloped         = false
+      pad.envelope_time     = 3.0
+      pad.clock_resolution  = 4
+      pad.offset            = 1.0
+      pad.crow_pad_execute  = 1
     end
-    cross_filter[i] = {}
-    cross_filter[i].fc = 12000
-    cross_filter[i].lp = 0
-    cross_filter[i].hp = 0
-    cross_filter[i].dry = 1
+    cross_filter[i]         = {}
+    cross_filter[i].fc      = 12000
+    cross_filter[i].lp      = 0
+    cross_filter[i].hp      = 0
+    cross_filter[i].dry     = 1
     cross_filter[i].exp_dry = 1
     cheat(i,bank[i].id)
   end
