@@ -352,32 +352,43 @@ function main_menu.init()
       screen.level(page.time_sel == i and 15 or 3)
       --local time_options = {"clk","P1","P2","P3","ALL"}
       local time_options = {"clk","P1","P2","P3","   "}
-      screen.move(15+(23*(i-2)),25)
+      screen.move(15+(40*(i-2)),25)
       screen.text(time_options[i])
       local glb_options = {"bpm","clk source","send crow clk?"}
-      local p_options = {"rec mode", "shuffle pat","crow output"}
+      local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat", "pat start", "pat end"}
       local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
-      for j = 1,3 do
-        screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
-        screen.move(15,40+(10*(j-1)))
-        if page.time_sel < 5 then
-          screen.text(p_options[j])
-          local mode_options = {"loose","distro","quant","quant+trim"}
-          local fine_options = {mode_options[grid_pat[page.time_sel-1].playmode], grid_pat[page.time_sel-1].count > 0 and grid_pat[page.time_sel-1].rec == 0 and "[K3]" or "(no pat!)", bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}
-          screen.move(85,40+(10*(j-1)))
-          screen.text(fine_options[j])
-          if bank[page.time_sel-1].crow_execute ~= 1 then
-            screen.move(102,60)
-            screen.level(page.time_page_sel[page.time_sel] == 4 and 15 or 3)
-            screen.text("(/"..crow.count_execute[page.time_sel-1]..")")
+      if page.time_scroll[page.time_sel] == 1 then
+        for j = 1,3 do
+          screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
+          screen.move(15,40+(10*(j-1)))
+          if page.time_sel < 5 then
+            screen.text(p_options[j])
+            local mode_options = {"loose","distro","quant","quant+trim"}
+            local fine_options = {mode_options[grid_pat[page.time_sel-1].playmode], grid_pat[page.time_sel-1].count > 0 and grid_pat[page.time_sel-1].rec == 0 and "[K3]" or "(no pat!)", bank[page.time_sel-1].crow_execute == 1 and "pads" or "clk"}
+            screen.move(85,40+(10*(j-1)))
+            screen.text(fine_options[j])
+            if bank[page.time_sel-1].crow_execute ~= 1 then
+              screen.move(102,60)
+              screen.level(page.time_page_sel[page.time_sel] == 4 and 15 or 3)
+              screen.text("(/"..crow.count_execute[page.time_sel-1]..")")
+            end
+          elseif page.time_sel == 5 then
+            local all_options = {"linear recording?","quantize pads?","quant resolution"}
+            screen.text(all_options[j])
+            local quant_div_options = {"1/4","1/8","1/8t","1/16","1/32"}
+            local fine_options = {params:get("lock_pat") == 2 and "yes" or "no", params:get("quantize_pads") == 2 and "yes" or "no", quant_div_options[params:get("quant_div")]}
+            screen.move(95,40+(10*(j-1)))
+            screen.text(fine_options[j])
           end
-        elseif page.time_sel == 5 then
-          local all_options = {"linear recording?","quantize pads?","quant resolution"}
-          screen.text(all_options[j])
-          local quant_div_options = {"1/4","1/8","1/8t","1/16","1/32"}
-          local fine_options = {params:get("lock_pat") == 2 and "yes" or "no", params:get("quantize_pads") == 2 and "yes" or "no", quant_div_options[params:get("quant_div")]}
-          screen.move(95,40+(10*(j-1)))
-          screen.text(fine_options[j])
+        end
+      else
+        for j = 5,7 do
+          screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
+          screen.move(15,40+(10*(j-5)))
+          screen.text(p_options[j])
+          screen.move(85,40+(10*(j-5)))
+          local fine_options = {"some stuff", grid_pat[page.time_sel-1].count > 0 and grid_pat[page.time_sel-1].rec == 0 and grid_pat[page.time_sel-1].start_point or "(no pat!)", grid_pat[page.time_sel-1].count > 0 and grid_pat[page.time_sel-1].rec == 0 and grid_pat[page.time_sel-1].end_point or "(no pat!)"}
+          screen.text(fine_options[j-4])
         end
       end
     end

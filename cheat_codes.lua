@@ -154,7 +154,7 @@ function cheat_clock_synced(i)
 end
 
 function set_pattern_mode(bank)
-  grid_pat[bank].step = 1
+  grid_pat[bank].step = grid_pat[bank].start_point
   quantized_grid_pat[bank].current_step = 1
   quantized_grid_pat[bank].sub_step = 1
   if grid_pat[bank].playmode == 1 then
@@ -218,7 +218,7 @@ function better_grid_pat_q_clock(i)
     grid_pat[i]:stop()
   elseif grid_pat[i].tightened_start == 1 then
     grid_pat[i].tightened_start = 0
-    grid_pat[i].step = 1
+    grid_pat[i].step = grid_pat[i].start_point
     quantized_grid_pat[i].current_step = 1
     quantized_grid_pat[i].sub_step = 1
   else
@@ -340,6 +340,8 @@ function random_grid_pat(which,mode)
       grid_pat[which].time[i] = (60/bpm) / math.pow(2,math.random(-2,2))
     end
     grid_pat[which].count = count
+    grid_pat[which].start_point = 1
+    grid_pat[which].end_point = count
   end
 
   --
@@ -542,6 +544,8 @@ function copy_entire_pattern(bank)
   original_pattern[bank].metro.props.time = grid_pat[bank].metro.props.time
   original_pattern[bank].prev_time = grid_pat[bank].prev_time
   original_pattern[bank].count = grid_pat[bank].count
+  original_pattern[bank].start_point = grid_pat[bank].start_point
+  original_pattern[bank].end_point = grid_pat[bank].end_point
   if grid_pat[bank].playmode ~= nil then
     original_pattern[bank].playmode = grid_pat[bank].playmode
   else
@@ -719,7 +723,7 @@ function init()
       if quantized_grid_pat[bank].event[current][sub_step] == "something" then
         --print(current, sub_step, "+++")
         if grid_pat[bank].step == 0 then
-          grid_pat[bank].step = 1
+          grid_pat[bank].step = grid_pat[bank].start_point
         end
         if quantized_grid_pat[bank].current_step == 0 then
           quantized_grid_pat[bank].current_step = 1
@@ -728,7 +732,7 @@ function init()
       elseif quantized_grid_pat[bank].event[current][sub_step] == "nothing" then
         -- nothing!
         if grid_pat[bank].step == 0 then
-          grid_pat[bank].step = 1
+          grid_pat[bank].step = grid_pat[bank].start_point
         end
         if quantized_grid_pat[bank].current_step == 0 then
           quantized_grid_pat[bank].current_step = 1
@@ -810,9 +814,11 @@ function init()
   page.time_sel = 2
   page.time_page = {}
   page.time_page_sel = {}
+  page.time_scroll = {}
   for i = 1,5 do
     page.time_page[i] = 1
     page.time_page_sel[i] = 1
+    page.time_scroll[i] = 1
   end
   
   delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
@@ -1131,7 +1137,7 @@ osc_in = function(path, args, from)
         grid_pat[i]:stop()
       elseif grid_pat[i].tightened_start == 1 then
         grid_pat[i].tightened_start = 0
-        grid_pat[i].step = 1
+        grid_pat[i].step = grid_pat[i].start_point
         quantized_grid_pat[i].current_step = 1
         quantized_grid_pat[i].sub_step = 1
       end
@@ -2416,9 +2422,12 @@ function savestate()
     end
   end
   io.write("the last params".."\n")
-  io.write(params:get("clock_out") .. "\n")
-  io.write(params:get("crow_clock_out") .. "\n")
-  io.write(params:get("midi_device") .. "\n")
+  --io.write(params:get("clock_out") .. "\n")
+  io.write("0".."\n")
+  --io.write(params:get("crow_clock_out") .. "\n")
+  io.write("0".."\n")
+  --io.write(params:get("midi_device") .. "\n")
+  io.write("0".."\n")
   io.write(params:get("loop_enc_resolution") .."\n")
   --io.write(params:get("clock") .. "\n")
   io.write("0".."\n")
@@ -2602,9 +2611,12 @@ function loadstate()
       end
     end
     if io.read() == "the last params" then
-      params:set("clock_out",tonumber(io.read()))
-      params:set("crow_clock_out",tonumber(io.read()))
-      params:set("midi_device",tonumber(io.read()))
+      --params:set("clock_out",tonumber(io.read()))
+      local disregard = tonumber(io.read())
+      --params:set("crow_clock_out",tonumber(io.read()))
+      local disregard = tonumber(io.read())
+      --params:set("midi_device",tonumber(io.read()))
+      local disregard = tonumber(io.read())
       params:set("loop_enc_resolution",tonumber(io.read()))
       --params:set("clock",tonumber(io.read()))
       local disregard_the_clock_source = tonumber(io.read())
@@ -2732,7 +2744,7 @@ function test_load(slot,destination)
       grid_pat[destination]:stop()
     elseif grid_pat[destination].tightened_start == 1 then
       grid_pat[destination].tightened_start = 0
-      grid_pat[destination].step = 1
+      grid_pat[destination].step = grid_pat[destination].start_point
       quantized_grid_pat[destination].current_step = 1
       quantized_grid_pat[destination].sub_step = 1
     end
@@ -2802,6 +2814,10 @@ function save_pattern(source,slot)
   io.write(original_pattern[source].prev_time .. "\n")
   io.write("which playmode?" .. "\n")
   io.write(original_pattern[source].playmode .. "\n")
+  io.write("start point" .. "\n")
+  io.write(original_pattern[source].start_point .. "\n")
+  io.write("end point" .. "\n")
+  io.write(original_pattern[source].end_point .. "\n")
   io.close(file)
   save_external_timing(source,slot)
   print("saved pattern "..source.." to slot "..slot)
@@ -3171,6 +3187,16 @@ function load_pattern(slot,destination)
         grid_pat[destination].playmode = 1
       end
       set_pattern_mode(destination)
+      if io.read() == "start point" then
+        grid_pat[destination].start_point = tonumber(io.read())
+      else
+        grid_pat[destination].start_point = 1
+      end
+      if io.read() == "end point" then
+        grid_pat[destination].end_point = tonumber(io.read())
+      else
+        grid_pat[destination].end_point = grid_pat[destination].count
+      end
     end
     io.close(file)
     load_external_timing(destination,slot)

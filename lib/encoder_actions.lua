@@ -157,9 +157,25 @@ function encoder_actions.init(n,d)
       end
     elseif menu == 7 then
       if page.time_sel > 1 and page.time_sel < 5 and bank[page.time_sel-1].crow_execute ~= 1 then
-        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,4)
+        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,7)
+        if page.time_page_sel[page.time_sel] > 4 then
+          page.time_scroll[page.time_sel] = 2
+        else
+          page.time_scroll[page.time_sel] = 1
+        end
       else
-        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,3)
+        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,7)
+        if page.time_page_sel[page.time_sel] < 4 then
+          page.time_scroll[page.time_sel] = 1
+        elseif page.time_page_sel[page.time_sel] == 4 and bank[page.time_sel-1].crow_execute == 1 then
+          if page.time_scroll[page.time_sel] == 1 then
+            page.time_page_sel[page.time_sel] = 5
+            page.time_scroll[page.time_sel] = 2
+          else
+            page.time_page_sel[page.time_sel] = 3
+            page.time_scroll[page.time_sel] = 1
+          end
+        end
       end
     end
   end
@@ -247,6 +263,14 @@ function encoder_actions.init(n,d)
           end
         elseif page.time_page_sel[page.time_sel] == 4 and bank[page.time_sel-1].crow_execute ~= 1 then
           crow.count_execute[page.time_sel-1] = util.clamp(crow.count_execute[page.time_sel-1]+d,1,16)
+        elseif page.time_page_sel[page.time_sel] == 6 then
+          if grid_pat[page.time_sel-1].rec ~= 1 and grid_pat[page.time_sel-1].count > 0 then
+            grid_pat[page.time_sel-1].start_point = util.clamp(grid_pat[page.time_sel-1].start_point+d,1,grid_pat[page.time_sel-1].count)
+          end
+        elseif page.time_page_sel[page.time_sel] == 7 then
+          if grid_pat[page.time_sel-1].rec ~= 1 and grid_pat[page.time_sel-1].count > 0 then
+            grid_pat[page.time_sel-1].end_point = util.clamp(grid_pat[page.time_sel-1].end_point+d,grid_pat[page.time_sel-1].start_point,grid_pat[page.time_sel-1].count)
+          end
         end
       end
     end
