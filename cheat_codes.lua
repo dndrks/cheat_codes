@@ -721,22 +721,22 @@ function init()
           print("if you see this message, tell dan!")
           quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
         end
-      elseif quantized_grid_pat[bank].event[current][sub_step] == nil then
+      elseif quantized_grid_pat[bank].event[current][sub_step] == nil and #quantized_grid_pat[bank].event == grid_pat[bank].end_point then
         print(current.." is nil!")
         table.remove(quantized_grid_pat[bank].event,current)
         quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step + 1
         quantized_grid_pat[bank].sub_step = 1
+        print(quantized_grid_pat[bank].current_step)
       end
       --increase sub_step now
       --if quantized_grid_pat[bank].current_step > #quantized_grid_pat[bank].event or quantized_grid_pat[bank].current_step > #grid_pat[bank].event then
-      if quantized_grid_pat[bank].current_step > #quantized_grid_pat[bank].event then
-        print("HOW DID THIS HAPPEN?")
+      if quantized_grid_pat[bank].current_step > grid_pat[bank].end_point then
         quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
       end
       if quantized_grid_pat[bank].sub_step == #quantized_grid_pat[bank].event[quantized_grid_pat[bank].current_step] then
         quantized_grid_pat[bank].sub_step = 0
         --if we're at the end of the events in this step, move to the next step
-        if grid_pat[bank].step == grid_pat[bank].count then
+        if grid_pat[bank].step == grid_pat[bank].end_point then
           grid_pat[bank].step = 0
           --quantized_grid_pat[bank].current_step = 0
         end

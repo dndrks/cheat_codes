@@ -275,10 +275,18 @@ function encoder_actions.init(n,d)
         elseif time_page[page_line] == 6 then
           if pattern.rec ~= 1 and pattern.count > 0 then
             pattern.start_point = util.clamp(pattern.start_point+d,1,pattern.count)
+            if quantized_grid_pat[page_line].current_step < pattern.start_point then
+              quantized_grid_pat[page_line].current_step = pattern.start_point
+              quantized_grid_pat[page_line].sub_step = 1
+            end
           end
         elseif time_page[page_line] == 7 then
           if pattern.rec ~= 1 and pattern.count > 0 then
             pattern.end_point = util.clamp(pattern.end_point+d,pattern.start_point,pattern.count)
+            if quantized_grid_pat[page_line].current_step > pattern.end_point then
+              quantized_grid_pat[page_line].current_step = pattern.start_point
+              quantized_grid_pat[page_line].sub_step = 1
+            end
           end
         end
       end
