@@ -484,42 +484,9 @@ function copy_entire_pattern(bank)
   original_pattern[bank].event = {}
   for i = 1,#grid_pat[bank].event do
     original_pattern[bank].event[i] = {}
-    original_pattern[bank].event[i].id = {}
-    original_pattern[bank].event[i].rate = {}
-    original_pattern[bank].event[i].loop = {}
-    original_pattern[bank].event[i].mode = {}
-    original_pattern[bank].event[i].pause = {}
-    original_pattern[bank].event[i].start_point = {}
-    original_pattern[bank].event[i].clip = {}
-    original_pattern[bank].event[i].end_point = {}
-    original_pattern[bank].event[i].rate_adjusted = {}
-    original_pattern[bank].event[i].y = {}
-    original_pattern[bank].event[i].x = {}
-    original_pattern[bank].event[i].action = {}
-    original_pattern[bank].event[i].i = {}
-    original_pattern[bank].event[i].previous_rate = {}
-    original_pattern[bank].event[i].row = {}
-    original_pattern[bank].event[i].con = {}
-    original_pattern[bank].event[i].bank = nil
-  end
-  for i = 1,#grid_pat[bank].event do
-    original_pattern[bank].event[i].id = grid_pat[bank].event[i].id
-    original_pattern[bank].event[i].rate = grid_pat[bank].event[i].rate
-    original_pattern[bank].event[i].loop = grid_pat[bank].event[i].loop
-    original_pattern[bank].event[i].mode = grid_pat[bank].event[i].mode
-    original_pattern[bank].event[i].pause = grid_pat[bank].event[i].pause
-    original_pattern[bank].event[i].start_point = grid_pat[bank].event[i].start_point
-    original_pattern[bank].event[i].clip = grid_pat[bank].event[i].clip
-    original_pattern[bank].event[i].end_point = grid_pat[bank].event[i].end_point
-    original_pattern[bank].event[i].rate_adjusted = grid_pat[bank].event[i].rate_adjusted
-    original_pattern[bank].event[i].y = grid_pat[bank].event[i].y
-    original_pattern[bank].event[i].x = grid_pat[bank].event[i].x
-    original_pattern[bank].event[i].action = grid_pat[bank].event[i].action
-    original_pattern[bank].event[i].i = grid_pat[bank].event[i].i
-    original_pattern[bank].event[i].previous_rate = grid_pat[bank].event[i].previous_rate
-    original_pattern[bank].event[i].row = grid_pat[bank].event[i].row
-    original_pattern[bank].event[i].con = grid_pat[bank].event[i].con
-    original_pattern[bank].event[i].bank = grid_pat[bank].event[i].bank
+    for k,v in pairs(grid_pat[bank].event[i]) do
+      original_pattern[bank].event[i][k] = v
+    end
   end
   original_pattern[bank].metro = {}
   original_pattern[bank].metro.props = {}
@@ -584,8 +551,6 @@ function pattern_timing_to_clock_resolution(i)
 end
 
 key1_hold = false
-
-clipboard = {}
 
 --local beatclock = include "lib/beatclock-crow"
 --clk = beatclock.new()
@@ -1417,8 +1382,8 @@ function reset_all_banks( banks )
       pad.end_point         = 1+((8/16) *  pad.pad_id)
       pad.sample_end        = 8
       pad.rate              = 1.0
-      pad.left_delay_time   = 0.5
-      pad.right_delay_time  = 0.5
+      pad.left_delay_time   = 0.5 -- [delay] controls these
+      pad.right_delay_time  = 0.5 -- [delay] controls these
       pad.pause             = false
       pad.play_mode         = "latch"
       pad.level             = 1.0
@@ -2190,33 +2155,12 @@ function zilchmo(k,i)
   redraw()
 end
 
-function clipboard_copy(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r)
-  for k,v in pairs({a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r}) do
-    clipboard[k] = v
+function pad_copy(destination, source)
+  for k,v in pairs(source) do
+    if k ~= bank_id and k ~= pad_id then
+      destination[k] = v
+    end
   end
-end
-
-function clipboard_paste(i)
-  local d = bank[i].focus_pad
-  bank[i][d].start_point = clipboard[1]
-  bank[i][d].end_point = clipboard[2]
-  bank[i][d].rate = clipboard[3]
-  bank[i][d].level = clipboard[4]
-  bank[i][d].pan = clipboard[5]
-  bank[i][d].clip = clipboard[6]
-  bank[i][d].mode = clipboard[7]
-  bank[i][d].loop = clipboard[8]
-  bank[i][d].filter_type = clipboard[9]
-  bank[i][d].fc = clipboard[10]
-  bank[i][d].q = clipboard[11]
-  bank[i][d].fifth = clipboard[12]
-  bank[i][d].enveloped = clipboard[13]
-  bank[i][d].envelope_time = clipboard[14]
-  bank[i][d].tilt = clipboard[15]
-  bank[i][d].tilt_ease_time = clipboard[16]
-  bank[i][d].tilt_ease_type = clipboard[17]
-  bank[i][d].offset = clipboard[18]
-  redraw()
 end
 
 a = arc.connect()

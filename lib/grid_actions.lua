@@ -26,7 +26,7 @@ function grid_actions.init(x,y,z)
             if menu == 8 then
               help_menu = "banks"
             end
-            clipboard = {}
+            pad_clipboard = nil
             if bank[i].quantize_press == 0 then
               cheat(i, bank[i].id)
               grid_p[i] = {}
@@ -52,33 +52,14 @@ function grid_actions.init(x,y,z)
           if grid.alt == 0 then
             bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
           elseif grid.alt == 1 then
-            if #clipboard == 0 then
+            if not pad_clipboard then
+              pad_clipboard = {}
               bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
-              clipboard[i] = {}
-              clipboard_copy(
-                bank[i][bank[i].focus_pad].start_point,
-                bank[i][bank[i].focus_pad].end_point,
-                bank[i][bank[i].focus_pad].rate,
-                bank[i][bank[i].focus_pad].level,
-                bank[i][bank[i].focus_pad].pan,
-                bank[i][bank[i].focus_pad].clip,
-                bank[i][bank[i].focus_pad].mode,
-                bank[i][bank[i].focus_pad].loop,
-                bank[i][bank[i].focus_pad].filter_type,
-                bank[i][bank[i].focus_pad].fc,
-                bank[i][bank[i].focus_pad].q,
-                bank[i][bank[i].focus_pad].fifth,
-                bank[i][bank[i].focus_pad].enveloped,
-                bank[i][bank[i].focus_pad].envelope_time,
-                bank[i][bank[i].focus_pad].tilt,
-                bank[i][bank[i].focus_pad].tilt_ease_time,
-                bank[i][bank[i].focus_pad].tilt_ease_type,
-                bank[i][bank[i].focus_pad].offset
-                )
+              pad_copy(pad_clipboard, bank[i][bank[i].focus_pad])
             else
               bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
-              clipboard_paste(i)
-              clipboard = {}
+              pad_copy(bank[i][bank[i].focus_pad], pad_clipboard)
+              pad_clipboard = nil
             end
           end
         end
