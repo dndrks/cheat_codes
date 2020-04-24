@@ -156,7 +156,7 @@ end
 
 function set_pattern_mode(bank)
   grid_pat[bank].step = grid_pat[bank].start_point
-  quantized_grid_pat[bank].current_step = 1
+  quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
   quantized_grid_pat[bank].sub_step = 1
   if grid_pat[bank].playmode == 1 then
     grid_pat[bank].quantize = 0
@@ -220,7 +220,7 @@ function better_grid_pat_q_clock(i)
   elseif grid_pat[i].tightened_start == 1 then
     grid_pat[i].tightened_start = 0
     grid_pat[i].step = grid_pat[i].start_point
-    quantized_grid_pat[i].current_step = 1
+    quantized_grid_pat[i].current_step = grid_pat[i].start_point
     quantized_grid_pat[i].sub_step = 1
   else
     grid_pat[i].tightened_start = 1
@@ -294,7 +294,15 @@ function random_grid_pat(which,mode)
       pattern.event[i] = {}
       local constructed = pattern.event[i]
       constructed.id = math.random(1,16)
-      constructed.rate = math.pow(2,math.random(-2,2))*((math.random(1,2)*2)-3)
+      if pattern.random_pitch_range == 1 then
+        constructed.rate = math.pow(2,math.random(-3,-1))*((math.random(1,2)*2)-3)
+      elseif pattern.random_pitch_range == 2 then
+        constructed.rate = math.pow(2,math.random(-1,1))*((math.random(1,2)*2)-3)
+      elseif pattern.random_pitch_range == 3 then
+        constructed.rate = math.pow(2,math.random(1,2))*((math.random(1,2)*2)-3)
+      else
+        constructed.rate = math.pow(2,math.random(-2,2))*((math.random(1,2)*2)-3)
+      end
       bank[which][constructed.id].rate = constructed.rate
       constructed.loop = bank[which][constructed.id].loop
       constructed.mode = bank[which][constructed.id].mode
@@ -401,7 +409,7 @@ function snap_to_bars_midi(bank,bar_count)
         current_count = current_count + 1
       end
     end
-    quantized_grid_pat[bank].current_step = 1
+    quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
     quantized_grid_pat[bank].sub_step = 1
   end
   
@@ -552,7 +560,7 @@ function midi_clock_linearize(bank)
       end
     end
   end
-  quantized_grid_pat[bank].current_step = 1
+  quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
   quantized_grid_pat[bank].sub_step = 1
 end
 
@@ -654,6 +662,7 @@ function init()
     grid_pat[i].auto_snap = 0
     grid_pat[i].quantize = 0
     grid_pat[i].playmode = 1
+    grid_pat[i].random_pitch_range = 4
   end
   
   quantized_grid_pat = {}
@@ -662,7 +671,7 @@ function init()
     quantized_grid_pat[i].clicks = {}
     quantized_grid_pat[i].event = {}
     quantized_grid_pat[i].sub_step = 1
-    quantized_grid_pat[i].current_step = 1
+    quantized_grid_pat[i].current_step = grid_pat[i].start_point
   end
   
   step_seq = {}
@@ -700,7 +709,7 @@ function init()
           grid_pat[bank].step = grid_pat[bank].start_point
         end
         if quantized_grid_pat[bank].current_step == 0 then
-          quantized_grid_pat[bank].current_step = 1
+          quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
         end
         grid_pattern_execute(grid_pat[bank].event[quantized_grid_pat[bank].current_step])
       elseif quantized_grid_pat[bank].event[current][sub_step] == "nothing" then
@@ -709,7 +718,8 @@ function init()
           grid_pat[bank].step = grid_pat[bank].start_point
         end
         if quantized_grid_pat[bank].current_step == 0 then
-          quantized_grid_pat[bank].current_step = 1
+          print("if you see this message, tell dan!")
+          quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
         end
       elseif quantized_grid_pat[bank].event[current][sub_step] == nil then
         print(current.." is nil!")
@@ -721,7 +731,7 @@ function init()
       --if quantized_grid_pat[bank].current_step > #quantized_grid_pat[bank].event or quantized_grid_pat[bank].current_step > #grid_pat[bank].event then
       if quantized_grid_pat[bank].current_step > #quantized_grid_pat[bank].event then
         print("HOW DID THIS HAPPEN?")
-        quantized_grid_pat[bank].current_step = 1
+        quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
       end
       if quantized_grid_pat[bank].sub_step == #quantized_grid_pat[bank].event[quantized_grid_pat[bank].current_step] then
         quantized_grid_pat[bank].sub_step = 0
@@ -730,8 +740,9 @@ function init()
           grid_pat[bank].step = 0
           --quantized_grid_pat[bank].current_step = 0
         end
-        if quantized_grid_pat[bank].current_step == #quantized_grid_pat[bank].event then
-          quantized_grid_pat[bank].current_step = 0
+        --if quantized_grid_pat[bank].current_step == #quantized_grid_pat[bank].event then
+        if quantized_grid_pat[bank].current_step == grid_pat[bank].end_point then
+          quantized_grid_pat[bank].current_step = grid_pat[bank].start_point - 1
         end
         grid_pat[bank].step = grid_pat[bank].step + 1
         quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step +1
@@ -785,7 +796,7 @@ function init()
   page.filtering_sel = 0
   page.arc_sel = 0
   page.delay_sel = 0
-  page.time_sel = 2
+  page.time_sel = 1
   page.time_page = {}
   page.time_page_sel = {}
   page.time_scroll = {}
@@ -1112,7 +1123,7 @@ osc_in = function(path, args, from)
       elseif grid_pat[i].tightened_start == 1 then
         grid_pat[i].tightened_start = 0
         grid_pat[i].step = grid_pat[i].start_point
-        quantized_grid_pat[i].current_step = 1
+        quantized_grid_pat[i].current_step = grid_pat[i].start_point
         quantized_grid_pat[i].sub_step = 1
       end
     elseif path == "/start_pat_"..i then
@@ -1749,7 +1760,7 @@ function key(n,z)
       page.filtering_sel = filter_nav
     elseif menu == 7 then
       local time_nav = page.time_sel
-      local id = time_nav-1
+      local id = time_nav
       --[[
         if time_nav == 1 and page.time_page_sel[time_nav] == 1 then
         local tap1 = util.time()
@@ -1764,9 +1775,11 @@ function key(n,z)
           crow.count[i] = crow.count_execute[i]
         end
         --]]
-      if time_nav > 1 and time_nav < 5 then
+      if time_nav >= 1 and time_nav < 4 then
         if page.time_page_sel[time_nav] == 2 then
           random_grid_pat(id,2)
+        elseif page.time_page_sel[time_nav] == 5 then
+          random_grid_pat(id,3)
         end
       end
     end
@@ -2455,6 +2468,10 @@ function savestate()
       io.write(bank[i][k].crow_pad_execute.."\n")
     end
   end
+  io.write("1.3: Pattern random pitch range".."\n")
+  for i = 1,3 do
+    io.write(grid_pat[i].random_pitch_range.."\n")
+  end
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -2658,6 +2675,11 @@ function loadstate()
         end
       end
     end
+    if io.read() == "1.3: Pattern random pitch range" then
+      for i  = 1,3 do
+        grid_pat[i].random_pitch_range = tonumber(io.read())
+      end
+    end
     io.close(file)
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
@@ -2721,7 +2743,7 @@ function test_load(slot,destination)
     elseif grid_pat[destination].tightened_start == 1 then
       grid_pat[destination].tightened_start = 0
       grid_pat[destination].step = grid_pat[destination].start_point
-      quantized_grid_pat[destination].current_step = 1
+      quantized_grid_pat[destination].current_step = grid_pat[destination].start_point
       quantized_grid_pat[destination].sub_step = 1
     end
     load_pattern(slot,destination)

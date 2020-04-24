@@ -58,7 +58,7 @@ function encoder_actions.init(n,d)
     elseif menu == 6 then
       page.delay_sel = util.clamp(page.delay_sel+d,0,4)
     elseif menu == 7 then
-      page.time_sel = util.clamp(page.time_sel+d,2,4)
+      page.time_sel = util.clamp(page.time_sel+d,1,3)
     end
   end
   if n == 2 then
@@ -156,27 +156,29 @@ function encoder_actions.init(n,d)
         params:delta("delay L: global level",d)
       end
     elseif menu == 7 then
-      if page.time_sel > 1 and page.time_sel < 5 and bank[page.time_sel-1].crow_execute ~= 1 then
-        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,7)
-        if page.time_page_sel[page.time_sel] > 4 then
-          page.time_scroll[page.time_sel] = 2
+      local time_page = page.time_page_sel
+      local page_line = page.time_sel
+      if page_line >= 1 and page_line < 4 and bank[page_line].crow_execute ~= 1 then
+        time_page[page_line] = util.clamp(time_page[page_line]+d,1,7)
+        if time_page[page_line] > 4 then
+          page.time_scroll[page_line] = 2
         else
-          page.time_scroll[page.time_sel] = 1
+          page.time_scroll[page_line] = 1
         end
       else
-        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,7)
-        if page.time_page_sel[page.time_sel] < 4 then
-          page.time_scroll[page.time_sel] = 1
-        elseif page.time_page_sel[page.time_sel] == 4 and bank[page.time_sel-1].crow_execute == 1 then
-          if page.time_scroll[page.time_sel] == 1 then
-            page.time_page_sel[page.time_sel] = 5
-            page.time_scroll[page.time_sel] = 2
+        time_page[page_line] = util.clamp(time_page[page_line]+d,1,7)
+        if time_page[page_line] < 4 then
+          page.time_scroll[page_line] = 1
+        elseif time_page[page_line] == 4 and bank[page_line].crow_execute == 1 then
+          if page.time_scroll[page_line] == 1 then
+            time_page[page_line] = 5
+            page.time_scroll[page_line] = 2
           else
-            page.time_page_sel[page.time_sel] = 3
-            page.time_scroll[page.time_sel] = 1
+            time_page[page_line] = 3
+            page.time_scroll[page_line] = 1
           end
-        elseif page.time_page_sel[page.time_sel] > 4 and bank[page.time_sel-1].crow_execute == 1 then
-          page.time_scroll[page.time_sel] = 2
+        elseif time_page[page_line] > 4 and bank[page_line].crow_execute == 1 then
+          page.time_scroll[page_line] = 2
         end
       end
     end
@@ -255,23 +257,28 @@ function encoder_actions.init(n,d)
         params:delta("delay R: global level",d)
       end
     elseif menu == 7 then
-      if page.time_sel <= 4 then
-        if page.time_page_sel[page.time_sel] == 3 then
-          bank[page.time_sel-1].crow_execute = util.clamp(bank[page.time_sel-1].crow_execute+d,0,1)
-        elseif page.time_page_sel[page.time_sel] == 1 then
-          if grid_pat[page.time_sel-1].rec ~= 1 then
-            grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,1,4)
-            set_pattern_mode(page.time_sel-1)
+      local time_page = page.time_page_sel
+      local page_line = page.time_sel
+      local pattern = grid_pat[page_line]
+      if page_line <= 4 then
+        if time_page[page_line] == 3 then
+          bank[page_line].crow_execute = util.clamp(bank[page_line].crow_execute+d,0,1)
+        elseif time_page[page_line] == 1 then
+          if pattern.rec ~= 1 then
+            pattern.playmode = util.clamp(pattern.playmode+d,1,4)
+            set_pattern_mode(page_line)
           end
-        elseif page.time_page_sel[page.time_sel] == 4 and bank[page.time_sel-1].crow_execute ~= 1 then
-          crow.count_execute[page.time_sel-1] = util.clamp(crow.count_execute[page.time_sel-1]+d,1,16)
-        elseif page.time_page_sel[page.time_sel] == 6 then
-          if grid_pat[page.time_sel-1].rec ~= 1 and grid_pat[page.time_sel-1].count > 0 then
-            grid_pat[page.time_sel-1].start_point = util.clamp(grid_pat[page.time_sel-1].start_point+d,1,grid_pat[page.time_sel-1].count)
+        elseif time_page[page_line] == 4 and bank[page_line].crow_execute ~= 1 then
+          crow.count_execute[page_line] = util.clamp(crow.count_execute[page_line]+d,1,16)
+        elseif time_page[page_line] == 5 then
+          pattern.random_pitch_range = util.clamp(pattern.random_pitch_range+d,1,4)
+        elseif time_page[page_line] == 6 then
+          if pattern.rec ~= 1 and pattern.count > 0 then
+            pattern.start_point = util.clamp(pattern.start_point+d,1,pattern.count)
           end
-        elseif page.time_page_sel[page.time_sel] == 7 then
-          if grid_pat[page.time_sel-1].rec ~= 1 and grid_pat[page.time_sel-1].count > 0 then
-            grid_pat[page.time_sel-1].end_point = util.clamp(grid_pat[page.time_sel-1].end_point+d,grid_pat[page.time_sel-1].start_point,grid_pat[page.time_sel-1].count)
+        elseif time_page[page_line] == 7 then
+          if pattern.rec ~= 1 and pattern.count > 0 then
+            pattern.end_point = util.clamp(pattern.end_point+d,pattern.start_point,pattern.count)
           end
         end
       end
