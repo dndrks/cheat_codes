@@ -310,7 +310,7 @@ function random_grid_pat(which,mode)
   elseif mode == 3 then
   --
     local count = math.random(2,24)
-    if grid_pat[which].count > 0 then
+    if grid_pat[which].count > 0 or grid_pat[which].rec == 1 then
       grid_pat[which]:rec_stop()
       grid_pat[which]:stop()
       grid_pat[which].tightened_start = 0

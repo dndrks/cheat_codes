@@ -175,6 +175,8 @@ function encoder_actions.init(n,d)
             page.time_page_sel[page.time_sel] = 3
             page.time_scroll[page.time_sel] = 1
           end
+        elseif page.time_page_sel[page.time_sel] > 4 and bank[page.time_sel-1].crow_execute == 1 then
+          page.time_scroll[page.time_sel] = 2
         end
       end
     end
