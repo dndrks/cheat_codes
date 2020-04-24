@@ -1363,25 +1363,6 @@ function update_tempo()
   --]]
 end
 
---[[
-  function random_clock_resolution(bank)
-  for i = 1,16 do
-    bank[bank][i].clock_resolution = math.random(1,4)
-  end
-end
---]]
-
---[[
-function slice()
-  for i = 1,3 do
-    for j = 1,16 do
-      bank[i][j].start_point = 1+((8/16)*(j-1))
-      bank[i][j].end_point = 1+((8/16)*j)
-    end
-  end
-end
---]]
-
 function rec_count()
   rec_time = rec_time + 0.01
 end
