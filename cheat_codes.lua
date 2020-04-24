@@ -17,6 +17,7 @@ rightangleslice = include 'lib/zilchmos'
 start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
 easingFunctions = include 'lib/easing'
+math.randomseed(os.time())
 
 tau = math.pi * 2
 arc_param = {}
@@ -249,99 +250,72 @@ function snap_to_bars(bank,bar_count)
   end
 end
 
-function shuffle_grid_pat(which,mode)
-  if mode == 1 then
-    for i = #grid_pat[which].time,2,-1 do
-      local j = math.random(i)
-      grid_pat[which].time[i], grid_pat[which].time[j] = grid_pat[which].time[j], grid_pat[which].time[i]
-    end
-  elseif mode == 2 then
-    for i = #grid_pat[which].event,2,-1 do
-      local j = math.random(i)
-      grid_pat[which].event[i].id, grid_pat[which].event[j].id = grid_pat[which].event[j].id, grid_pat[which].event[i].id
-      grid_pat[which].event[i].rate, grid_pat[which].event[j].rate = grid_pat[which].event[j].rate, grid_pat[which].event[i].rate
-      grid_pat[which].event[i].loop, grid_pat[which].event[j].loop = grid_pat[which].event[j].loop, grid_pat[which].event[i].loop
-      grid_pat[which].event[i].mode, grid_pat[which].event[j].mode = grid_pat[which].event[j].mode, grid_pat[which].event[i].mode
-      grid_pat[which].event[i].pause, grid_pat[which].event[j].pause = grid_pat[which].event[j].pause, grid_pat[which].event[i].pause
-      grid_pat[which].event[i].start_point, grid_pat[which].event[j].start_point = grid_pat[which].event[j].start_point, grid_pat[which].event[i].start_point
-      grid_pat[which].event[i].clip, grid_pat[which].event[j].clip = grid_pat[which].event[j].clip, grid_pat[which].event[i].clip
-      grid_pat[which].event[i].end_point = grid_pat[which].event[i].end_point
-      grid_pat[which].event[i].rate_adjusted, grid_pat[which].event[j].rate_adjusted = grid_pat[which].event[j].rate_adjusted, grid_pat[which].event[i].rate_adjusted
-      grid_pat[which].event[i].y, grid_pat[which].event[j].y = grid_pat[which].event[j].y, grid_pat[which].event[i].y
-      grid_pat[which].event[i].x, grid_pat[which].event[j].x = grid_pat[which].event[j].x, grid_pat[which].event[i].x
-      grid_pat[which].event[i].action, grid_pat[which].event[j].action = grid_pat[which].event[j].action, grid_pat[which].event[i].action
-      grid_pat[which].event[i].i, grid_pat[which].event[j].i = grid_pat[which].event[j].i, grid_pat[which].event[i].i
-      grid_pat[which].event[i].previous_rate, grid_pat[which].event[j].previous_rate = grid_pat[which].event[j].previous_rate, grid_pat[which].event[i].previous_rate
-      grid_pat[which].event[i].row, grid_pat[which].event[j].row = grid_pat[which].event[j].row, grid_pat[which].event[i].row
-      grid_pat[which].event[i].con, grid_pat[which].event[j].con = grid_pat[which].event[j].con, grid_pat[which].event[i].con
-      grid_pat[which].event[i].bank, grid_pat[which].event[j].bank = grid_pat[which].event[j].bank, grid_pat[which].event[i].bank
-    end
-  end
-end
-
 function random_grid_pat(which,mode)
+
+  local pattern = grid_pat[which]
   
   if mode == 1 then
-    for i = #grid_pat[which].time,2,-1 do
+    for i = #pattern.time,2,-1 do
       local j = math.random(i)
-      grid_pat[which].time[i], grid_pat[which].time[j] = grid_pat[which].time[j], grid_pat[which].time[i]
+      pattern.time[i], pattern.time[j] = pattern.time[j], pattern.time[i]
     end
   elseif mode == 2 then
-    for i = #grid_pat[which].event,2,-1 do
+    for i = #pattern.event,2,-1 do
       local j = math.random(i)
-      grid_pat[which].event[i].id, grid_pat[which].event[j].id = grid_pat[which].event[j].id, grid_pat[which].event[i].id
-      grid_pat[which].event[i].rate, grid_pat[which].event[j].rate = grid_pat[which].event[j].rate, grid_pat[which].event[i].rate
-      grid_pat[which].event[i].loop, grid_pat[which].event[j].loop = grid_pat[which].event[j].loop, grid_pat[which].event[i].loop
-      grid_pat[which].event[i].mode, grid_pat[which].event[j].mode = grid_pat[which].event[j].mode, grid_pat[which].event[i].mode
-      grid_pat[which].event[i].pause, grid_pat[which].event[j].pause = grid_pat[which].event[j].pause, grid_pat[which].event[i].pause
-      grid_pat[which].event[i].start_point, grid_pat[which].event[j].start_point = grid_pat[which].event[j].start_point, grid_pat[which].event[i].start_point
-      grid_pat[which].event[i].clip, grid_pat[which].event[j].clip = grid_pat[which].event[j].clip, grid_pat[which].event[i].clip
-      grid_pat[which].event[i].end_point = grid_pat[which].event[i].end_point
-      grid_pat[which].event[i].rate_adjusted, grid_pat[which].event[j].rate_adjusted = grid_pat[which].event[j].rate_adjusted, grid_pat[which].event[i].rate_adjusted
-      grid_pat[which].event[i].y, grid_pat[which].event[j].y = grid_pat[which].event[j].y, grid_pat[which].event[i].y
-      grid_pat[which].event[i].x, grid_pat[which].event[j].x = grid_pat[which].event[j].x, grid_pat[which].event[i].x
-      grid_pat[which].event[i].action, grid_pat[which].event[j].action = grid_pat[which].event[j].action, grid_pat[which].event[i].action
-      grid_pat[which].event[i].i, grid_pat[which].event[j].i = grid_pat[which].event[j].i, grid_pat[which].event[i].i
-      grid_pat[which].event[i].previous_rate, grid_pat[which].event[j].previous_rate = grid_pat[which].event[j].previous_rate, grid_pat[which].event[i].previous_rate
-      grid_pat[which].event[i].row, grid_pat[which].event[j].row = grid_pat[which].event[j].row, grid_pat[which].event[i].row
-      grid_pat[which].event[i].con, grid_pat[which].event[j].con = grid_pat[which].event[j].con, grid_pat[which].event[i].con
-      grid_pat[which].event[i].bank, grid_pat[which].event[j].bank = grid_pat[which].event[j].bank, grid_pat[which].event[i].bank
+      local original, shuffled = pattern.event[i], pattern.event[j]
+      original.id, shuffled.id = shuffled.id, original.id
+      original.rate, shuffled.rate = shuffled.rate, original.rate
+      original.loop, shuffled.loop = shuffled.loop, original.loop
+      original.mode, shuffled.mode = shuffled.mode, original.mode
+      original.pause, shuffled.pause = shuffled.pause, original.pause
+      original.start_point, shuffled.start_point = shuffled.start_point, original.start_point
+      original.clip, shuffled.clip = shuffled.clip, original.clip
+      original.end_point = original.end_point
+      original.rate_adjusted, shuffled.rate_adjusted = shuffled.rate_adjusted, original.rate_adjusted
+      original.y, shuffled.y = shuffled.y, original.y
+      original.x, shuffled.x = shuffled.x, original.x
+      original.action, shuffled.action = shuffled.action, original.action
+      original.i, shuffled.i = shuffled.i, original.i
+      original.previous_rate, shuffled.previous_rate = shuffled.previous_rate, original.previous_rate
+      original.row, shuffled.row = shuffled.row, original.row
+      original.con, shuffled.con = shuffled.con, original.con
+      original.bank, shuffled.bank = shuffled.bank, original.bank
     end
   elseif mode == 3 then
-  --
     local count = math.random(2,24)
-    if grid_pat[which].count > 0 or grid_pat[which].rec == 1 then
-      grid_pat[which]:rec_stop()
-      grid_pat[which]:stop()
-      grid_pat[which].tightened_start = 0
-      grid_pat[which]:clear()
+    if pattern.count > 0 or pattern.rec == 1 then
+      pattern:rec_stop()
+      pattern:stop()
+      pattern.tightened_start = 0
+      pattern:clear()
       pattern_saver[which].load_slot = 0
     end
     for i = 1,count do
-      grid_pat[which].event[i] = {}
-      grid_pat[which].event[i].id = math.random(1,16)
-      grid_pat[which].event[i].rate = math.pow(2,math.random(-2,2))*((math.random(1,2)*2)-3)
-      bank[which][grid_pat[which].event[i].id].rate = grid_pat[which].event[i].rate
-      grid_pat[which].event[i].loop = bank[which][grid_pat[which].event[i].id].loop
-      grid_pat[which].event[i].mode = bank[which][grid_pat[which].event[i].id].mode
-      grid_pat[which].event[i].pause = bank[which][grid_pat[which].event[i].id].pause
-      grid_pat[which].event[i].start_point = (math.random(10,75)/10)+(8*(bank[which][grid_pat[which].event[i].id].clip-1))
-      grid_pat[which].event[i].clip = bank[which][grid_pat[which].event[i].id].clip
-      grid_pat[which].event[i].end_point = grid_pat[which].event[i].start_point + (math.random(1,15)/10)
-      grid_pat[which].event[i].rate_adjusted = false
-      grid_pat[which].event[i].x = (5*(which-1)+1)+(math.ceil(grid_pat[which].event[i].id/4)-1)
-      if (grid_pat[which].event[i].id % 4) ~= 0 then
-        grid_pat[which].event[i].y = 9-(grid_pat[which].event[i].id % 4)
+      pattern.event[i] = {}
+      local constructed = pattern.event[i]
+      constructed.id = math.random(1,16)
+      constructed.rate = math.pow(2,math.random(-2,2))*((math.random(1,2)*2)-3)
+      bank[which][constructed.id].rate = constructed.rate
+      constructed.loop = bank[which][constructed.id].loop
+      constructed.mode = bank[which][constructed.id].mode
+      constructed.pause = bank[which][constructed.id].pause
+      constructed.start_point = (math.random(10,75)/10)+(8*(bank[which][constructed.id].clip-1))
+      constructed.clip = bank[which][constructed.id].clip
+      constructed.end_point = constructed.start_point + (math.random(1,15)/10)
+      constructed.rate_adjusted = false
+      constructed.x = (5*(which-1)+1)+(math.ceil(constructed.id/4)-1)
+      if (constructed.id % 4) ~= 0 then
+        constructed.y = 9-(constructed.id % 4)
       else
-        grid_pat[which].event[i].y = 5
+        constructed.y = 5
       end
-      grid_pat[which].event[i].action = "pads"
-      grid_pat[which].event[i].i = which
-      grid_pat[which].time[i] = (60/bpm) / math.pow(2,math.random(-2,2))
+      constructed.action = "pads"
+      constructed.i = which
+      pattern.time[i] = (60/bpm) / math.pow(2,math.random(-2,2))
     end
-    grid_pat[which].count = count
-    grid_pat[which].start_point = 1
-    grid_pat[which].end_point = count
+    pattern.count = count
+    pattern.start_point = 1
+    pattern.end_point = count
   end
 
   --
@@ -349,18 +323,18 @@ function random_grid_pat(which,mode)
     bank[which][i].level = 1
   end
   midi_clock_linearize(which)
-  if grid_pat[which].quantize == 0 then
-    if grid_pat[which].auto_snap == 1 then
+  if pattern.quantize == 0 then
+    if pattern.auto_snap == 1 then
       print("auto-snap")
       snap_to_bars(which,how_many_bars(which))
     end
-    grid_pat[which]:start()
-    grid_pat[which].loop = 1
+    pattern:start()
+    pattern.loop = 1
   else
-    grid_pat[which].loop = 1
-    if grid_pat[which].count > 0 then
-      grid_pat[which].tightened_start = 1
-      if grid_pat[which].auto_snap == 1 then
+    pattern.loop = 1
+    if pattern.count > 0 then
+      pattern.tightened_start = 1
+      if pattern.auto_snap == 1 then
         print("auto-snap")
         snap_to_bars(which,how_many_bars(which))
       end
@@ -1776,7 +1750,8 @@ function key(n,z)
     elseif menu == 7 then
       local time_nav = page.time_sel
       local id = time_nav-1
-      if time_nav == 1 and page.time_page_sel[time_nav] == 1 then
+      --[[
+        if time_nav == 1 and page.time_page_sel[time_nav] == 1 then
         local tap1 = util.time()
         deltatap = tap1 - tap
         tap = tap1
@@ -1788,7 +1763,8 @@ function key(n,z)
         for i = 1,3 do
           crow.count[i] = crow.count_execute[i]
         end
-      elseif time_nav > 1 and time_nav < 5 then
+        --]]
+      if time_nav > 1 and time_nav < 5 then
         if page.time_page_sel[time_nav] == 2 then
           random_grid_pat(id,2)
         end
