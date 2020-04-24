@@ -134,10 +134,11 @@ function start_up.init()
   params:add_option("zilchmo_patterning", "grid pattern style", { "classic", "rad sauce" })
   params:add_option("arc_patterning", "arc pattern style", { "passive", "active" })
   
-  params:add_group("manual control params",24)
+  params:add_group("manual control params",27)
   
   for i = 1,3 do
     banks = {"(a)","(b)","(c)"}
+    params:add_separator(banks[i])
     params:add_control("current pad "..i, "current pad "..banks[i], controlspec.new(1,16,'lin',1,1))
     params:set_action("current pad "..i, function(x)
       if bank[i].id ~= x then
@@ -263,7 +264,7 @@ function start_up.init()
   --params:add_separator()
   
   params:add_group("ignore",18)
-  params:hide(118)
+  params:hide(124)
   
   --params:add{type = "trigger", id = "ignore", name = "ignore, data only:"}
   

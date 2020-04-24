@@ -392,7 +392,7 @@ function snap_to_bars_midi(bank,bar_count)
         elseif #quantized_grid_pat[bank].event[last_group] == 1 and quantized_grid_pat[bank].event[last_group][#quantized_grid_pat[bank].event[last_group]] == "nothing" then
           --print("there's only nothing in group "..last_group..", but removing it")
           table.remove(quantized_grid_pat[bank].event[last_group])
-          print_my_g_p_q(1)
+          --print_my_g_p_q(1)
           current_count = current_count + 1
           if current_count == distance_count then print("done now!") break end
           --print("current count :" .. current_count)
@@ -667,6 +667,9 @@ function init()
   function internal_clocking_tightened(bank)
     local current = quantized_grid_pat[bank].current_step
     local sub_step = quantized_grid_pat[bank].sub_step
+    if current == 0 then
+      current = grid_pat[bank].start_point
+    end
     if grid_pat[bank].tightened_start == 1 and grid_pat[bank].count > 0 then
       if quantized_grid_pat[bank].event[current][sub_step] == "something" then
         --print(current, sub_step, "+++")
@@ -689,9 +692,9 @@ function init()
       elseif quantized_grid_pat[bank].event[current][sub_step] == nil and #quantized_grid_pat[bank].event == grid_pat[bank].end_point then
         print(current.." is nil!")
         table.remove(quantized_grid_pat[bank].event,current)
+        grid_pat[bank].end_point = grid_pat[bank].end_point - 1
         quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step + 1
         quantized_grid_pat[bank].sub_step = 1
-        print(quantized_grid_pat[bank].current_step)
       end
       --increase sub_step now
       --if quantized_grid_pat[bank].current_step > #quantized_grid_pat[bank].event or quantized_grid_pat[bank].current_step > #grid_pat[bank].event then
@@ -728,9 +731,10 @@ function init()
   --clk:add_clock_params()
 
   params:add_number("bpm", "bpm", 1, 480,80)
+  params:hide(51)
   
   params:add_group("hidden [timing]",6)
-  params:hide(49)
+  params:hide(52)
   params:add_option("quantize_pads", "(see [timing] menu)", { "no", "yes" })
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "(see [timing] menu)", { "no", "yes" })
@@ -948,8 +952,6 @@ end
 function globally_clocked()
   while true do
     clock.sync(1/4)
-    --params:set("bpm", util.round(clock.get_tempo())) --taken care of in update_tempo()
-    --if bpm ~= clock.get_tempo() then params:set("bpm", clock.get_tempo()) print(clock.get_tempo()) end
     if menu == 7 then
       redraw()
     end
@@ -1307,25 +1309,6 @@ function update_tempo()
     --quantizer[i].time = interval
     --grid_pat_quantizer[i].time = interval_pats
   end
-
-  --[[
-  if params:get("clock") == 1 then
-    --INTERNAL
-    params:set("bpm", util.round(clock.get_tempo()))
-    bpm = params:get("bpm")
-    local t = params:get("bpm")
-    local d = params:get("quant_div")
-    local d_pat = params:get("quant_div_pats")
-    local interval = (60/t) / d
-    local interval_pats = (60/t) / d_pat
-    for i = 1,3 do
-      --quantizer[i].time = interval
-      --grid_pat_quantizer[i].time = interval_pats
-    end
-  else
-    bpm = params:get("bpm")
-  end
-  --]]
 end
 
 function rec_count()
@@ -3208,6 +3191,8 @@ function save_arc_pattern(which)
   end
   io.write(arc_pat[which].metro.props.time .. "\n")
   io.write(arc_pat[which].prev_time .. "\n")
+  io.write("start point: " .. arc_pat[which].start_point .. "\n")
+  io.write("end point: " .. arc_pat[which].end_point .. "\n")
   io.close(file)
   print("saved arc pattern for encoder "..which)
 end
@@ -3240,6 +3225,18 @@ function load_arc_pattern(which)
       end
       arc_pat[which].metro.props.time = tonumber(io.read())
       arc_pat[which].prev_time = tonumber(io.read())
+      local new_arc_array = io.read()
+      if new_arc_array ~= nil then
+        arc_pat[which].start_point = tonumber(string.match(new_arc_array, ': (.*)'))
+      else
+        arc_pat[which].start_point = 1
+      end
+      local new_arc_array = io.read()
+      if new_arc_array ~= nil then
+        arc_pat[which].end_point = tonumber(string.match(new_arc_array, ': (.*)'))
+      else
+        arc_pat[which].end_point = arc_pat[which].count
+      end
     end
     io.close(file)
   else
