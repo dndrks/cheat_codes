@@ -113,13 +113,18 @@ function start_up.init()
     end
   )
   
-  params:add_option("loop_enc_resolution", "loop encoder resolution", {"0.1","0.01"}, 1)
+  params:add_option("loop_enc_resolution", "loop encoder resolution", {"0.1","0.01","1/16","1/8","1/4","1/2","1 bar"}, 1)
   params:set_action("loop_enc_resolution", function(x)
-    if x == 1 then
-      loop_enc_resolution = 10
-    elseif x == 2 then
-      loop_enc_resolution = 100
-    end
+    local resolutions =
+    { [1] = 10
+    , [2] = 100
+    , [3] = 1/((60/bpm)/4)
+    , [4] = 1/((60/bpm)/2)
+    , [5] = 1/((60/bpm))
+    , [6] = (1/((60/bpm)))/2
+    , [7] = (1/((60/bpm)))/4
+    }
+    loop_enc_resolution = resolutions[x]
   end)
   
   params:add_option("live_buff_rate", "Live buffer max", {"8 sec", "16 sec", "32 sec"}, 1)
@@ -207,7 +212,6 @@ function start_up.init()
     params:add_control("delay "..sides[i-3]..": global level", "delay "..sides[i-3]..": global level", controlspec.new(0,1,'lin',0,0,""))
     params:set_action("delay "..sides[i-3]..": global level", function(x) softcut.level(i+1,x) redraw() end)
     params:add_option("delay "..sides[i-3]..": rate", "delay "..sides[i-3]..": div/mult", {"x2","x1 3/4","x1 2/3","x1 1/2","x1 1/3","x1 1/4","x1","/1 1/4","/1 1/3","/1 1/2","/1 2/3","/1 3/4","/2"},7)
-    --params:add_control("delay "..sides[i-3]..": rate", "delay "..sides[i-3]..": rate (RAW)", controlspec.new(1,13,'lin',1,7))
     params:set_action("delay "..sides[i-3]..": rate", function(x)
       delay[i-3].rate = delay_rates[x]
       delay[i-3].id = x
