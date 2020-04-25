@@ -617,8 +617,8 @@ function grid_actions.init(x,y,z)
         redraw()
       end
     elseif grid.alt == 1 then
-      clk_midi:stop()
-      clk:reset()
+      --clk_midi:stop()
+      --clk:reset()
     end
   end
     
