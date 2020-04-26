@@ -279,7 +279,7 @@ function encoder_actions.init(n,d)
           pattern.random_pitch_range = util.clamp(pattern.random_pitch_range+d,1,4)
         elseif time_page[page_line] == 6 then
           if pattern.rec ~= 1 and pattern.count > 0 then
-            pattern.start_point = util.clamp(pattern.start_point+d,1,pattern.count)
+            pattern.start_point = util.clamp(pattern.start_point+d,1,pattern.end_point)
             if quantized_grid_pat[page_line].current_step < pattern.start_point then
               quantized_grid_pat[page_line].current_step = pattern.start_point
               quantized_grid_pat[page_line].sub_step = 1

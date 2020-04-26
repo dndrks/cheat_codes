@@ -344,26 +344,29 @@ function main_menu.init()
     end
     screen.text((math.modf(show_me_beats)+1).."."..show_me_frac)
     screen.level(10)
-    screen.move(15,30)
-    screen.line(120,30)
+    screen.move(10,30)
+    screen.line(123,30)
     screen.stroke()
+    local playing = {}
+    local display_step = {}
     for i = 1,3 do
       local time_page = page.time_page_sel
       local page_line = page.time_sel
       local pattern = grid_pat[page_line]
       screen.level(page_line == i and 15 or 3)
-      local playing = {}
       if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 then
         playing[i] = 1
       else
         playing[i] = 0
       end
+      if grid_pat[i].quantize == 1 then
+        display_step[i] = quantized_grid_pat[i].current_step
+      else
+        display_step[i] = grid_pat[i].step
+      end
       local playing_options =
-      { [1] = { "P1"  , "P1  >",  "P1  ||"}
-      , [2] = { "P2"  , "P2  >",  "P2  ||"}
-      , [3] = { "P3"  , "P3  >",  "P3  ||"}
-      }
-      screen.move(15+(40*(i-1)),25)
+      { [i] = { "P"..i  , "P"..i.."  > "..display_step[i],  "P"..i.."  x "..display_step[i]} }
+      screen.move(10+(40*(i-1)),25)
       screen.text(playing_options[i][grid_pat[i].count == 0 and 1 or playing[i] == 1 and 2 or playing[i] == 0 and 3])
       local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
       local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
@@ -371,14 +374,14 @@ function main_menu.init()
       if page.time_scroll[page_line] == 1 then
         for j = 1,3 do
           screen.level(time_page[page_line] == j and 15 or 3)
-          screen.move(15,40+(10*(j-1)))
+          screen.move(10,40+(10*(j-1)))
           screen.text(p_options[j])
           local mode_options = {"loose","distro","quant","quant+trim"}
           local fine_options = {mode_options[pattern.playmode], pattern.count > 0 and pattern.rec == 0 and "[K3]" or "(no pat!)", bank[page_line].crow_execute == 1 and "pads" or "clk"}
-          screen.move(85,40+(10*(j-1)))
+          screen.move(80,40+(10*(j-1)))
           screen.text(fine_options[j])
           if bank[page_line].crow_execute ~= 1 then
-            screen.move(102,60)
+            screen.move(97,60)
             screen.level(time_page[page_line] == 4 and 15 or 3)
             screen.text("(/"..crow.count_execute[page_line]..")")
           end
@@ -386,9 +389,9 @@ function main_menu.init()
       else
         for j = 5,7 do
           screen.level(time_page[page_line] == j and 15 or 3)
-          screen.move(15,40+(10*(j-5)))
+          screen.move(10,40+(10*(j-5)))
           screen.text(p_options[j])
-          screen.move(85,40+(10*(j-5)))
+          screen.move(80,40+(10*(j-5)))
           local fine_options = {p_options_rand[pattern.random_pitch_range], pattern.count > 0 and pattern.rec == 0 and pattern.start_point or "(no pat!)", pattern.count > 0 and pattern.rec == 0 and pattern.end_point or "(no pat!)"}
           screen.text(fine_options[j-4])
         end
