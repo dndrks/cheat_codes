@@ -407,7 +407,11 @@ function grid_actions.init(x,y,z)
             redraw()
           else
             if y == 2 then
-              random_grid_pat(math.ceil(x/4),3)
+              if grid_pat[math.ceil(x/4)].playmode == 3 or grid_pat[math.ceil(x/4)].playmode == 4 then
+                clock.run(random_grid_pat, math.ceil(x/4), 3)
+              else
+                random_grid_pat(math.ceil(x/4),3)
+              end
             end
             if y == 4 then
               local current = math.floor(x/5)+1

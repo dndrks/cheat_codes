@@ -352,9 +352,19 @@ function main_menu.init()
       local page_line = page.time_sel
       local pattern = grid_pat[page_line]
       screen.level(page_line == i and 15 or 3)
-      local time_options = {"P1","P2","P3"}
+      local playing = {}
+      if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 then
+        playing[i] = 1
+      else
+        playing[i] = 0
+      end
+      local playing_options =
+      { [1] = { "P1"  , "P1  >",  "P1  ||"}
+      , [2] = { "P2"  , "P2  >",  "P2  ||"}
+      , [3] = { "P3"  , "P3  >",  "P3  ||"}
+      }
       screen.move(15+(40*(i-1)),25)
-      screen.text(time_options[i])
+      screen.text(playing_options[i][grid_pat[i].count == 0 and 1 or playing[i] == 1 and 2 or playing[i] == 0 and 3])
       local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
       local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
       local p_options_rand = {"low rates", "mid rates", "hi rates", "full range"}
