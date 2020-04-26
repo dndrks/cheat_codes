@@ -767,8 +767,6 @@ function init()
   
   params:add_group("crow utils",2)
   params:hide("crow utils")
-
-  params:hide("SOFTCUT")
   
   params:add{type = "trigger", id = "init_crow", name = "initialize crow", action = crow_init}
   params:add{type = "trigger", id = "clear_crow", name = "(reset/clear crow)", action = crow_flush}
