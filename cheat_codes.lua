@@ -962,7 +962,7 @@ local osc_send = {}
 
 function osc_send.pad_sel( state , bank , pad )
   if grid_pat[bank].play == 0 and grid_pat[bank].tightened_start == 0 then
-  osc.send(dest, "/pad_sel_"..bank.."_"..pad, {state})
+    osc.send(dest, "/pad_sel_"..bank.."_"..pad, {state})
   end
 end
 
@@ -1041,6 +1041,13 @@ osc_in = function(path, args, from)
         cheat(i,bank[i].id)
         redraw()
         osc_redraw(i)
+      end
+    elseif path == "/randomize_this_bank"..i then
+      for j = 2,16 do
+        bank[i][j].rate = math.pow(2,math.random(-2,2))*((math.random(1,2)*2)-3)
+        bank[i][j].start_point = (math.random(10,30)/10)+(8*(bank[i][j].clip-1))
+        bank[i][j].end_point = bank[i][j].start_point + (math.random(10,60)/10)
+        bank[i][j].pan = math.random(-100,100)/100
       end
     elseif path == "/rate_"..i then
       for j = 7,12 do
