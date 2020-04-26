@@ -704,10 +704,10 @@ function init()
   end
 
   params:add_number("bpm", "bpm", 1, 480,80)
-  params:hide(51)
+  params:hide("bpm")
   
   params:add_group("hidden [timing]",6)
-  params:hide(52)
+  params:hide("hidden [timing]")
   params:add_option("quantize_pads", "(see [timing] menu)", { "no", "yes" })
   params:set_action("quantize_pads", function(x) quantize = x-1 end)
   params:add_option("quantize_pats", "(see [timing] menu)", { "no", "yes" })
@@ -764,8 +764,11 @@ function init()
   edit = "all"
   
   start_up.init()
-    
+  
   params:add_group("crow utils",2)
+  params:hide("crow utils")
+
+  params:hide("SOFTCUT")
   
   params:add{type = "trigger", id = "init_crow", name = "initialize crow", action = crow_init}
   params:add{type = "trigger", id = "clear_crow", name = "(reset/clear crow)", action = crow_flush}

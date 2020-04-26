@@ -268,7 +268,7 @@ function start_up.init()
   --params:add_separator()
   
   params:add_group("ignore",18)
-  params:hide(124)
+  params:hide("ignore")
   
   --params:add{type = "trigger", id = "ignore", name = "ignore, data only:"}
   
