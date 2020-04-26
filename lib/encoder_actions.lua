@@ -6,7 +6,8 @@ function encoder_actions.init(n,d)
       local id = page.loops_sel + 1
       if id ~= 4 then
         if key1_hold or grid.alt == 1 then
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             bank[id].id = util.clamp(bank[id].id + d,1,16)
             selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
             selected[id].y = 8-((bank[id].id-1)%4)
@@ -16,9 +17,9 @@ function encoder_actions.init(n,d)
           end
         else
           local which_pad = nil
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             which_pad = bank[id].id
-          elseif bank[id].focus_hold == 1 then
+          else
             which_pad = bank[id].focus_pad
           end
           local current_difference = (bank[id][which_pad].end_point - bank[id][which_pad].start_point)
@@ -30,7 +31,7 @@ function encoder_actions.init(n,d)
             bank[id][which_pad].start_point = bank[id][which_pad].end_point - current_difference
           end
         end
-        if bank[id].focus_hold == 0 then
+        if bank[id].focus_hold == false then
           softcut.loop_start(id+1,bank[id][bank[id].id].start_point)
           softcut.loop_end(id+1,bank[id][bank[id].id].end_point)
         end
@@ -43,11 +44,16 @@ function encoder_actions.init(n,d)
           rec.end_point = rec.start_point + current_difference
         else
           local current_difference = (rec.end_point - rec.start_point)
-          if rec.start_point + current_difference <= (9+(8*(rec.clip-1))) then
-            rec.start_point = util.clamp(rec.start_point + d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+          if rec.start_point + current_difference < (9+(8*(rec.clip-1))) then
+            --rec.start_point = util.clamp(rec.start_point + d/loop_enc_resolution,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+            rec.start_point = util.clamp(rec.start_point + current_difference * (d>0 and 1 or -1), (1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
             rec.end_point = rec.start_point + current_difference
           else
+            --[[
             rec.end_point = (9+(8*(rec.clip-1)))
+            rec.start_point = rec.end_point - current_difference
+            --]]
+            rec.end_point = util.clamp(rec.end_point + current_difference * (d>0 and 1 or -1), (1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
             rec.start_point = rec.end_point - current_difference
           end
         end
@@ -57,7 +63,7 @@ function encoder_actions.init(n,d)
     elseif menu == 6 then
       page.delay_sel = util.clamp(page.delay_sel+d,0,4)
     elseif menu == 7 then
-      page.time_sel = util.clamp(page.time_sel+d,1,4)
+      page.time_sel = util.clamp(page.time_sel+d,1,3)
     end
   end
   if n == 2 then
@@ -68,7 +74,8 @@ function encoder_actions.init(n,d)
       if id ~=4 then
         if key1_hold and grid.alt == 0 then
           local focused_pad = nil
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             focused_pad = bank[id].id
           else
             focused_pad = bank[id].focus_pad
@@ -86,7 +93,8 @@ function encoder_actions.init(n,d)
           end
           bank[id][focused_pad].start_point = bank[id][focused_pad].start_point - ((pre_adjust - bank[id][focused_pad].clip)*8)
           bank[id][focused_pad].end_point = bank[id][focused_pad].start_point + current_difference
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             cheat(id,bank[id].id)
           end
           if focused_pad == 16 then
@@ -101,9 +109,9 @@ function encoder_actions.init(n,d)
           end
         elseif key1_hold == false and grid.alt == 0 then
           local which_pad = nil
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             which_pad = bank[id].id
-          elseif bank[id].focus_hold == 1 then
+          else
             which_pad = bank[id].focus_pad
           end
           if d >= 0 and bank[id][which_pad].start_point < (bank[id][which_pad].end_point - d/loop_enc_resolution) then
@@ -111,7 +119,7 @@ function encoder_actions.init(n,d)
           elseif d < 0 then
             bank[id][which_pad].start_point = util.clamp(bank[id][which_pad].start_point+d/loop_enc_resolution,(1+(8*(bank[id][which_pad].clip-1))),(8.9+(8*(bank[id][which_pad].clip-1))))
           end
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             softcut.loop_start(id+1, bank[id][bank[id].id].start_point)
           end
         end
@@ -131,10 +139,10 @@ function encoder_actions.init(n,d)
             end
           end
         else
-          if d >= 0 and rec.start_point < (rec.end_point - d/10) then
-            rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+          if d >= 0 and rec.start_point < (rec.end_point - d/loop_enc_resolution) then
+            rec.start_point = util.clamp(rec.start_point+d/loop_enc_resolution,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
           elseif d < 0 then
-            rec.start_point = util.clamp(rec.start_point+d/10,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+            rec.start_point = util.clamp(rec.start_point+d/loop_enc_resolution,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
           end
           softcut.loop_start(1, rec.start_point)
         end
@@ -153,10 +161,30 @@ function encoder_actions.init(n,d)
         params:delta("delay L: global level",d)
       end
     elseif menu == 7 then
-      if page.time_sel > 1 and page.time_sel < 5 and bank[page.time_sel-1].crow_execute ~= 1 then
-        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,4)
+      local time_page = page.time_page_sel
+      local page_line = page.time_sel
+      if page_line >= 1 and page_line < 4 and bank[page_line].crow_execute ~= 1 then
+        time_page[page_line] = util.clamp(time_page[page_line]+d,1,7)
+        if time_page[page_line] > 4 then
+          page.time_scroll[page_line] = 2
+        else
+          page.time_scroll[page_line] = 1
+        end
       else
-        page.time_page_sel[page.time_sel] = util.clamp(page.time_page_sel[page.time_sel]+d,1,3)
+        time_page[page_line] = util.clamp(time_page[page_line]+d,1,7)
+        if time_page[page_line] < 4 then
+          page.time_scroll[page_line] = 1
+        elseif time_page[page_line] == 4 and bank[page_line].crow_execute == 1 then
+          if page.time_scroll[page_line] == 1 then
+            time_page[page_line] = 5
+            page.time_scroll[page_line] = 2
+          else
+            time_page[page_line] = 3
+            page.time_scroll[page_line] = 1
+          end
+        elseif time_page[page_line] > 4 and bank[page_line].crow_execute == 1 then
+          page.time_scroll[page_line] = 2
+        end
       end
     end
   end
@@ -166,7 +194,8 @@ function encoder_actions.init(n,d)
       if id ~= 4 then
         if key1_hold or grid.alt == 1 then
           local focused_pad = nil
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             focused_pad = bank[id].id
           else
             focused_pad = bank[id].focus_pad
@@ -177,7 +206,8 @@ function encoder_actions.init(n,d)
             current_offset = 0
           end
           bank[id][focused_pad].offset = math.pow(0.5, -current_offset / 12)
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          --if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and grid_pat[id].external_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
             cheat(id,bank[id].id)
           end
           if focused_pad == 16 then
@@ -192,9 +222,9 @@ function encoder_actions.init(n,d)
           end
         else
           local which_pad = nil
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             which_pad = bank[id].id
-          elseif bank[id].focus_hold == 1 then
+          else
             which_pad = bank[id].focus_pad
           end
           if d <= 0 and bank[id][which_pad].start_point < bank[id][which_pad].end_point + d/loop_enc_resolution then
@@ -202,7 +232,7 @@ function encoder_actions.init(n,d)
           elseif d > 0 then
             bank[id][which_pad].end_point = util.clamp(bank[id][which_pad].end_point+d/loop_enc_resolution,(1+(8*(bank[id][which_pad].clip-1))),(9+(8*(bank[id][which_pad].clip-1))))
           end
-          if bank[id].focus_hold == 0 then
+          if bank[id].focus_hold == false then
             softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
           end
         end
@@ -210,10 +240,10 @@ function encoder_actions.init(n,d)
         if key1_hold or grid.alt == 1 then
           params:delta("live_buff_rate",d)
         else
-          if d <= 0 and rec.start_point < rec.end_point + d/10 then
-            rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+          if d <= 0 and rec.start_point < rec.end_point + d/loop_enc_resolution then
+            rec.end_point = util.clamp(rec.end_point+d/loop_enc_resolution,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           elseif d > 0 then
-            rec.end_point = util.clamp(rec.end_point+d/10,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+            rec.end_point = util.clamp(rec.end_point+d/loop_enc_resolution,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           end
           softcut.loop_end(1, rec.end_point-0.01)
         end
@@ -232,55 +262,46 @@ function encoder_actions.init(n,d)
         params:delta("delay R: global level",d)
       end
     elseif menu == 7 then
-      if page.time_sel == 1 then
-        if page.time_page_sel[page.time_sel] == 1 then
-          params:delta("bpm",d)
-        elseif page.time_page_sel[page.time_sel] == 2 then
-          params:delta("clock",d)
-          for i = 1,3 do
-            grid_pat[i]:rec_stop()
-            grid_pat[i]:stop()
-            grid_pat[i].external_start = 0
-            grid_pat[i].tightened_start = 0
-            pattern_saver[i].load_slot = 0
+      local time_page = page.time_page_sel
+      local page_line = page.time_sel
+      local pattern = grid_pat[page_line]
+      if page_line <= 4 then
+        if time_page[page_line] == 3 then
+          bank[page_line].crow_execute = util.clamp(bank[page_line].crow_execute+d,0,1)
+        elseif time_page[page_line] == 1 then
+          if pattern.rec ~= 1 then
+            pattern.playmode = util.clamp(pattern.playmode+d,1,4)
+            set_pattern_mode(page_line)
           end
-        elseif page.time_page_sel[page.time_sel] == 3 then
-          params:delta("crow_clock_out",d)
-        end
-      elseif page.time_sel < 5 then
-        if page.time_page_sel[page.time_sel] == 3 then
-          bank[page.time_sel-1].crow_execute = util.clamp(bank[page.time_sel-1].crow_execute+d,0,1)
-        elseif page.time_page_sel[page.time_sel] == 1 then
-          if grid_pat[page.time_sel-1].rec ~= 1 then
-            if not clk.externalmidi and not clk.externalcrow then
-              grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,1,4)
-            else
-              grid_pat[page.time_sel-1].playmode = util.clamp(grid_pat[page.time_sel-1].playmode+d,3,4)
+        elseif time_page[page_line] == 4 and bank[page_line].crow_execute ~= 1 then
+          crow.count_execute[page_line] = util.clamp(crow.count_execute[page_line]+d,1,16)
+        elseif time_page[page_line] == 5 then
+          pattern.random_pitch_range = util.clamp(pattern.random_pitch_range+d,1,4)
+        elseif time_page[page_line] == 6 then
+          if pattern.rec ~= 1 and pattern.count > 0 then
+            pattern.start_point = util.clamp(pattern.start_point+d,1,pattern.end_point)
+            if quantized_grid_pat[page_line].current_step < pattern.start_point then
+              quantized_grid_pat[page_line].current_step = pattern.start_point
+              quantized_grid_pat[page_line].sub_step = 1
             end
-            set_pattern_mode(page.time_sel-1)
           end
-        elseif page.time_page_sel[page.time_sel] == 4 and bank[page.time_sel-1].crow_execute ~= 1 then
-          crow.count_execute[page.time_sel-1] = util.clamp(crow.count_execute[page.time_sel-1]+d,1,16)
-        end
-      elseif page.time_sel == 5 then
-        if page.time_page_sel[page.time_sel] == 1 then
-          params:delta("lock_pat",d)
-        elseif page.time_page_sel[page.time_sel] == 2 then
-          params:delta("quantize_pads",d)
-          if not clk.externalmidi and not clk.externalcrow then
-            params:delta("quantize_pats",d)
+        elseif time_page[page_line] == 7 then
+          if pattern.rec ~= 1 and pattern.count > 0 then
+            pattern.end_point = util.clamp(pattern.end_point+d,pattern.start_point,pattern.count)
+            if quantized_grid_pat[page_line].current_step > pattern.end_point then
+              quantized_grid_pat[page_line].current_step = pattern.start_point
+              quantized_grid_pat[page_line].sub_step = 1
+            end
           end
-        elseif page.time_page_sel[page.time_sel] == 3 then
-          params:delta("quant_div",d)
         end
       end
     end
   end
   if menu == 3 then
     local focused_pad = nil
-    if bank[n].focus_hold == 1 then
+    if bank[n].focus_hold == true then
       focused_pad = bank[n].focus_pad
-    elseif bank[n].focus_hold == 0 then
+    else
       focused_pad = bank[n].id
     end
     if page.levels_sel == 0 then
@@ -292,7 +313,7 @@ function encoder_actions.init(n,d)
         bank[n][focused_pad].level = util.clamp(bank[n][focused_pad].level+d/10,0,2)
       end
       if bank[n][bank[n].id].enveloped == false then
-        if bank[n].focus_hold == 0 then
+        if bank[n].focus_hold == false then
           softcut.level_slew_time(n+1,1.0)
           softcut.level(n+1,bank[n][bank[n].id].level)
           softcut.level_cut_cut(n+1,5,util.linlin(-1,1,0,1,bank[n][bank[n].id].pan)*(bank[n][bank[n].id].left_delay_level*bank[n][bank[n].id].level))
@@ -325,7 +346,7 @@ function encoder_actions.init(n,d)
           if d < 0 then
             bank[n][focused_pad].enveloped = false
             if pre_enveloped ~= bank[n][bank[n].id].enveloped then
-              if bank[n].focus_hold == 0 then
+              if bank[n].focus_hold == false then
                 cheat(n, bank[n].id)
               end
             end
@@ -334,7 +355,7 @@ function encoder_actions.init(n,d)
           if d > 0 then
             bank[n][focused_pad].enveloped = true
             if pre_enveloped ~= bank[n][focused_pad].enveloped then
-              if bank[n].focus_hold == 0 then
+              if bank[n].focus_hold == false then
                 cheat(n, bank[n].id)
               end
             end
@@ -366,9 +387,9 @@ function encoder_actions.init(n,d)
         bank[n][i].pan = util.clamp(bank[n][i].pan+d/10,-1,1)
       end
     else
-      if bank[n].focus_hold == 1 then
+      if bank[n].focus_hold == true then
         focused_pad = bank[n].focus_pad
-      elseif bank[n].focus_hold == 0 then
+      else
         focused_pad = bank[n].id
       end
       bank[n][focused_pad].pan = util.clamp(bank[n][focused_pad].pan+d/10,-1,1)

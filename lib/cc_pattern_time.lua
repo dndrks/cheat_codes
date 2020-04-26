@@ -17,6 +17,8 @@ function pattern.new()
   i.step = 0
   i.time_factor = 1
   i.loop = 1
+  i.start_point = 0
+  i.end_point = 0
 
   i.metro = metro.init(function() i:next_event() end,1,1)
 
@@ -36,6 +38,8 @@ function pattern:clear()
   self.count = 0
   self.step = 0
   self.time_factor = 1
+  self.start_point = 0
+  self.end_point = 0
 end
 
 --- adjust the time factor of this pattern.
@@ -59,6 +63,8 @@ function pattern:rec_stop()
       local t = self.prev_time
       self.prev_time = util.time()
       self.time[self.count] = self.prev_time - t
+      self.start_point = 1
+      self.end_point = self.count
       --tab.print(self.time)
     else
       print("no events recorded")
@@ -94,24 +100,30 @@ end
 function pattern:start()
   if self.count > 0 then
     --print("start pattern ")
-    self.process(self.event[1])
+    self.process(self.event[self.start_point])
     self.play = 1
-    self.step = 1
-    self.metro.time = self.time[1] * self.time_factor
+    self.step = self.start_point
+    self.metro.time = self.time[self.start_point] * self.time_factor
     self.metro:start()
   end
 end
 
 --- process next event
 function pattern:next_event()
-  if self.step == self.count and self.loop == 1 then self.step = 1
-  else self.step = self.step + 1 end
+  local diff = nil
+  if self.count == self.end_point then diff = self.count else diff = self.end_point end
+  if self.step == diff and self.loop == 1 then
+    self.step = self.start_point
+  elseif self.step > diff and self.loop == 1 then
+    self.step = self.start_point
+  else
+    self.step = self.step + 1 end
   --print("next step "..self.step)
   --event_exec(self.event[self.step])
   self.process(self.event[self.step])
   self.metro.time = self.time[self.step] * self.time_factor
   --print("next time "..self.metro.time)
-  if self.step == self.count and self.loop == 0 then
+  if self.step == diff and self.loop == 0 then
     if self.play == 1 then
       self.play = 0
       self.metro:stop()
