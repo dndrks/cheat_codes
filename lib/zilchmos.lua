@@ -204,7 +204,7 @@ function zilchmos.sc.play_toggle( pad, i )
     softcut.rate(i+1, 0.0)
   else
     if pad.enveloped then
-      cheat( i, pad.id )
+      cheat( i, pad.pad_id )
     else
       softcut.level(i+1, pad.level)
     end
@@ -242,7 +242,7 @@ end
 
 function zilchmos.sc.cheat( pad, i, p )
   if pad.loop and not pad.enveloped then
-    cheat( i, pad.id )
+    cheat( i, pad.pad_id )
   end
 end
 
