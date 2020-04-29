@@ -45,14 +45,9 @@ function encoder_actions.init(n,d)
         else
           local current_difference = (rec.end_point - rec.start_point)
           if rec.start_point + current_difference < (9+(8*(rec.clip-1))) then
-            --rec.start_point = util.clamp(rec.start_point + d/loop_enc_resolution,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
             rec.start_point = util.clamp(rec.start_point + current_difference * (d>0 and 1 or -1), (1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
             rec.end_point = rec.start_point + current_difference
           else
-            --[[
-            rec.end_point = (9+(8*(rec.clip-1)))
-            rec.start_point = rec.end_point - current_difference
-            --]]
             rec.end_point = util.clamp(rec.end_point + current_difference * (d>0 and 1 or -1), (1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
             rec.start_point = rec.end_point - current_difference
           end
@@ -139,10 +134,10 @@ function encoder_actions.init(n,d)
             end
           end
         else
-          if d >= 0 and rec.start_point < (rec.end_point - d/loop_enc_resolution) then
-            rec.start_point = util.clamp(rec.start_point+d/loop_enc_resolution,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+          if d >= 0 and rec.start_point < (rec.end_point - d/rec_loop_enc_resolution) then
+            rec.start_point = util.clamp(rec.start_point+d/rec_loop_enc_resolution,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
           elseif d < 0 then
-            rec.start_point = util.clamp(rec.start_point+d/loop_enc_resolution,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+            rec.start_point = util.clamp(rec.start_point+d/rec_loop_enc_resolution,(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
           end
           softcut.loop_start(1, rec.start_point)
         end
@@ -240,10 +235,10 @@ function encoder_actions.init(n,d)
         if key1_hold or grid.alt == 1 then
           params:delta("live_buff_rate",d)
         else
-          if d <= 0 and rec.start_point < rec.end_point + d/loop_enc_resolution then
-            rec.end_point = util.clamp(rec.end_point+d/loop_enc_resolution,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+          if d <= 0 and rec.start_point < rec.end_point + d/rec_loop_enc_resolution then
+            rec.end_point = util.clamp(rec.end_point+d/rec_loop_enc_resolution,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           elseif d > 0 then
-            rec.end_point = util.clamp(rec.end_point+d/loop_enc_resolution,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+            rec.end_point = util.clamp(rec.end_point+d/rec_loop_enc_resolution,(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           end
           softcut.loop_end(1, rec.end_point-0.01)
         end

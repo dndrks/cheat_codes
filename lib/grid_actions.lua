@@ -321,6 +321,7 @@ function grid_actions.init(x,y,z)
         end
         
         if rec.loop == 0 and grid.alt == 0 then
+          --[[
           softcut.position(1,rec.start_point)
           if rec.state == 0 then
             rec.state = 1
@@ -328,6 +329,8 @@ function grid_actions.init(x,y,z)
             rec_state_watcher:start()
             end
           if rec.clear == 1 then rec.clear = 0 end
+          --]]
+          clock.run(one_shot_clock)
         elseif rec.loop == 0 and grid.alt == 1 then
           buff_flush()
         end
@@ -366,6 +369,12 @@ function grid_actions.init(x,y,z)
                 redraw()
               elseif grid.alt == 0 and arc_switcher[x/5] == 3 then
                  arc_param[x/5] = 4
+              elseif grid.alt == 1 then
+                if y == 8 then
+                  sixteen_slices(x/5)
+                elseif y == 7 then
+                  pad_to_rec(x/5)
+                end
               end
             elseif z == 0 then
               arc_switcher[x/5] = arc_switcher[x/5] - 1

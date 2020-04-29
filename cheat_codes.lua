@@ -906,6 +906,7 @@ function init()
   
   task_id = clock.run(globally_clocked)
   pad_press_quant = clock.run(pad_clock)
+  --one_shot_quant = clock.run(one_shot_clock)
   
   if params:string("clock_source") == "internal" then
     clock.internal.start(bpm)
@@ -920,6 +921,19 @@ function pad_clock()
       cheat_clock_synced(i)
     end
   end
+end
+
+function one_shot_clock()
+  local divs = {0.25,1}
+  local rate = 1/divs[params:get("one_shot_clock_div")]
+  clock.sync(rate)
+  softcut.position(1,rec.start_point)
+  if rec.state == 0 then
+    rec.state = 1
+    softcut.rec_level(1,1)
+    rec_state_watcher:start()
+  end
+  if rec.clear == 1 then rec.clear = 0 end
 end
 
 function globally_clocked()
@@ -1129,13 +1143,16 @@ osc_in = function(path, args, from)
       osc.send(dest, "/buffer_LED_"..i, {1})
         
       if rec.loop == 0 and grid.alt == 0 then
+        --[[
         softcut.position(1,rec.start_point)
         if rec.state == 0 then
           rec.state = 1
           softcut.rec_level(1,1)
           rec_state_watcher:start()
-          end
-      if rec.clear == 1 then rec.clear = 0 end
+        end
+        if rec.clear == 1 then rec.clear = 0 end
+      --]]
+      clock.run(one_shot_clock)
       end
         
       softcut.loop_start(1,rec.start_point)
@@ -1258,6 +1275,28 @@ function step_sequence()
     end
   end
 end
+
+function sixteen_slices(b)
+  local s_p = rec.start_point
+  local e_p = rec.end_point
+  local distance = e_p-s_p
+  for i = 1,16 do
+    bank[b][i].start_point = s_p+((distance/16) * (i-1))
+    bank[b][i].end_point = s_p+((distance/16) * (i))
+  end
+end
+
+function pad_to_rec(b)
+  local pad = bank[b][bank[b].id]
+  local s_p = pad.start_point-(8*(pad.clip-1))
+  local e_p = pad.end_point-(8*(pad.clip-1))
+  rec.start_point = s_p+(8*(rec.clip-1))
+  rec.end_point = e_p+(8*(rec.clip-1))
+  softcut.loop_start(1,rec.start_point)
+  softcut.loop_end(1,rec.end_point-0.01)
+  softcut.position(1,rec.start_point)
+end
+  
 
 function reset_all_banks( banks )
   cross_filter = {} -- TODO put into the banks
