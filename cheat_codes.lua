@@ -704,6 +704,7 @@ function init()
   end
 
   params:add_number("bpm", "bpm", 1, 480,80)
+  bpm = params:get("bpm")
   params:hide("bpm")
   
   params:add_group("hidden [timing]",6)
@@ -718,9 +719,9 @@ function init()
     end
   end)
   params:add_number("quant_div", "(see [timing] menu)", 1, 5, 4)
-  params:set_action("quant_div",function() update_tempo() end)
+  --params:set_action("quant_div",function() update_tempo() end)
   params:add_number("quant_div_pats", "(see [timing] menu)", 1, 5, 4)
-  params:set_action("quant_div_pats",function() update_tempo() end)
+  --params:set_action("quant_div_pats",function() update_tempo() end)
   params:add_option("lock_pat", "(see [timing] menu)", {"no", "yes"} )
   params:add{type = "trigger", id = "sync_pat", name = "(see [timing] menu)"}
 
@@ -927,13 +928,33 @@ function one_shot_clock()
   local divs = {1,0.25}
   local rate = 1/divs[params:get("one_shot_clock_div")]
   clock.sync(rate)
-  softcut.position(1,rec.start_point)
   if rec.state == 0 then
+    softcut.position(1,rec.start_point+0.1)
     rec.state = 1
     softcut.rec_level(1,1)
     rec_state_watcher:start()
   end
   if rec.clear == 1 then rec.clear = 0 end
+end
+
+function compare_rec_resolution(x)
+  local resolutions =
+    { [1] = 10
+    , [2] = 100
+    , [3] = 1/((60/bpm)/4)
+    , [4] = 1/((60/bpm)/2)
+    , [5] = 1/((60/bpm))
+    , [6] = (1/((60/bpm)))/2
+    , [7] = (1/((60/bpm)))/4
+    }
+  rec_loop_enc_resolution = resolutions[x]
+  if x > 2 then
+    rec.start_point = 1+(8*(rec.clip-1))
+    rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))*params:get("live_buff_rate"))
+    softcut.loop_start(1,rec.start_point)
+    softcut.loop_end(1,rec.end_point)
+    redraw()
+  end
 end
 
 function globally_clocked()
@@ -1143,16 +1164,7 @@ osc_in = function(path, args, from)
       osc.send(dest, "/buffer_LED_"..i, {1})
         
       if rec.loop == 0 and grid.alt == 0 then
-        --[[
-        softcut.position(1,rec.start_point)
-        if rec.state == 0 then
-          rec.state = 1
-          softcut.rec_level(1,1)
-          rec_state_watcher:start()
-        end
-        if rec.clear == 1 then rec.clear = 0 end
-      --]]
-      clock.run(one_shot_clock)
+        clock.run(one_shot_clock)
       end
         
       softcut.loop_start(1,rec.start_point)
@@ -1235,7 +1247,7 @@ local tap = 0
 local deltatap = 1
 
 function update_tempo()
-
+  local pre_bpm = bpm
   params:set("bpm", util.round(clock.get_tempo()))
   bpm = params:get("bpm") -- FIXME this is where the global bpm is defined
   local t = params:get("bpm")
@@ -1243,6 +1255,10 @@ function update_tempo()
   local d_pat = params:get("quant_div_pats")
   local interval = (60/t) / d
   local interval_pats = (60/t) / d_pat
+  if pre_bpm ~= bpm then
+    print("not equal!")
+    compare_rec_resolution(params:get("rec_loop_enc_resolution"))
+  end
   for i = 1,3 do
     --quantizer[i].time = interval
     --grid_pat_quantizer[i].time = interval_pats
@@ -1284,6 +1300,7 @@ function sixteen_slices(b)
     bank[b][i].start_point = s_p+((distance/16) * (i-1))
     bank[b][i].end_point = s_p+((distance/16) * (i))
   end
+  cheat(b,bank[b].id)
 end
 
 function pad_to_rec(b)
@@ -1332,7 +1349,7 @@ function reset_all_banks( banks )
       pad.level             = 1.0
       pad.left_delay_level  = 1
       pad.right_delay_level = 1
-      pad.loop              = true
+      pad.loop              = false
       pad.fifth             = false
       pad.pan               = 0.0
       -- FIXME these are both just 0.5. why compute them? could instead call that fn?
