@@ -924,7 +924,7 @@ function pad_clock()
 end
 
 function one_shot_clock()
-  local divs = {0.25,1}
+  local divs = {1,0.25}
   local rate = 1/divs[params:get("one_shot_clock_div")]
   clock.sync(rate)
   softcut.position(1,rec.start_point)

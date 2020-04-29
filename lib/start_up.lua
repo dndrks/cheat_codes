@@ -87,11 +87,12 @@ function start_up.init()
       rec.loop = 2-x
       softcut.loop(1,rec.loop)
       softcut.position(1,rec.start_point)
-      rec.state = 1
-      rec.clear = 0
+      --rec.state = 1
+      rec.state = 0
+      --rec.clear = 0
       softcut.rec_level(1,rec.state)
       if x == 2 then
-        rec_state_watcher:start()
+        --rec_state_watcher:start()
         softcut.pre_level(1,params:get("live_rec_feedback"))
       elseif x == 1 then
         softcut.pre_level(1,params:get("live_rec_feedback"))
@@ -99,7 +100,7 @@ function start_up.init()
     end
   )
 
-  params:add_option("one_shot_clock_div","1-shot sync division",{"next bar","next beat"},1)
+  params:add_option("one_shot_clock_div","1-shot sync div",{"next beat","next bar"},1)
 
   params:add_control("offset", "global pitch offset", controlspec.new(-24, 24, 'lin', 1, 0, "st"))
   params:set_action("offset",
