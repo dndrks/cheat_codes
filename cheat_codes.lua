@@ -1337,7 +1337,6 @@ function pad_to_rec(b)
   softcut.loop_end(1,rec.end_point-0.01)
   softcut.position(1,rec.start_point)
 end
-  
 
 function reset_all_banks( banks )
   cross_filter = {} -- TODO put into the banks
