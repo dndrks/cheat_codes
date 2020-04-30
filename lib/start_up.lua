@@ -97,7 +97,7 @@ function start_up.init()
     end
   )
 
-  params:add_option("one_shot_clock_div","1-shot sync div",{"next beat","next bar"},1)
+  params:add_option("one_shot_clock_div","--> 1-shot sync",{"next beat","next bar"},1)
 
   params:add_option("rec_loop_enc_resolution", "rec loop enc resolution", {"0.1","0.01","1/16","1/8","1/4","1/2","1 bar"}, 1)
   params:set_action("rec_loop_enc_resolution", function(x)
@@ -113,18 +113,12 @@ function start_up.init()
     rec_loop_enc_resolution = resolutions[x]
     if x > 2 then
       rec.start_point = 1+(8*(rec.clip-1))
-      rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))*params:get("live_buff_rate"))
+      rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))/params:get("live_buff_rate"))
       softcut.loop_start(1,rec.start_point)
       softcut.loop_end(1,rec.end_point)
     end
   end)
-  
-  params:add_option("live_buff_rate", "Live buffer max", {"8 sec", "16 sec", "32 sec"}, 1)
-  params:set_action("live_buff_rate", function(x)
-    local buff_rates = {1,0.5,0.25}
-    softcut.rate(1,buff_rates[x])
-  end)
-  
+
   params:add{id="live_rec_feedback", name="live rec feedback", type="control", 
   controlspec=controlspec.new(0,1.0,'lin',0,0.25,""),
   action=function(x)
@@ -132,6 +126,13 @@ function start_up.init()
       softcut.pre_level(1,x)
     end
   end}
+  
+  params:add_option("live_buff_rate", "live buffer max", {"8 sec", "16 sec", "32 sec"}, 1)
+  params:set_action("live_buff_rate", function(x)
+    local buff_rates = {1,0.5,0.25}
+    softcut.rate(1,buff_rates[x])
+    compare_rec_resolution(params:get("rec_loop_enc_resolution"))
+  end)
 
   params:add_separator("global")
 

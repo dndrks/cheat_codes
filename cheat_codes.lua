@@ -876,7 +876,7 @@ function init()
   filter_types = {"lp", "hp", "bp", "lp/hp"}
   
   rec_state_watcher = metro.init()
-  rec_state_watcher.time = 0.25
+  rec_state_watcher.time = 0.05
   rec_state_watcher.event = function()
     if rec.loop == 0 then
       if rec.state == 1 then
@@ -925,13 +925,14 @@ function pad_clock()
 end
 
 function one_shot_clock()
-  local divs = {1,0.25}
-  local rate = 1/divs[params:get("one_shot_clock_div")]
-  clock.sync(rate)
+  local divs = {1,4}
+  local rate = divs[params:get("one_shot_clock_div")]
+  --clock.sync(rate)
   if rec.state == 0 then
+    clock.sync(rate)
     softcut.position(1,rec.start_point+0.1)
-    rec.state = 1
     softcut.rec_level(1,1)
+    rec.state = 1
     rec_state_watcher:start()
   end
   if rec.clear == 1 then rec.clear = 0 end
@@ -950,7 +951,7 @@ function compare_rec_resolution(x)
   rec_loop_enc_resolution = resolutions[x]
   if x > 2 then
     rec.start_point = 1+(8*(rec.clip-1))
-    rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))*params:get("live_buff_rate"))
+    rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))/params:get("live_buff_rate"))
     softcut.loop_start(1,rec.start_point)
     softcut.loop_end(1,rec.end_point)
     redraw()
@@ -1256,7 +1257,6 @@ function update_tempo()
   local interval = (60/t) / d
   local interval_pats = (60/t) / d_pat
   if pre_bpm ~= bpm then
-    print("not equal!")
     compare_rec_resolution(params:get("rec_loop_enc_resolution"))
   end
   for i = 1,3 do
@@ -1292,15 +1292,39 @@ function step_sequence()
   end
 end
 
-function sixteen_slices(b)
+function sixteen_slices(x)
   local s_p = rec.start_point
   local e_p = rec.end_point
   local distance = e_p-s_p
-  for i = 1,16 do
-    bank[b][i].start_point = s_p+((distance/16) * (i-1))
-    bank[b][i].end_point = s_p+((distance/16) * (i))
+  local b = bank[x]
+  local pad = b.focus_hold and b.focus_pad or b.id
+  local function map_em(i)
+    b[i].start_point = s_p+((distance/16) * (i-1))
+    b[i].end_point = s_p+((distance/16) * (i))
+    b[i].clip = rec.clip
   end
-  cheat(b,bank[b].id)
+  if not b.focus_hold then
+    for i = 1,16 do
+      map_em(i)
+    end
+  else
+    map_em(pad)
+  end
+  if b[b.id].loop == true then
+    cheat(x,b.id)
+  end
+end
+
+function rec_to_pad(b)
+  local s_p = rec.start_point
+  local e_p = rec.end_point
+  local distance = e_p-s_p
+  bank[b][bank[b].id].start_point = s_p+((distance/16) * (bank[b].id-1))
+  bank[b][bank[b].id].end_point = s_p+((distance/16) * (bank[b].id))
+  bank[b][bank[b].id].clip = rec.clip
+  if bank[b][bank[b].id].loop == true then
+    cheat(b,bank[b].id)
+  end
 end
 
 function pad_to_rec(b)
@@ -1402,6 +1426,9 @@ function cheat(b,i)
     softcut.level(b+1,pad.level)
     softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
     softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+  end
+  if pad.end_point - pad.start_point < 0.11 then
+    pad.end_point = pad.start_point + 0.1
   end
   if pad.end_point == 9 or pad.end_point == 17 or pad.end_point == 25 then
     pad.end_point = pad.end_point-0.01

@@ -373,6 +373,8 @@ function grid_actions.init(x,y,z)
                 if y == 8 then
                   sixteen_slices(x/5)
                 elseif y == 7 then
+                  rec_to_pad(x/5)
+                elseif y == 6 then
                   pad_to_rec(x/5)
                 end
               end
