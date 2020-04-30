@@ -113,7 +113,8 @@ function start_up.init()
     rec_loop_enc_resolution = resolutions[x]
     if x > 2 then
       rec.start_point = 1+(8*(rec.clip-1))
-      rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))/params:get("live_buff_rate"))
+      local lbr = {1,2,4}
+      rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))/lbr[params:get("live_buff_rate")])
       softcut.loop_start(1,rec.start_point)
       softcut.loop_end(1,rec.end_point)
     end
@@ -132,6 +133,8 @@ function start_up.init()
     local buff_rates = {1,0.5,0.25}
     softcut.rate(1,buff_rates[x])
     compare_rec_resolution(params:get("rec_loop_enc_resolution"))
+    local rate_offset = {0,-12,-24}
+    params:set("offset",rate_offset[x])
   end)
 
   params:add_separator("global")

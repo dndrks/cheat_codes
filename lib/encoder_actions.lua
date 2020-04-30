@@ -138,11 +138,12 @@ function encoder_actions.init(n,d)
             end
           end
         else
+          local lbr = {1,2,4}
           --if d >= 0 and rec.start_point + ((d/rec_loop_enc_resolution)/params:get("live_buff_rate")) < (rec.end_point - ((d/rec_loop_enc_resolution)/params:get("live_buff_rate"))) then
-          if d >= 0 and rec.start_point + ((d/rec_loop_enc_resolution)/params:get("live_buff_rate")) < rec.end_point then
-            rec.start_point = util.clamp(rec.start_point+((d/rec_loop_enc_resolution)/params:get("live_buff_rate")),(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+          if d >= 0 and rec.start_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) < rec.end_point then
+            rec.start_point = util.clamp(rec.start_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
           elseif d < 0 then
-            rec.start_point = util.clamp(rec.start_point+((d/rec_loop_enc_resolution)/params:get("live_buff_rate")),(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
+            rec.start_point = util.clamp(rec.start_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
           end
           softcut.loop_start(1, rec.start_point)
         end
@@ -240,10 +241,11 @@ function encoder_actions.init(n,d)
         if key1_hold or grid.alt == 1 then
           params:delta("live_buff_rate",d)
         else
-          if d <= 0 and rec.start_point < rec.end_point + ((d/rec_loop_enc_resolution)/params:get("live_buff_rate")) then
-            rec.end_point = util.clamp(rec.end_point+((d/rec_loop_enc_resolution)/params:get("live_buff_rate")),(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
-          elseif d > 0 and rec.end_point+((d/rec_loop_enc_resolution)/params:get("live_buff_rate")) < 9+(8*(rec.clip-1)) then
-            rec.end_point = util.clamp(rec.end_point+((d/rec_loop_enc_resolution)/params:get("live_buff_rate")),(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+          local lbr = {1,2,4}
+          if d <= 0 and rec.start_point < rec.end_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) then
+            rec.end_point = util.clamp(rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
+          elseif d > 0 and rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) < 9+(8*(rec.clip-1)) then
+            rec.end_point = util.clamp(rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           end
           softcut.loop_end(1, rec.end_point-0.01)
         end

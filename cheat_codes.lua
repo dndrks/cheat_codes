@@ -951,7 +951,8 @@ function compare_rec_resolution(x)
   rec_loop_enc_resolution = resolutions[x]
   if x > 2 then
     rec.start_point = 1+(8*(rec.clip-1))
-    rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))/params:get("live_buff_rate"))
+    local lbr = {1,2,4}
+    rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))/lbr[params:get("live_buff_rate")])
     softcut.loop_start(1,rec.start_point)
     softcut.loop_end(1,rec.end_point)
     redraw()
