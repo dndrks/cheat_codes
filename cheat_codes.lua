@@ -1488,7 +1488,11 @@ function cheat(b,i)
     s[v]=k
   end
   if pad.fifth == false then
-    params:set("rate "..tonumber(string.format("%.0f",b)),s[pad.rate])
+    if s[pad.rate] ~= nil then
+      params:set("rate "..tonumber(string.format("%.0f",b)),s[pad.rate])
+    else
+      pad.fifth = true
+    end
   end
   params:set("level "..tonumber(string.format("%.0f",b)),pad.level)
   params:set("current pad "..tonumber(string.format("%.0f",b)),i,"true")
