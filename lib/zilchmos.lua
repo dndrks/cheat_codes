@@ -118,9 +118,15 @@ end
 
 function zilchmos.end_random( pad )
   local current_start = math.floor(pad.start_point * 100)
-  local max_end = math.floor(((8*pad.clip)+1) * 100)
+  local max_end = nil
+  --if params:get("zilchmo_bind_rand") == 1 then
+    max_end = math.floor(((8*pad.clip)+1) * 100)
+  --else
+    --max_end = math.floor(rec.end_point * 100)
+  --end
   pad.end_point = math.random(current_start,max_end)/100
 end
+
 
 function zilchmos.start_end_random( pad )
   local jump = math.random(100,900)/100+(8*(pad.clip-1))

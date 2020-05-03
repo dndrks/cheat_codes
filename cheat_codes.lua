@@ -719,9 +719,7 @@ function init()
     end
   end)
   params:add_number("quant_div", "(see [timing] menu)", 1, 5, 4)
-  --params:set_action("quant_div",function() update_tempo() end)
   params:add_number("quant_div_pats", "(see [timing] menu)", 1, 5, 4)
-  --params:set_action("quant_div_pats",function() update_tempo() end)
   params:add_option("lock_pat", "(see [timing] menu)", {"no", "yes"} )
   params:add{type = "trigger", id = "sync_pat", name = "(see [timing] menu)"}
 
@@ -883,12 +881,12 @@ function init()
         if rec.end_point < poll_position_new[1] +0.015 then
           rec.state = 0
           rec_state_watcher:stop()
+          redraw()
         end
       end
     end
   end
   rec_state_watcher.count = -1
-  rec_state_watcher:start()
   
   already_saved()
   
@@ -927,14 +925,30 @@ end
 function one_shot_clock()
   local divs = {1,4}
   local rate = divs[params:get("one_shot_clock_div")]
-  --clock.sync(rate)
-  if rec.state == 0 then
+  --[[
+  if rec.state == 0 and not rec_state_watcher.is_running then
+    clock.sync(rate)
+    softcut.position(1,rec.start_point+0.1)
+    softcut.rec_level(1,1)
+    rec.state = 1
+    rec_state_watcher:start()
+  elseif rec.state == 1 and rec_state_watcher.is_running then
+    rec_state_watcher:stop()
     clock.sync(rate)
     softcut.position(1,rec.start_point+0.1)
     softcut.rec_level(1,1)
     rec.state = 1
     rec_state_watcher:start()
   end
+  --]]
+  if rec.state == 1 and rec_state_watcher.is_running then
+    rec_state_watcher:stop()
+  end
+  clock.sync(rate)
+  softcut.position(1,rec.start_point+0.1)
+  softcut.rec_level(1,1)
+  rec.state = 1
+  rec_state_watcher:start()
   if rec.clear == 1 then rec.clear = 0 end
 end
 
@@ -2422,6 +2436,9 @@ function savestate()
   for i = 1,3 do
     io.write(grid_pat[i].random_pitch_range.."\n")
   end
+  io.write("1.3.1".."\n")
+  io.write("one_shot_clock_div: "..params:get("one_shot_clock_div").."\n")
+  io.write("rec_loop_enc_resolution: "..params:get("rec_loop_enc_resolution").."\n")
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -2629,6 +2646,10 @@ function loadstate()
       for i  = 1,3 do
         grid_pat[i].random_pitch_range = tonumber(io.read())
       end
+    end
+    if io.read() == "1.3.1" then
+      params:set("one_shot_clock_div", tonumber(string.match(io.read(), ': (.*)')))
+      params:set("rec_loop_enc_resolution", tonumber(string.match(io.read(), ': (.*)')))
     end
     io.close(file)
     for i = 1,3 do

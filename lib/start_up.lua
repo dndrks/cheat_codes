@@ -153,7 +153,8 @@ function start_up.init()
     end
   )
   
-  params:add_option("loop_enc_resolution", "play loop enc resolution", {"0.1","0.01","1/16","1/8","1/4","1/2","1 bar"}, 1)
+  --params:add_option("loop_enc_resolution", "play loop enc resolution", {"0.1","0.01","1/16","1/8","1/4","1/2","1 bar"}, 1)
+  params:add_option("loop_enc_resolution", "play loop enc resolution", {"0.1","0.01"}, 1)
   params:set_action("loop_enc_resolution", function(x)
     local resolutions =
     { [1] = 10
@@ -167,7 +168,7 @@ function start_up.init()
     loop_enc_resolution = resolutions[x]
   end)
   
-  --params:add_separator()
+  --params:add_option("zilchmo_bind_rand","bind random zilchmo?", {"no","yes"}, 1)
   
   params:add_group("grid/arc pattern params",2)
   params:add_option("zilchmo_patterning", "grid pattern style", { "classic", "rad sauce" })
