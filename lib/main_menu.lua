@@ -328,8 +328,6 @@ function main_menu.init()
     screen.level(3)
     screen.text("timing")
     screen.level(3)
-    --screen.move(100,10)
-    --screen.text(params:get("bpm") >= 1 and ("bpm: "..params:get("bpm")) or "too slow")
     screen.move(110,10)
     local show_me_beats = clock.get_beats() % 4
     local show_me_frac = math.fmod(clock.get_beats(),1)

@@ -704,6 +704,7 @@ function init()
   end
 
   params:add_number("bpm", "bpm", 1, 480,80)
+  bpm = params:get("bpm")
   params:hide("bpm")
   
   params:add_group("hidden [timing]",6)
@@ -718,9 +719,7 @@ function init()
     end
   end)
   params:add_number("quant_div", "(see [timing] menu)", 1, 5, 4)
-  params:set_action("quant_div",function() update_tempo() end)
   params:add_number("quant_div_pats", "(see [timing] menu)", 1, 5, 4)
-  params:set_action("quant_div_pats",function() update_tempo() end)
   params:add_option("lock_pat", "(see [timing] menu)", {"no", "yes"} )
   params:add{type = "trigger", id = "sync_pat", name = "(see [timing] menu)"}
 
@@ -875,19 +874,19 @@ function init()
   filter_types = {"lp", "hp", "bp", "lp/hp"}
   
   rec_state_watcher = metro.init()
-  rec_state_watcher.time = 0.25
+  rec_state_watcher.time = 0.05
   rec_state_watcher.event = function()
     if rec.loop == 0 then
       if rec.state == 1 then
         if rec.end_point < poll_position_new[1] +0.015 then
           rec.state = 0
           rec_state_watcher:stop()
+          redraw()
         end
       end
     end
   end
   rec_state_watcher.count = -1
-  rec_state_watcher:start()
   
   already_saved()
   
@@ -906,6 +905,7 @@ function init()
   
   task_id = clock.run(globally_clocked)
   pad_press_quant = clock.run(pad_clock)
+  --one_shot_quant = clock.run(one_shot_clock)
   
   if params:string("clock_source") == "internal" then
     clock.internal.start(bpm)
@@ -919,6 +919,57 @@ function pad_clock()
     for i = 1,3 do
       cheat_clock_synced(i)
     end
+  end
+end
+
+function one_shot_clock()
+  local divs = {1,4}
+  local rate = divs[params:get("one_shot_clock_div")]
+  --[[
+  if rec.state == 0 and not rec_state_watcher.is_running then
+    clock.sync(rate)
+    softcut.position(1,rec.start_point+0.1)
+    softcut.rec_level(1,1)
+    rec.state = 1
+    rec_state_watcher:start()
+  elseif rec.state == 1 and rec_state_watcher.is_running then
+    rec_state_watcher:stop()
+    clock.sync(rate)
+    softcut.position(1,rec.start_point+0.1)
+    softcut.rec_level(1,1)
+    rec.state = 1
+    rec_state_watcher:start()
+  end
+  --]]
+  if rec.state == 1 and rec_state_watcher.is_running then
+    rec_state_watcher:stop()
+  end
+  clock.sync(rate)
+  softcut.position(1,rec.start_point+0.1)
+  softcut.rec_level(1,1)
+  rec.state = 1
+  rec_state_watcher:start()
+  if rec.clear == 1 then rec.clear = 0 end
+end
+
+function compare_rec_resolution(x)
+  local resolutions =
+    { [1] = 10
+    , [2] = 100
+    , [3] = 1/((60/bpm)/4)
+    , [4] = 1/((60/bpm)/2)
+    , [5] = 1/((60/bpm))
+    , [6] = (1/((60/bpm)))/2
+    , [7] = (1/((60/bpm)))/4
+    }
+  rec_loop_enc_resolution = resolutions[x]
+  if x > 2 then
+    rec.start_point = 1+(8*(rec.clip-1))
+    local lbr = {1,2,4}
+    rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))/lbr[params:get("live_buff_rate")])
+    softcut.loop_start(1,rec.start_point)
+    softcut.loop_end(1,rec.end_point)
+    redraw()
   end
 end
 
@@ -1129,13 +1180,7 @@ osc_in = function(path, args, from)
       osc.send(dest, "/buffer_LED_"..i, {1})
         
       if rec.loop == 0 and grid.alt == 0 then
-        softcut.position(1,rec.start_point)
-        if rec.state == 0 then
-          rec.state = 1
-          softcut.rec_level(1,1)
-          rec_state_watcher:start()
-          end
-      if rec.clear == 1 then rec.clear = 0 end
+        clock.run(one_shot_clock)
       end
         
       softcut.loop_start(1,rec.start_point)
@@ -1218,7 +1263,7 @@ local tap = 0
 local deltatap = 1
 
 function update_tempo()
-
+  local pre_bpm = bpm
   params:set("bpm", util.round(clock.get_tempo()))
   bpm = params:get("bpm") -- FIXME this is where the global bpm is defined
   local t = params:get("bpm")
@@ -1226,6 +1271,9 @@ function update_tempo()
   local d_pat = params:get("quant_div_pats")
   local interval = (60/t) / d
   local interval_pats = (60/t) / d_pat
+  if pre_bpm ~= bpm then
+    compare_rec_resolution(params:get("rec_loop_enc_resolution"))
+  end
   for i = 1,3 do
     --quantizer[i].time = interval
     --grid_pat_quantizer[i].time = interval_pats
@@ -1257,6 +1305,52 @@ function step_sequence()
       end
     end
   end
+end
+
+function sixteen_slices(x)
+  local s_p = rec.start_point
+  local e_p = rec.end_point
+  local distance = e_p-s_p
+  local b = bank[x]
+  local pad = b.focus_hold and b.focus_pad or b.id
+  local function map_em(i)
+    b[i].start_point = s_p+((distance/16) * (i-1))
+    b[i].end_point = s_p+((distance/16) * (i))
+    b[i].clip = rec.clip
+  end
+  if not b.focus_hold then
+    for i = 1,16 do
+      map_em(i)
+    end
+  else
+    map_em(pad)
+  end
+  if b[b.id].loop == true then
+    cheat(x,b.id)
+  end
+end
+
+function rec_to_pad(b)
+  local s_p = rec.start_point
+  local e_p = rec.end_point
+  local distance = e_p-s_p
+  bank[b][bank[b].id].start_point = s_p+((distance/16) * (bank[b].id-1))
+  bank[b][bank[b].id].end_point = s_p+((distance/16) * (bank[b].id))
+  bank[b][bank[b].id].clip = rec.clip
+  if bank[b][bank[b].id].loop == true then
+    cheat(b,bank[b].id)
+  end
+end
+
+function pad_to_rec(b)
+  local pad = bank[b][bank[b].id]
+  local s_p = pad.start_point-(8*(pad.clip-1))
+  local e_p = pad.end_point-(8*(pad.clip-1))
+  rec.start_point = s_p+(8*(rec.clip-1))
+  rec.end_point = e_p+(8*(rec.clip-1))
+  softcut.loop_start(1,rec.start_point)
+  softcut.loop_end(1,rec.end_point-0.01)
+  softcut.position(1,rec.start_point)
 end
 
 function reset_all_banks( banks )
@@ -1293,7 +1387,7 @@ function reset_all_banks( banks )
       pad.level             = 1.0
       pad.left_delay_level  = 1
       pad.right_delay_level = 1
-      pad.loop              = true
+      pad.loop              = false
       pad.fifth             = false
       pad.pan               = 0.0
       -- FIXME these are both just 0.5. why compute them? could instead call that fn?
@@ -1346,6 +1440,9 @@ function cheat(b,i)
     softcut.level(b+1,pad.level)
     softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
     softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+  end
+  if pad.end_point - pad.start_point < 0.11 then
+    pad.end_point = pad.start_point + 0.1
   end
   if pad.end_point == 9 or pad.end_point == 17 or pad.end_point == 25 then
     pad.end_point = pad.end_point-0.01
@@ -1405,7 +1502,11 @@ function cheat(b,i)
     s[v]=k
   end
   if pad.fifth == false then
-    params:set("rate "..tonumber(string.format("%.0f",b)),s[pad.rate])
+    if s[pad.rate] ~= nil then
+      params:set("rate "..tonumber(string.format("%.0f",b)),s[pad.rate])
+    else
+      pad.fifth = true
+    end
   end
   params:set("level "..tonumber(string.format("%.0f",b)),pad.level)
   params:set("current pad "..tonumber(string.format("%.0f",b)),i,"true")
@@ -2335,6 +2436,9 @@ function savestate()
   for i = 1,3 do
     io.write(grid_pat[i].random_pitch_range.."\n")
   end
+  io.write("1.3.1".."\n")
+  io.write("one_shot_clock_div: "..params:get("one_shot_clock_div").."\n")
+  io.write("rec_loop_enc_resolution: "..params:get("rec_loop_enc_resolution").."\n")
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -2542,6 +2646,10 @@ function loadstate()
       for i  = 1,3 do
         grid_pat[i].random_pitch_range = tonumber(io.read())
       end
+    end
+    if io.read() == "1.3.1" then
+      params:set("one_shot_clock_div", tonumber(string.match(io.read(), ': (.*)')))
+      params:set("rec_loop_enc_resolution", tonumber(string.match(io.read(), ': (.*)')))
     end
     io.close(file)
     for i = 1,3 do
