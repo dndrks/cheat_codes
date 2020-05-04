@@ -285,7 +285,7 @@ function random_grid_pat(which,mode)
     if pattern.playmode == 3 or pattern.playmode == 4 then
       clock.sync(1/4)
     end
-    local count = math.random(2,24)
+    local count = params:get("random_patterning") == 1 and math.random(2,24) or 16
     if pattern.count > 0 or pattern.rec == 1 then
       pattern:rec_stop()
       pattern:stop()
@@ -296,7 +296,7 @@ function random_grid_pat(which,mode)
     for i = 1,count do
       pattern.event[i] = {}
       local constructed = pattern.event[i]
-      constructed.id = math.random(1,16)
+      constructed.id = params:get("random_patterning") == 1 and math.random(1,16) or i
       local new_rates = 
       { [1] = math.pow(2,math.random(-3,-1))*((math.random(1,2)*2)-3)
       , [2] = math.pow(2,math.random(-1,1))*((math.random(1,2)*2)-3)
@@ -331,7 +331,7 @@ function random_grid_pat(which,mode)
       end
       constructed.action = "pads"
       constructed.i = which
-      pattern.time[i] = (60/bpm) / math.pow(2,math.random(-2,2))
+      pattern.time[i] = params:get("random_patterning") == 1 and ((60/bpm) / math.pow(2,math.random(-2,2))) or (60/bpm) / 4
     end
     pattern.count = count
     pattern.start_point = 1

@@ -66,13 +66,17 @@ function start_up.init()
   
   --params:add_separator()
   
-  params:add_group("loops + buffers", 14)
+  params:add_group("loops + buffers", 17)
 
   params:add_separator("clips")
   
   for i = 1,3 do
     params:add_file("clip "..i.." sample", "clip "..i.." sample")
     params:set_action("clip "..i.." sample", function(file) load_sample(file,i) end)
+  end
+
+  for i = 1,3 do	
+    params:add{type = "trigger", id = "save_buffer"..i, name = "save live buffer "..i.." [K3]", action = function() save_sample(i) end}	
   end
 
   params:add_separator("live")
@@ -172,8 +176,9 @@ function start_up.init()
   
   --params:add_option("zilchmo_bind_rand","bind random zilchmo?", {"no","yes"}, 1)
   
-  params:add_group("grid/arc pattern params",2)
+  params:add_group("grid/arc pattern params",3)
   params:add_option("zilchmo_patterning", "grid pattern style", { "classic", "rad sauce" })
+  params:add_option("random_patterning","rand grid pattern style", { "rand", "linear" })
   params:add_option("arc_patterning", "arc pattern style", { "passive", "active" })
   
   params:add_group("manual control params",27)
