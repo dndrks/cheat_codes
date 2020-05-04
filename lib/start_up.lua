@@ -66,7 +66,7 @@ function start_up.init()
   
   --params:add_separator()
   
-  params:add_group("loops + buffers", 13)
+  params:add_group("loops + buffers", 14)
 
   params:add_separator("clips")
   
@@ -136,6 +136,8 @@ function start_up.init()
     local rate_offset = {0,-12,-24}
     params:set("offset",rate_offset[x])
   end)
+
+  params:add_control("random_rec_clock_prob", "random rec probability", controlspec.new(0, 100, 'lin', 1, 0, "%"))
 
   params:add_separator("global")
 
