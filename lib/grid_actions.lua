@@ -321,15 +321,6 @@ function grid_actions.init(x,y,z)
         end
         
         if rec.loop == 0 and grid.alt == 0 then
-          --[[
-          softcut.position(1,rec.start_point)
-          if rec.state == 0 then
-            rec.state = 1
-            softcut.rec_level(1,1)
-            rec_state_watcher:start()
-            end
-          if rec.clear == 1 then rec.clear = 0 end
-          --]]
           clock.run(one_shot_clock)
         elseif rec.loop == 0 and grid.alt == 1 then
           buff_flush()

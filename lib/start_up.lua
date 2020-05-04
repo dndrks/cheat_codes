@@ -66,7 +66,7 @@ function start_up.init()
   
   --params:add_separator()
   
-  params:add_group("loops + buffers", 13)
+  params:add_group("loops + buffers", 14)
 
   params:add_separator("clips")
   
@@ -97,7 +97,7 @@ function start_up.init()
     end
   )
 
-  params:add_option("one_shot_clock_div","--> 1-shot sync",{"next beat","next bar"},1)
+  params:add_option("one_shot_clock_div","--> 1-shot sync",{"next beat","next bar","free"},1)
 
   params:add_option("rec_loop_enc_resolution", "rec loop enc resolution", {"0.1","0.01","1/16","1/8","1/4","1/2","1 bar"}, 1)
   params:set_action("rec_loop_enc_resolution", function(x)
@@ -136,6 +136,8 @@ function start_up.init()
     local rate_offset = {0,-12,-24}
     params:set("offset",rate_offset[x])
   end)
+
+  params:add_control("random_rec_clock_prob", "random rec probability", controlspec.new(0, 100, 'lin', 1, 0, "%"))
 
   params:add_separator("global")
 

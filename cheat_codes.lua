@@ -905,7 +905,7 @@ function init()
   
   task_id = clock.run(globally_clocked)
   pad_press_quant = clock.run(pad_clock)
-  --one_shot_quant = clock.run(one_shot_clock)
+  random_rec = clock.run(random_rec_clock)
   
   if params:string("clock_source") == "internal" then
     clock.internal.start(bpm)
@@ -922,29 +922,42 @@ function pad_clock()
   end
 end
 
-function one_shot_clock()
-  local divs = {1,4}
-  local rate = divs[params:get("one_shot_clock_div")]
-  --[[
-  if rec.state == 0 and not rec_state_watcher.is_running then
-    clock.sync(rate)
-    softcut.position(1,rec.start_point+0.1)
-    softcut.rec_level(1,1)
-    rec.state = 1
-    rec_state_watcher:start()
-  elseif rec.state == 1 and rec_state_watcher.is_running then
-    rec_state_watcher:stop()
-    clock.sync(rate)
-    softcut.position(1,rec.start_point+0.1)
-    softcut.rec_level(1,1)
-    rec.state = 1
-    rec_state_watcher:start()
+function random_rec_clock()
+  while true do
+    local lbr = {1,2,4}
+    local rler = rec_loop_enc_resolution
+    local rec_distance = rec.end_point - rec.start_point
+    local bar_count = params:get("rec_loop_enc_resolution") > 2 and (((rec_distance)/(1/rler)) / (rler))*(2*lbr[params:get("live_buff_rate")]) or 1/4
+    clock.sync(params:get("rec_loop") == 1 and 4 or bar_count)
+    local random_rec_prob = params:get("random_rec_clock_prob")
+    if random_rec_prob > 0 then
+      local random_rec_comp = math.random(0,100)
+      if random_rec_comp < random_rec_prob then
+        if params:get("rec_loop") == 1 then
+          buff_freeze()
+        elseif params:get("rec_loop") == 2 then
+          if not rec_state_watcher.is_running then
+            softcut.position(1,rec.start_point+0.1)
+            softcut.rec_level(1,1)
+            rec.state = 1
+            rec_state_watcher:start()
+            if rec.clear == 1 then rec.clear = 0 end
+          end
+        end
+      end
+    end
   end
-  --]]
+end
+
+function one_shot_clock()
   if rec.state == 1 and rec_state_watcher.is_running then
     rec_state_watcher:stop()
   end
-  clock.sync(rate)
+  if params:get("one_shot_clock_div") < 3 then
+    local divs = {1,4}
+    local rate = divs[params:get("one_shot_clock_div")]
+    clock.sync(rate)
+  end
   softcut.position(1,rec.start_point+0.1)
   softcut.rec_level(1,1)
   rec.state = 1
@@ -2439,6 +2452,8 @@ function savestate()
   io.write("1.3.1".."\n")
   io.write("one_shot_clock_div: "..params:get("one_shot_clock_div").."\n")
   io.write("rec_loop_enc_resolution: "..params:get("rec_loop_enc_resolution").."\n")
+  io.write("more 1.3.1".."\n")
+  io.write("random_rec_clock_prob: "..params:get("random_rec_clock_prob").."\n")
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -2650,6 +2665,9 @@ function loadstate()
     if io.read() == "1.3.1" then
       params:set("one_shot_clock_div", tonumber(string.match(io.read(), ': (.*)')))
       params:set("rec_loop_enc_resolution", tonumber(string.match(io.read(), ': (.*)')))
+    end
+    if io.read() == "more 1.3.1" then
+      params:set("random_rec_clock_prob", tonumber(string.match(io.read(), ': (.*)')))
     end
     io.close(file)
     for i = 1,3 do
