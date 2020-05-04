@@ -937,7 +937,6 @@ function random_rec_clock()
           buff_freeze()
         elseif params:get("rec_loop") == 2 then
           if not rec_state_watcher.is_running then
-            local butts = tostring(rec_state_watcher.is_running)
             softcut.position(1,rec.start_point+0.1)
             softcut.rec_level(1,1)
             rec.state = 1
@@ -951,12 +950,14 @@ function random_rec_clock()
 end
 
 function one_shot_clock()
-  local divs = {1,4}
-  local rate = divs[params:get("one_shot_clock_div")]
   if rec.state == 1 and rec_state_watcher.is_running then
     rec_state_watcher:stop()
   end
-  clock.sync(rate)
+  if params:get("one_shot_clock_div") < 3 then
+    local divs = {1,4}
+    local rate = divs[params:get("one_shot_clock_div")]
+    clock.sync(rate)
+  end
   softcut.position(1,rec.start_point+0.1)
   softcut.rec_level(1,1)
   rec.state = 1
