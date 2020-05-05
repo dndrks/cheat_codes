@@ -417,11 +417,13 @@ function grid_actions.init(x,y,z)
             end
             if y == 4 then
               local current = math.floor(x/5)+1
-              bank[current][bank[current].id].rate = 1
-              softcut.rate(current+1,1*bank[current][bank[current].id].offset)
-              if bank[current][bank[current].id].fifth == true then
-                bank[current][bank[current].id].fifth = false
+              for i = 1,16 do
+                bank[current][i].rate = 1
+                if bank[current][i].fifth == true then
+                  bank[current][i].fifth = false
+                end
               end
+              softcut.rate(current+1,1*bank[current][bank[current].id].offset)
             end
           end
           ---

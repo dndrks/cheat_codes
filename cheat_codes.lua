@@ -250,6 +250,17 @@ function snap_to_bars(bank,bar_count)
   end
 end
 
+local snakes = 
+{ [1] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 }
+, [2] = { 1,2,3,4,8,7,6,5,9,10,11,12,16,15,14,13 }
+, [3] = { 1,5,9,13,2,6,10,14,3,7,11,15,4,8,12,16 }
+, [4] = { 1,5,9,13,14,10,6,2,3,7,11,15,16,12,8,4 }
+, [5] = { 1,2,3,4,8,12,16,15,14,13,9,5,6,7,11,10 }
+, [6] = { 13,14,15,16,12,8,4,3,2,1,5,9,10,11,7,6 }
+, [7] = { 1,2,5,9,6,3,4,7,10,13,14,11,8,12,15,16 }
+, [8] = { 1,6,11,16,15,10,5,2,7,12,8,3,9,14,13,4 }
+}
+
 function random_grid_pat(which,mode)
 
   local pattern = grid_pat[which]
@@ -282,10 +293,11 @@ function random_grid_pat(which,mode)
       original.bank, shuffled.bank = shuffled.bank, original.bank
     end
   elseif mode == 3 then
+    local auto_pat = params:get("random_patterning")
     if pattern.playmode == 3 or pattern.playmode == 4 then
       clock.sync(1/4)
     end
-    local count = params:get("random_patterning") == 1 and math.random(2,24) or 16
+    local count = auto_pat == 1 and math.random(2,24) or 16
     if pattern.count > 0 or pattern.rec == 1 then
       pattern:rec_stop()
       pattern:stop()
@@ -296,7 +308,7 @@ function random_grid_pat(which,mode)
     for i = 1,count do
       pattern.event[i] = {}
       local constructed = pattern.event[i]
-      constructed.id = params:get("random_patterning") == 1 and math.random(1,16) or i
+      constructed.id = auto_pat == 1 and math.random(1,16) or snakes[auto_pat-1][i]
       local new_rates = 
       { [1] = math.pow(2,math.random(-3,-1))*((math.random(1,2)*2)-3)
       , [2] = math.pow(2,math.random(-1,1))*((math.random(1,2)*2)-3)
@@ -331,7 +343,7 @@ function random_grid_pat(which,mode)
       end
       constructed.action = "pads"
       constructed.i = which
-      pattern.time[i] = params:get("random_patterning") == 1 and ((60/bpm) / math.pow(2,math.random(-2,2))) or (60/bpm) / 4
+      pattern.time[i] = auto_pat == 1 and ((60/bpm) / math.pow(2,math.random(-2,2))) or (60/bpm) / 4
     end
     pattern.count = count
     pattern.start_point = 1

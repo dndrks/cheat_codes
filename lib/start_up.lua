@@ -177,9 +177,19 @@ function start_up.init()
   --params:add_option("zilchmo_bind_rand","bind random zilchmo?", {"no","yes"}, 1)
   
   params:add_group("grid/arc pattern params",3)
-  params:add_option("zilchmo_patterning", "grid pattern style", { "classic", "rad sauce" })
-  params:add_option("random_patterning","rand grid pattern style", { "rand", "linear" })
-  params:add_option("arc_patterning", "arc pattern style", { "passive", "active" })
+  params:add_option("zilchmo_patterning", "grid pat style", { "classic", "rad sauce" })
+  params:add_option("random_patterning","rand pat style", 
+    { "rand"
+    , "horizontal"
+    , "h.snake"
+    , "vertical"
+    , "v.snake"
+    , "top-in"
+    , "bottom-in"
+    , "zig-zag"
+    , "wrap"
+  })
+  params:add_option("arc_patterning", "arc pat style", { "passive", "active" })
   
   params:add_group("manual control params",27)
   
