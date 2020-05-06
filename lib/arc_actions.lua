@@ -1,7 +1,12 @@
-arc_actions = {}
+local arc_actions = {}
+aa = arc_actions
 
-function arc_actions.init(n,d)
-  --if n == 4 then n = 1 end
+aa.sc = {}
+
+--------------------------------
+
+function aa.init(n,d)
+
   local this_bank = bank[arc_control[n]]
   if n < 4 then
     if this_bank.focus_hold == false then
@@ -10,137 +15,136 @@ function arc_actions.init(n,d)
       which_pad = this_bank.focus_pad
     end
     local this_pad = this_bank[which_pad]
-    if arc_param[n] == 1 then
-      if grid.alt == 0 then
-        local current_difference = (this_pad.end_point - this_pad.start_point)
-        if this_pad.start_point + current_difference <= (9+(8*(this_pad.clip-1))) then
-          this_pad.start_point = util.clamp(this_pad.start_point + d/80,(1+(8*(this_pad.clip-1))),(9+(8*(this_pad.clip-1))))
-          this_pad.end_point = this_pad.start_point + current_difference
-        else
-          this_pad.end_point = (9+(8*(this_pad.clip-1)))
-          this_pad.start_point = this_pad.end_point - current_difference
-        end
-      else
-        for j = 1,16 do
-          local current_difference = (this_bank[j].end_point - this_bank[j].start_point)
-          if this_bank[j].start_point + current_difference <= (9+(8*(this_bank[j].clip-1))) then
-            this_bank[j].start_point = util.clamp(this_bank[j].start_point + d/80,(1+(8*(this_bank[j].clip-1))),(9+(8*(this_bank[j].clip-1))))
-            this_bank[j].end_point = this_bank[j].start_point + current_difference
-          else
-            this_bank[j].end_point = (9+(8*(this_bank[j].clip-1)))
-            this_bank[j].start_point = this_bank[j].end_point - current_difference
-          end
-        end
-      end
-      if this_bank.focus_hold == false or this_bank.focus_pad == this_bank.id then
-        softcut.loop_start(arc_control[n]+1,this_bank[this_bank.id].start_point)
-        softcut.loop_end(arc_control[n]+1,this_bank[this_bank.id].end_point)
-      end
-    elseif arc_param[n] == 2 then
-      if grid.alt == 0 then
-        if this_pad.start_point < (this_pad.end_point - d/80) then
-          this_pad.start_point = util.clamp(this_pad.start_point + d/80,(1+(8*(this_pad.clip-1))),(9+(8*(this_pad.clip-1))))
-        end
-      else
-        for j = 1,16 do
-          this_bank[j].start_point = util.clamp(this_bank[j].start_point + d/80,(1+(8*(this_bank[j].clip-1))),(9+(8*(this_bank[j].clip-1))))
-        end
-      end
-      if this_bank.focus_hold == false or this_bank.focus_pad == this_bank.id then
-        softcut.loop_start(arc_control[n]+1,this_bank[this_bank.id].start_point)
-      end
-    elseif arc_param[n] == 3 then
-      if grid.alt == 0 then
-        this_pad.end_point = util.clamp(this_pad.end_point + d/80,(1+(8*(this_pad.clip-1))),(9+(8*(this_pad.clip-1))))
-      else
-        for j = 1,16 do
-          this_bank[j].end_point = util.clamp(this_bank[j].end_point + d/80,(1+(8*(this_bank[j].clip-1))),(9+(8*(this_bank[j].clip-1))))
-        end
-      end
-      if this_bank.focus_hold == false or this_bank.focus_pad == this_bank.id then
-        softcut.loop_end(arc_control[n]+1,this_bank[this_bank.id].end_point)
-      end
-    elseif arc_param[n] == 4 then
-      local a_c = arc_control[n]
-      if key1_hold or grid.alt == 1 then
-        if slew_counter[a_c] ~= nil then
-          slew_counter[a_c].prev_tilt = this_pad.tilt
-        end
-        this_pad.tilt = util.explin(1,3,-1,1,this_pad.tilt+2)
-        this_pad.tilt = util.clamp(this_pad.tilt+(d/1000),-1,1)
-        this_pad.tilt = util.linexp(-1,1,1,3,this_pad.tilt)-2
-        if d < 0 then
-          if util.round(this_pad.tilt*100) < 0 and util.round(this_pad.tilt*100) > -9 then
-            this_pad.tilt = -0.10
-          elseif util.round(this_pad.tilt*100) > 0 and util.round(this_pad.tilt*100) < 3 then
-            this_pad.tilt = 0.0
-          end
-        end
-        if this_bank.focus_hold == false or this_bank.focus_pad == this_bank.id then
-          slew_filter(a_c,slew_counter[a_c].prev_tilt,this_bank[this_bank.id].tilt,this_bank[this_bank.id].q,this_bank[this_bank.id].q,15)
-        end
-      else
-        if slew_counter[a_c] ~= nil then
-          slew_counter[a_c].prev_tilt = this_bank[this_bank.id].tilt
-        end
-        for j = 1,16 do
-          this_bank[j].tilt = util.explin(1,3,-1,1,this_bank[j].tilt+2)
-          this_bank[j].tilt = util.clamp(this_bank[j].tilt+(d/1000),-1,1)
-          this_bank[j].tilt = util.linexp(-1,1,1,3,this_bank[j].tilt)-2
-          if d < 0 then
-            if util.round(this_bank[j].tilt*100) < -1 and util.round(this_bank[j].tilt*100) > -9 then
-              this_bank[j].tilt = -0.10
-            elseif util.round(this_bank[j].tilt*100) > 0 and util.round(this_bank[j].tilt*100) < 3 then
-              this_bank[j].tilt = 0.0
-            end
-          end
-        end
-        slew_filter(a_c,slew_counter[a_c].prev_tilt,this_bank[this_bank.id].tilt,this_bank[this_bank.id].q,this_bank[this_bank.id].q,15)
-      end
-    end
-  end
-  
-  if n == 4 then
+    local p_action = aa.actions[arc_param[n]][1]
+    local sc_action = aa.actions[arc_param[n]][2]
     if grid.alt == 0 then
-      delay[1].arc_rate_tracker = util.clamp(delay[1].arc_rate_tracker + d/10,1,13)
-      delay[1].arc_rate = math.floor(delay[1].arc_rate_tracker)
-      params:set("delay L: rate",math.floor(delay[1].arc_rate_tracker))
+      if arc_param[n] < 4 then
+        p_action(this_pad,d/80)
+      else
+        aa.map(p_action, this_bank, d/1000, n)
+      end
     else
-      delay[2].arc_rate_tracker = util.clamp(delay[2].arc_rate_tracker + d/10,1,13)
-      delay[2].arc_rate = math.floor(delay[2].arc_rate_tracker)
-      params:set("delay R: rate",math.floor(delay[2].arc_rate_tracker))
+      if arc_param[n] < 4 then
+        aa.map(p_action,this_bank,d/80)
+      else
+        p_action(this_pad,d/1000, n)
+      end
     end
-  end
-
-  if n == 1 or n == 2 or n == 3 then
-    arc_p[n] = {}
-    arc_p[n].i = n
-    arc_p[n].param = arc_param[n]
-    local id = arc_control[n]
-    if bank[id].focus_hold == false then
-      arc_p[n].pad = bank[id].id
-    else
-      arc_p[n].pad = bank[id].focus_pad
+    if this_bank.focus_hold == false or this_bank.focus_pad == this_bank.id then
+      sc_action(n, this_pad)
     end
-    arc_p[n].start_point = bank[id][arc_p[n].pad].start_point - (8*(bank[id][arc_p[n].pad].clip-1))
-    arc_p[n].end_point = bank[id][arc_p[n].pad].end_point - (8*(bank[id][arc_p[n].pad].clip-1))
-    arc_p[n].prev_tilt = slew_counter[id].prev_tilt
-    arc_p[n].tilt = bank[id][bank[id].id].tilt
-    arc_pat[n]:watch(arc_p[n])
-  end
-  
-  if n == 4 then
-    arc_p[n] = {}
-    arc_p[n].i = n
-    if grid.alt == 0 then
-      arc_p[n].delay_focus = "L"
-      arc_p[n].left_delay_value = params:get("delay L: rate")
-    else
-      arc_p[n].delay_focus = "R"
-      arc_p[n].right_delay_value = params:get("delay R: rate")
-    end
+    aa.record(n)
+  else
+    local side = grid.alt == 0 and "L" or "R"
+    aa.delay_rate(d,side)
+    aa.record_delay(side)
   end
   redraw()
 end
+
+function aa.map(fn, bank, delta, enc)
+  for i = 1,16 do
+    fn(bank[i],delta,enc)
+  end
+end
+
+function aa.delay_rate(d,side)
+  local chan = side == "L" and 1 or 2
+  delay[chan].arc_rate_tracker = util.clamp(delay[chan].arc_rate_tracker + d/10,1,13)
+  delay[chan].arc_rate = math.floor(delay[chan].arc_rate_tracker)
+  params:set("delay "..side..": rate",math.floor(delay[chan].arc_rate_tracker))
+end
+
+function aa.record(enc)
+  arc_p[enc] = {}
+  arc_p[enc].i = enc
+  arc_p[enc].param = arc_param[enc]
+  local id = arc_control[enc]
+  if bank[id].focus_hold == false then
+    arc_p[enc].pad = bank[id].id
+  else
+    arc_p[enc].pad = bank[id].focus_pad
+  end
+  arc_p[enc].start_point = bank[id][arc_p[enc].pad].start_point - (8*(bank[id][arc_p[enc].pad].clip-1))
+  arc_p[enc].end_point = bank[id][arc_p[enc].pad].end_point - (8*(bank[id][arc_p[enc].pad].clip-1))
+  arc_p[enc].prev_tilt = slew_counter[id].prev_tilt
+  arc_p[enc].tilt = bank[id][bank[id].id].tilt
+  arc_pat[enc]:watch(arc_p[enc])
+end
+
+function aa.record_delay(side)
+  arc_p[side] = {}
+  arc_p[side].i = side
+  if grid.alt == 0 then
+    arc_p[side].delay_focus = "L"
+    arc_p[side].left_delay_value = params:get("delay L: rate")
+  else
+    arc_p[side].delay_focus = "R"
+    arc_p[side].right_delay_value = params:get("delay R: rate")
+  end
+end
+
+function aa.move_window(target, delta)
+  local current_difference = (target.end_point - target.start_point)
+  local current_clip = 8*(target.clip-1)
+  if target.start_point + current_difference <= 9+current_clip then
+    target.start_point = util.clamp(target.start_point + delta, 1+current_clip, 9+current_clip)
+    target.end_point = target.start_point + current_difference
+  else
+    target.end_point = (9+current_clip)
+    target.start_point = target.end_point - current_difference
+  end
+end
+
+function aa.move_start(target, delta)
+  local current_clip = 8*(target.clip-1)
+  target.start_point = util.clamp(target.start_point + delta, (1+current_clip), target.end_point-0.01)
+end
+
+function aa.move_end(target, delta)
+  local current_clip = 8*(target.clip-1)
+  target.end_point = util.clamp(target.end_point + delta, target.start_point+0.01, (9+current_clip))
+end
+
+function aa.change_tilt(target, delta, enc)
+  local a_c = enc
+  if slew_counter[a_c] ~= nil then
+    slew_counter[a_c].prev_tilt = target.tilt
+  end
+  target.tilt = util.explin(1,3,-1,1,target.tilt+2)
+  target.tilt = util.clamp(target.tilt+(delta),-1,1)
+  target.tilt = util.linexp(-1,1,1,3,target.tilt)-2
+  if delta < 0 then
+    if util.round(target.tilt*100) < 0 and util.round(target.tilt*100) > -9 then
+      target.tilt = -0.10
+    elseif util.round(target.tilt*100) > 0 and util.round(target.tilt*100) < 3 then
+      target.tilt = 0.0
+    end
+  end
+end
+
+function aa.sc.move_window(enc, target)
+  softcut.loop_start(enc+1,target.start_point)
+  softcut.loop_end(enc+1,target.end_point)
+end
+
+function aa.sc.move_start(enc, target)
+  softcut.loop_start(enc+1,target.start_point)
+end
+
+function aa.sc.move_end(enc, target)
+  softcut.loop_end(enc+1,target.end_point)
+end
+
+function aa.sc.change_tilt(enc, target)
+  slew_filter(enc,slew_counter[enc].prev_tilt,target.tilt,target.q,target.q,15)
+end
+
+aa.actions =
+  { [1] = { aa.move_window    , aa.sc.move_window }
+  , [2] = { aa.move_start     , aa.sc.move_start }
+  , [3] = { aa.move_end       , aa.sc.move_end }
+  , [4] = { aa.change_tilt    , aa.sc.change_tilt }
+  }
 
 return arc_actions

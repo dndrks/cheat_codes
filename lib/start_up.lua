@@ -189,6 +189,14 @@ function start_up.init()
     , "zig-zag"
     , "wrap"
   })
+  params:set_action("random_patterning", function(x)
+    if x > 1 then
+      for i = 1,3 do
+        grid_pat[i].playmode = 3
+      end
+    end
+  end)
+
   params:add_option("arc_patterning", "arc pat style", { "passive", "active" })
   
   params:add_group("manual control params",27)
