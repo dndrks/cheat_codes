@@ -448,6 +448,23 @@ function main_menu.init()
     screen.level(3)
     screen.move(0,64)
     screen.text("...")
+  elseif menu == 9 then
+    local vals = #tracker[1] ~= 0
+    screen.move(0,10)
+    screen.level(3)
+    screen.text("tracker")
+    screen.level(15)
+    screen.move(0,20)
+    screen.text("[1]")
+    for i = 0,70,35 do
+      local header = {[0] = "step",[35] = "pad",[70] = "duration"}
+      screen.move(i+20,20)
+      screen.text(header[i])
+    end
+    screen.move(20,30)
+    screen.text(vals and tracker[1].step or "")
+    screen.move(55,30)
+    screen.text(vals and tracker[1][1][1] or "")
   end
 end
 

@@ -51,6 +51,9 @@ function grid_actions.init(x,y,z)
         else
           if grid.alt == 0 then
             bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+            if tracker[i].recording then
+              add_to_tracker(i,{bank[i].focus_pad,0.25,"next"})
+            end
           elseif grid.alt == 1 then
             if not pad_clipboard then
               pad_clipboard = {}

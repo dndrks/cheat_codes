@@ -19,6 +19,14 @@ grid_actions = include 'lib/grid_actions'
 easingFunctions = include 'lib/easing'
 math.randomseed(os.time())
 
+function screenshot()
+  _norns.screen_export_png("/home/we/"..menu.."-"..os.time()..".png")
+end
+
+function rerun()
+  norns.script.load(norns.state.script)
+end
+
 tau = math.pi * 2
 arc_param = {}
 arc_switcher = {}
@@ -924,6 +932,86 @@ function init()
   end
 
 end
+
+---
+
+function tracker_init(target)
+  tracker[target] = {}
+  tracker[target].step = 1
+  tracker[target].start_point = 1
+  tracker[target].end_point = 1
+  tracker[target].recording = false
+end
+
+tracker = {}
+for i = 1,3 do
+  tracker_init(i)
+end
+
+function snake_tracker(target,mode)
+  if #tracker[target] > 0 then
+    clear_tracker(target)
+  end
+  for i = 1,16 do
+    tracker[target][i] = {}
+    tracker[target][i][1] = snakes[mode][i]
+    tracker[target][i][2] = 1/4
+    tracker[target][i][3] = "next"
+  end
+  tracker[target].end_point = #tracker[target]
+  tracker[target].clock = clock.run(tracker_advance,target)
+end
+
+function add_to_tracker(target,entry)
+  table.insert(tracker[target],entry)
+  tracker[target].end_point = #tracker[target]
+end
+
+function clear_tracker(target)
+  clock.cancel(tracker[target].clock)
+  tracker_init(target)
+end
+
+function stop_tracker(target)
+  clock.cancel(tracker[target].clock)
+end
+
+function start_tracker(target)
+  tracker[target].clock = clock.run(tracker_advance,target)
+end
+
+function tracker_advance(target)
+  while true do
+    if #tracker[target] > 0 then
+      local step = tracker[target].step
+      tracker_cheat(target,step)
+      clock.sync(tracker[target][step][2])
+      --tracker_action(tracker[1][tracker.step][3])
+      tracker[target].step = tracker[target].step + 1
+      if tracker[target].step > tracker[target].end_point then
+        tracker[target].step = tracker[target].start_point
+      end
+    end
+  end
+end
+
+function tracker_sync(target)
+  tracker[target].step = tracker[target].start_point - 1
+end
+
+function tracker_cheat(target,step)
+  bank[target].id = tracker[target][step][1]
+  selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
+  if (bank[target].id % 4) ~= 0 then
+    selected[target].y = 9-(bank[target].id % 4)
+  else
+    selected[target].y = 5
+  end
+  cheat(target,bank[target].id)
+end
+
+
+---
 
 function pad_clock()
   while true do
