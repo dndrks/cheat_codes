@@ -449,22 +449,91 @@ function main_menu.init()
     screen.move(0,64)
     screen.text("...")
   elseif menu == 9 then
-    local vals = #tracker[1] ~= 0
+    --local vals = #tracker[1] ~= 0
     screen.move(0,10)
     screen.level(3)
     screen.text("tracker")
     screen.level(15)
-    screen.move(0,20)
+    screen.move(3,20)
     screen.text("[1]")
-    for i = 0,70,35 do
-      local header = {[0] = "step",[35] = "pad",[70] = "duration"}
-      screen.move(i+20,20)
-      screen.text(header[i])
+    for i = 0,1 do
+      screen.move(20+(i*60),20)
+      screen.text("p")
+      screen.move(35+(i*60),20)
+      screen.text("d")
     end
-    screen.move(20,30)
-    screen.text(vals and tracker[1].step or "")
-    screen.move(55,30)
-    screen.text(vals and tracker[1][1][1] or "")
+    local deci_to_frac =
+    { [0.25] = "1/16"
+    , [0.5] = "1/8"
+    , [1] = "1/4"
+    , [2] = "1/2"
+    , [4] = "1"
+    }
+
+    --[[
+    page.track_page = 1
+    page.track_sel = {}
+    page.track_page_section = {}
+    --]]
+
+    if page.track_sel[page.track_page] < 9 then
+      for i = 0,3 do
+        screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
+        screen.move(5,30+(10*i))
+        screen.text(i+1)
+        screen.move(20,30+(10*i))
+        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.move(35,30+(10*i))
+        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+      end
+      for i = 4,7 do
+        screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
+        screen.move(65,30+(10*(i-4)))
+        screen.text(i+1)
+        screen.move(80,30+(10*(i-4)))
+        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.move(95,30+(10*(i-4)))
+        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+      end
+    elseif page.track_sel[page.track_page] < 17 then
+      for i = 8,11 do
+        screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
+        screen.move(5,30+(10*(i-8)))
+        screen.text(i+1)
+        screen.move(20,30+(10*(i-8)))
+        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.move(35,30+(10*(i-8)))
+        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+      end
+      for i = 12,15 do
+        screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
+        screen.move(65,30+(10*(i-12)))
+        screen.text(i+1)
+        screen.move(80,30+(10*(i-12)))
+        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.move(95,30+(10*(i-12)))
+        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+      end
+    elseif page.track_sel[page.track_page] < 25 then
+      for i = 16,19 do
+        screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
+        screen.move(5,30+(10*(i-16)))
+        screen.text(i+1)
+        screen.move(20,30+(10*(i-16)))
+        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.move(35,30+(10*(i-16)))
+        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+      end
+      for i = 20,23 do
+        screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
+        screen.move(65,30+(10*(i-20)))
+        screen.text(i+1)
+        screen.move(80,30+(10*(i-20)))
+        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.move(95,30+(10*(i-20)))
+        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+      end
+    end
   end
 end
 

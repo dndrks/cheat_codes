@@ -764,6 +764,13 @@ function init()
     page.time_page_sel[i] = 1
     page.time_scroll[i] = 1
   end
+  page.track_sel = {}
+  page.track_page = 1
+  page.track_page_section = {}
+  for i = 1,3 do
+    page.track_sel[i] = 1
+    page.track_page_section[i] = 1
+  end
   
   delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
   delay = {}
@@ -941,6 +948,12 @@ function tracker_init(target)
   tracker[target].start_point = 1
   tracker[target].end_point = 1
   tracker[target].recording = false
+  for i = 1,64 do
+    tracker[target][i] = {}
+    for j = 1,3 do
+      tracker[target][i][j] = nil
+    end
+  end
 end
 
 tracker = {}

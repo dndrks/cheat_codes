@@ -34,6 +34,21 @@ function encoder_actions.init(n,d)
       page.delay_sel = util.clamp(page.delay_sel+d,0,4)
     elseif menu == 7 then
       page.time_sel = util.clamp(page.time_sel+d,1,3)
+    elseif menu ==9 then
+      if page.track_page_section[page.track_page] == 1 then
+        --TODO
+      elseif page.track_page_section[page.track_page] == 2 then
+        local reasonable_max = nil
+        for i = 1,64 do
+          --if tracker[page.track_page][i][1] ~= nil and tracker[page.track_page][i][2] ~= nil then
+          if tracker[page.track_page][i][1] ~= nil then
+            reasonable_max = i
+          end
+        end
+        if reasonable_max ~= nil then
+          page.track_sel[page.track_page] = util.clamp(page.track_sel[page.track_page]+d,1,reasonable_max+1)
+        end
+      end
     end
   end
   if n == 2 then
@@ -121,6 +136,9 @@ function encoder_actions.init(n,d)
           page.time_scroll[page_line] = 2
         end
       end
+    elseif menu == 9 then
+      if tracker[page.track_page][page.track_sel[page.track_page]][1] == nil then tracker[page.track_page][page.track_sel[page.track_page]][1] = 0 end
+      tracker[page.track_page][page.track_sel[page.track_page]][1] = util.clamp(tracker[page.track_page][page.track_sel[page.track_page]][1]+d,1,16)
     end
   end
   if n == 3 then
