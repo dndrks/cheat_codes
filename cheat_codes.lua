@@ -948,7 +948,8 @@ function tracker_init(target)
   tracker[target].start_point = 1
   tracker[target].end_point = 1
   tracker[target].recording = false
-  for i = 1,64 do
+  tracker[target].max_memory = 128
+  for i = 1,tracker[target].max_memory do
     tracker[target][i] = {}
     for j = 1,3 do
       tracker[target][i][j] = nil
@@ -979,7 +980,7 @@ function add_to_tracker(target,entry)
   table.remove(tracker[target],page.track_sel[page.track_page])
   table.insert(tracker[target],page.track_sel[page.track_page],entry)
   local reasonable_max = nil
-  for i = 1,64 do
+  for i = 1,tracker[target].max_memory do
     --if tracker[page.track_page][i][1] ~= nil and tracker[page.track_page][i][2] ~= nil then
     if tracker[page.track_page][i][1] ~= nil then
       reasonable_max = i

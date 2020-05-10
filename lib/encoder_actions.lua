@@ -39,7 +39,7 @@ function encoder_actions.init(n,d)
         --TODO
       elseif page.track_page_section[page.track_page] == 2 then
         local reasonable_max = nil
-        for i = 1,64 do
+        for i = 1,tracker[page.track_page].max_memory do
           --if tracker[page.track_page][i][1] ~= nil and tracker[page.track_page][i][2] ~= nil then
           if tracker[page.track_page][i][1] ~= nil then
             reasonable_max = i
