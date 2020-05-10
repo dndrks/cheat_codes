@@ -453,9 +453,14 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("tracker")
-    screen.level(15)
-    screen.move(3,20)
-    screen.text("[1]")
+    local selections =
+    { [1] = "[ 1 ]    2      3  "
+    , [2] = " 1     [ 2 ]    3  "
+    , [3] = " 1       2    [ 3 ]"
+    }
+    screen.level(page.track_page_section[page.track_page] == 1 and 15 or 3)
+    screen.move(60,10)
+    screen.text(selections[page.track_page])
     for i = 0,1 do
       screen.move(20+(i*60),20)
       screen.text("p")
@@ -478,60 +483,78 @@ function main_menu.init()
 
     if page.track_sel[page.track_page] < 9 then
       for i = 0,3 do
+        screen.level(3)
+        screen.move(0,tracker[page.track_page].step == i+1 and 30+(10*i) or 0)
+        screen.text(">")
         screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
         screen.move(5,30+(10*i))
         screen.text(i+1)
         screen.move(20,30+(10*i))
-        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.text(tracker[page.track_page][i+1][1]==nil and "--" or tracker[page.track_page][i+1][1])
         screen.move(35,30+(10*i))
-        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+        screen.text(tracker[page.track_page][i+1][2]==nil and "--" or deci_to_frac[tracker[page.track_page][i+1][2]])
       end
       for i = 4,7 do
+        screen.level(3)
+        screen.move(60,tracker[page.track_page].step == i+1 and 30+(10*(i-4)) or 0)
+        screen.text(">")
         screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
         screen.move(65,30+(10*(i-4)))
         screen.text(i+1)
         screen.move(80,30+(10*(i-4)))
-        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.text(tracker[page.track_page][i+1][1]==nil and "--" or tracker[page.track_page][i+1][1])
         screen.move(95,30+(10*(i-4)))
-        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+        screen.text(tracker[page.track_page][i+1][2]==nil and "--" or deci_to_frac[tracker[page.track_page][i+1][2]])
       end
     elseif page.track_sel[page.track_page] < 17 then
       for i = 8,11 do
+        screen.level(3)
+        screen.move(0,tracker[page.track_page].step == i+1 and 30+(10*(i-8)) or 0)
+        screen.text(">")
         screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
         screen.move(5,30+(10*(i-8)))
         screen.text(i+1)
         screen.move(20,30+(10*(i-8)))
-        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.text(tracker[page.track_page][i+1][1]==nil and "--" or tracker[page.track_page][i+1][1])
         screen.move(35,30+(10*(i-8)))
-        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+        screen.text(tracker[page.track_page][i+1][2]==nil and "--" or deci_to_frac[tracker[page.track_page][i+1][2]])
       end
       for i = 12,15 do
+        screen.level(3)
+        screen.move(60,tracker[page.track_page].step == i+1 and 30+(10*(i-12)) or 0)
+        screen.text(">")
         screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
         screen.move(65,30+(10*(i-12)))
         screen.text(i+1)
         screen.move(80,30+(10*(i-12)))
-        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.text(tracker[page.track_page][i+1][1]==nil and "--" or tracker[page.track_page][i+1][1])
         screen.move(95,30+(10*(i-12)))
-        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+        screen.text(tracker[page.track_page][i+1][2]==nil and "--" or deci_to_frac[tracker[page.track_page][i+1][2]])
       end
     elseif page.track_sel[page.track_page] < 25 then
       for i = 16,19 do
+        screen.level(3)
+        screen.move(0,tracker[page.track_page].step == i+1 and 30+(10*(i-16)) or 0)
+        screen.text(">")
         screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
         screen.move(5,30+(10*(i-16)))
         screen.text(i+1)
         screen.move(20,30+(10*(i-16)))
-        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.text(tracker[page.track_page][i+1][1]==nil and "--" or tracker[page.track_page][i+1][1])
         screen.move(35,30+(10*(i-16)))
-        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+        screen.text(tracker[page.track_page][i+1][2]==nil and "--" or deci_to_frac[tracker[page.track_page][i+1][2]])
       end
       for i = 20,23 do
+        screen.level(3)
+        screen.move(60,tracker[page.track_page].step == i+1 and 30+(10*(i-20)) or 0)
+        screen.text(">")
         screen.level(page.track_sel[page.track_page] - 1 == i and 15 or 3)
         screen.move(65,30+(10*(i-20)))
         screen.text(i+1)
         screen.move(80,30+(10*(i-20)))
-        screen.text(tracker[1][i+1][1]==nil and "--" or tracker[1][i+1][1])
+        screen.text(tracker[page.track_page][i+1][1]==nil and "--" or tracker[page.track_page][i+1][1])
         screen.move(95,30+(10*(i-20)))
-        screen.text(tracker[1][i+1][2]==nil and "--" or deci_to_frac[tracker[1][i+1][2]])
+        screen.text(tracker[page.track_page][i+1][2]==nil and "--" or deci_to_frac[tracker[page.track_page][i+1][2]])
       end
     end
   end

@@ -137,7 +137,10 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 9 then
-      if tracker[page.track_page][page.track_sel[page.track_page]][1] == nil then tracker[page.track_page][page.track_sel[page.track_page]][1] = 0 end
+      if tracker[page.track_page][page.track_sel[page.track_page]][1] == nil then
+        tracker[page.track_page][page.track_sel[page.track_page]][1] = 0
+        tracker[page.track_page][page.track_sel[page.track_page]][2] = 0.25
+      end
       tracker[page.track_page][page.track_sel[page.track_page]][1] = util.clamp(tracker[page.track_page][page.track_sel[page.track_page]][1]+d,1,16)
     end
   end
@@ -246,6 +249,20 @@ function encoder_actions.init(n,d)
             end
           end
         end
+      end
+    elseif menu == 9 then
+      if tracker[page.track_page][page.track_sel[page.track_page]][1] ~= nil then
+        local deci_to_int =
+        { [0.25] = 1
+        , [0.5] = 2
+        , [1] = 3
+        , [2] = 4
+        , [4] = 5
+        }
+        local working = deci_to_int[tracker[page.track_page][page.track_sel[page.track_page]][2]]
+        working = util.clamp(working+d,1,5)
+        local int_to_deci = {0.25,0.5,1,2,4}
+        tracker[page.track_page][page.track_sel[page.track_page]][2] = int_to_deci[working]
       end
     end
   end

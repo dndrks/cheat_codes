@@ -976,8 +976,23 @@ function snake_tracker(target,mode)
 end
 
 function add_to_tracker(target,entry)
-  table.insert(tracker[target],entry)
-  tracker[target].end_point = #tracker[target]
+  table.remove(tracker[target],page.track_sel[page.track_page])
+  table.insert(tracker[target],page.track_sel[page.track_page],entry)
+  local reasonable_max = nil
+  for i = 1,64 do
+    --if tracker[page.track_page][i][1] ~= nil and tracker[page.track_page][i][2] ~= nil then
+    if tracker[page.track_page][i][1] ~= nil then
+      reasonable_max = i
+    end
+  end
+  tracker[target].end_point = reasonable_max
+  page.track_sel[page.track_page] = page.track_sel[page.track_page] + 1
+  redraw()
+end
+
+function remove_from_tracker(target,entry)
+  table.remove(tracker[target],page.track_sel[page.track_page])
+  redraw()
 end
 
 function clear_tracker(target)
@@ -1005,6 +1020,7 @@ function tracker_advance(target)
         tracker[target].step = tracker[target].start_point
       end
     end
+    redraw()
   end
 end
 
