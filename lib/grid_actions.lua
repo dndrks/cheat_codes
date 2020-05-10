@@ -23,7 +23,7 @@ function grid_actions.init(x,y,z)
             selected[i].id = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
             bank[i].id = selected[i].id
             which_bank = i
-            if menu == 8 then
+            if menu == 9 then
               help_menu = "banks"
             end
             pad_clipboard = nil
@@ -152,7 +152,7 @@ function grid_actions.init(x,y,z)
               better_grid_pat_q_clock(i)
             end
           end
-          if menu == 8 then
+          if menu == 9 then
             help_menu = "grid patterns"
             which_bank = i
           end
@@ -177,7 +177,7 @@ function grid_actions.init(x,y,z)
         else
           arc_pat[current]:start()
         end
-        if menu == 8 then
+        if menu == 9 then
           help_menu = "arc patterns"
           which_bank = current
         end
@@ -216,7 +216,7 @@ function grid_actions.init(x,y,z)
             softcut.loop(i+1,1)
           end
         end
-        if menu == 8 then
+        if menu == 9 then
           help_menu = "loop"
         end
       end
@@ -228,7 +228,7 @@ function grid_actions.init(x,y,z)
         grid.alt_pp = 0
       end
       grid.alt = z
-      if menu == 8 then
+      if menu == 9 then
         if grid.alt == 1 then
           help_menu = "alt"
         elseif grid.alt == 0 then
@@ -295,7 +295,7 @@ function grid_actions.init(x,y,z)
             local current = math.sqrt(math.abs(x-3))
             cheat(current,bank[current].id)
           end
-          if menu == 8 then
+          if menu == 9 then
             which_bank = current
             help_menu = "mode"
           end
@@ -342,7 +342,7 @@ function grid_actions.init(x,y,z)
           buff_flush()
         end
         
-        if menu == 8 then
+        if menu == 9 then
           help_menu = "buffer switch"
         end
       end
@@ -356,7 +356,7 @@ function grid_actions.init(x,y,z)
               arc_switcher[x/5] = arc_switcher[x/5] + 1
               if grid.alt == 0 and arc_switcher[x/5] == 1 then
                 arc_param[x/5] = 9-y
-                if menu == 8 then
+                if menu == 9 then
                   which_bank = x/5
                   help_menu = "arc params"
                 end
@@ -583,7 +583,7 @@ function grid_actions.init(x,y,z)
       grid_redraw()
     end
     
-    if menu == 8 then
+    if menu == 9 then
       if x == 1 or x == 6 or x == 11 then
         help_menu = "meta: slots"
       elseif x == 2 or x == 7 or x == 12 then
@@ -619,7 +619,7 @@ function grid_actions.init(x,y,z)
   if x == 16 and y == 1 and z == 1 then
     if grid.alt == 0 then
       grid_page = (grid_page + 1)%2
-      if menu == 8 then
+      if menu == 9 then
         if grid_page == 1 then
           help_menu = "meta page"
         elseif grid_page == 0 then

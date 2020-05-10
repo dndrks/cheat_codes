@@ -5,17 +5,20 @@ function main_menu.init()
     screen.move(0,10)
     screen.text("cheat codes")
     screen.move(10,30)
-    for i = 1,7 do
+    for i = 1,8 do
       screen.level(page.main_sel == i and 15 or 3)
       if i < 4 then
         screen.move(10,20+(10*i))
-      elseif i < 7 then
+      elseif i < 8 then
         screen.move(60,10*(i-1))
-      elseif i == 7 then
+      --[[elseif i == 7 then
+        screen.move(110,30)
+        --]]
+      elseif i == 8 then
         screen.move(118,64)
       end
-      local selected = {"[ loops ]", "[ levels ]", "[ panning ]", "[ filters ]", "[ delay ]", "[ timing ]", "[?]"}
-      local unselected = {"loops", "levels", "panning", "filters", "delay", "timing", " ? "}
+      local selected = {"[ loops ]", "[ levels ]", "[ panning ]", "[ filters ]", "[ delay ]", "[ timing ]", "[ tkr ]", "[?]"}
+      local unselected = {"loops", "levels", "panning", "filters", "delay", "timing", "tkr", " ? "}
       if page.main_sel == i then
         screen.text(selected[i])
       else
@@ -401,6 +404,69 @@ function main_menu.init()
   elseif menu == 8 then
     screen.move(0,10)
     screen.level(3)
+    screen.text("tracker")
+    screen.level(page.track_page_section[page.track_page] == 1 and 15 or 3)
+    screen.move(40,10)
+    for i = 1,3 do
+      screen.level(page.track_page == i and 15 or 3)
+      screen.move(30+(i*20),10)
+      screen.text(i)
+      screen.level(15)
+      screen.move(30+(page.track_page*20),13)
+      screen.text("_")
+    end
+    screen.level(3)
+    --[[
+    for i = 0,1 do
+      screen.move(20+(i*60),20)
+      screen.text("p")
+      screen.move(35+(i*60),20)
+      screen.text("d")
+    end
+    --]]
+    local deci_to_frac =
+    { [0.1875] = "1/16t"
+    , [0.25] = "1/16"
+    , [0.375] = "1/8t"
+    , [0.5] = "1/8"
+    , [0.75] = "1/4t"
+    , [1] = "1/4"
+    , [1.5] = "1/2t"
+    , [2] = "1/2"
+    , [3] = "1t"
+    , [4] = "1"
+    }
+
+    function tracker_to_screen(line)
+      screen.level(3)
+      local current = math.modf(line/4)
+      local vert_position = 30+(10*(line-(4*current)))
+      local left_side = current % 2 == 0
+      screen.move(left_side and 0 or 60,tracker[page.track_page].step == line+1 and vert_position or 0)
+      screen.text(">")
+      if page.track_page_section[page.track_page] == 1 then
+        screen.level(3)
+      else  
+        screen.level(page.track_sel[page.track_page] - 1 == line and 15 or 3)
+      end
+      screen.move(left_side and 5 or 65,vert_position)
+      screen.text(line+1)
+      screen.move(left_side and 20 or 80,vert_position)
+      screen.text(tracker[page.track_page][line+1][1]==nil and "--" or tracker[page.track_page][line+1][1])
+      screen.move(left_side and 35 or 95,vert_position)
+      screen.text(tracker[page.track_page][line+1][2]==nil and "--" or deci_to_frac[tracker[page.track_page][line+1][2]])
+    end
+
+    local screen_lim = tonumber(string.format("%.0f", 9 + (((math.modf((page.track_sel[page.track_page]-1)/8))*8))))
+
+    if page.track_sel[page.track_page] < screen_lim then
+      for i = screen_lim - 9, screen_lim - 2 do
+        tracker_to_screen(i)
+      end
+    end
+  elseif menu == 9 then
+    screen.move(0,10)
+    screen.level(3)
     screen.text("help")
     if help_menu == "welcome" then
       help_menus.welcome()
@@ -448,56 +514,7 @@ function main_menu.init()
     screen.level(3)
     screen.move(0,64)
     screen.text("...")
-  elseif menu == 9 then
-    screen.move(0,10)
-    screen.level(3)
-    screen.text("tracker")
-    local selections =
-    { [1] = "[ 1 ]    2      3  "
-    , [2] = " 1     [ 2 ]    3  "
-    , [3] = " 1       2    [ 3 ]"
-    }
-    screen.level(page.track_page_section[page.track_page] == 1 and 15 or 3)
-    screen.move(60,10)
-    screen.text(selections[page.track_page])
-    for i = 0,1 do
-      screen.move(20+(i*60),20)
-      screen.text("p")
-      screen.move(35+(i*60),20)
-      screen.text("d")
-    end
-    local deci_to_frac =
-    { [0.25] = "1/16"
-    , [0.5] = "1/8"
-    , [1] = "1/4"
-    , [2] = "1/2"
-    , [4] = "1"
-    }
-
-    function tracker_to_screen(line)
-      screen.level(3)
-      local current = math.modf(line/4)
-      local vert_position = 30+(10*(line-(4*current)))
-      local left_side = current % 2 == 0
-      screen.move(left_side and 0 or 60,tracker[page.track_page].step == line+1 and vert_position or 0)
-      screen.text(">")
-      screen.level(page.track_sel[page.track_page] - 1 == line and 15 or 3)
-      screen.move(left_side and 5 or 65,vert_position)
-      screen.text(line+1)
-      screen.move(left_side and 20 or 80,vert_position)
-      screen.text(tracker[page.track_page][line+1][1]==nil and "--" or tracker[page.track_page][line+1][1])
-      screen.move(left_side and 35 or 95,vert_position)
-      screen.text(tracker[page.track_page][line+1][2]==nil and "--" or deci_to_frac[tracker[page.track_page][line+1][2]])
-    end
-
-    local screen_lim = tonumber(string.format("%.0f", 9 + (((math.modf((page.track_sel[page.track_page]-1)/8))*8))))
-
-    if page.track_sel[page.track_page] < screen_lim then
-      for i = screen_lim - 9, screen_lim - 2 do
-        tracker_to_screen(i)
-      end
-    end
-
+  
   end
 end
 

@@ -1040,6 +1040,13 @@ function tracker_cheat(target,step)
   cheat(target,bank[target].id)
 end
 
+function tracker_copy_prev(source,destination)
+  for k,v in pairs(source) do
+    destination[k] = v
+  end
+  redraw()
+end
+
 
 ---
 
@@ -1838,7 +1845,7 @@ end
 function key(n,z)
   if n == 3 and z == 1 then
     if menu == 1 then
-      for i = 1,7 do
+      for i = 1,8 do
         if page.main_sel == i then
           menu = i+1
         end
@@ -1855,20 +1862,6 @@ function key(n,z)
     elseif menu == 7 then
       local time_nav = page.time_sel
       local id = time_nav
-      --[[
-        if time_nav == 1 and page.time_page_sel[time_nav] == 1 then
-        local tap1 = util.time()
-        deltatap = tap1 - tap
-        tap = tap1
-        local tap_tempo = 60/deltatap
-        if tap_tempo >=1 then
-          params:set("bpm",math.floor(tap_tempo+0.5))
-        end
-      elseif time_nav == 1 and page.time_page_sel[time_nav] == 3 then
-        for i = 1,3 do
-          crow.count[i] = crow.count_execute[i]
-        end
-        --]]
       if time_nav >= 1 and time_nav < 4 then
         if page.time_page_sel[time_nav] == 2 then
           random_grid_pat(id,2)
@@ -1891,12 +1884,37 @@ function key(n,z)
           end
         end
       end
+    elseif menu == 8 then
+      if page.track_page_section[page.track_page] == 1 then
+        page.track_page_section[page.track_page] = 2
+      elseif page.track_page_section[page.track_page] == 2 then
+        if tracker[page.track_page][page.track_sel[page.track_page]][1] ~= nil then
+          tracker_cheat(page.track_page,page.track_sel[page.track_page])
+        else
+          local source = tracker[page.track_page][page.track_sel[page.track_page]-1]
+          local destination = tracker[page.track_page][page.track_sel[page.track_page]]
+          if source ~= nil then
+            tracker_copy_prev(source,destination)
+          end
+        end
+      end
     end
   elseif n == 2 and z == 1 then
-    if menu == 8 then
-      help_menu = "welcome"
+    if menu == 9 then
+      if help_menu ~= "welcome" then
+        help_menu = "welcome"
+      else
+        menu = 1
+      end
+    elseif menu == 8 then
+      if page.track_page_section[page.track_page] == 2 then
+        page.track_page_section[page.track_page] = 1
+      else
+      menu = 1
+      end
+    else
+      menu = 1
     end
-    menu = 1
     if key1_hold == true then key1_hold = false end
   end
   if n == 1 and z == 1 then
@@ -1969,7 +1987,7 @@ function clip_jump(i,s,y,z)
     local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
     bank[i][s].start_point = (((bank[i][s].start_point - old_min) * new_range) / old_range) + new_min
     bank[i][s].end_point = bank[i][s].start_point + current_difference
-    if menu == 8 then
+    if menu == 9 then
       which_bank = i
       help_menu = "buffer jump"
     end

@@ -16,7 +16,7 @@ zilchmos.sc = {}
 function zilchmos.init(k,i)
   -- for .help functionality
   which_bank = i -- FIXME should be in the help. namespace
-  if menu == 8 then
+  if menu == 9 then
     help_menu = "zilchmo_"..k
   end
 

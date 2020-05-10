@@ -34,9 +34,9 @@ function encoder_actions.init(n,d)
       page.delay_sel = util.clamp(page.delay_sel+d,0,4)
     elseif menu == 7 then
       page.time_sel = util.clamp(page.time_sel+d,1,3)
-    elseif menu ==9 then
+    elseif menu == 8 then
       if page.track_page_section[page.track_page] == 1 then
-        --TODO
+        page.track_page = util.clamp(page.track_page+d,1,3)
       elseif page.track_page_section[page.track_page] == 2 then
         local reasonable_max = nil
         for i = 1,tracker[page.track_page].max_memory do
@@ -53,7 +53,7 @@ function encoder_actions.init(n,d)
   end
   if n == 2 then
     if menu == 1 then
-      page.main_sel = util.clamp(page.main_sel+d,1,7)
+      page.main_sel = util.clamp(page.main_sel+d,1,8)
     elseif menu == 2 then
       local id = page.loops_sel + 1
       if id ~=4 then
@@ -136,12 +136,16 @@ function encoder_actions.init(n,d)
           page.time_scroll[page_line] = 2
         end
       end
-    elseif menu == 9 then
-      if tracker[page.track_page][page.track_sel[page.track_page]][1] == nil then
-        tracker[page.track_page][page.track_sel[page.track_page]][1] = 0
-        tracker[page.track_page][page.track_sel[page.track_page]][2] = 0.25
+    elseif menu == 8 then
+      if page.track_page_section[page.track_page] == 1 then
+        --TODO
+      else
+        if tracker[page.track_page][page.track_sel[page.track_page]][1] == nil then
+          tracker[page.track_page][page.track_sel[page.track_page]][1] = 0
+          tracker[page.track_page][page.track_sel[page.track_page]][2] = 0.25
+        end
+        tracker[page.track_page][page.track_sel[page.track_page]][1] = util.clamp(tracker[page.track_page][page.track_sel[page.track_page]][1]+d,1,16)
       end
-      tracker[page.track_page][page.track_sel[page.track_page]][1] = util.clamp(tracker[page.track_page][page.track_sel[page.track_page]][1]+d,1,16)
     end
   end
   if n == 3 then
@@ -250,18 +254,23 @@ function encoder_actions.init(n,d)
           end
         end
       end
-    elseif menu == 9 then
+    elseif menu == 8 then
       if tracker[page.track_page][page.track_sel[page.track_page]][1] ~= nil then
         local deci_to_int =
-        { [0.25] = 1
-        , [0.5] = 2
-        , [1] = 3
-        , [2] = 4
-        , [4] = 5
+        { [0.1875] = 1 --1/16T
+        , [0.25] = 2 -- 1/16
+        , [0.375] = 3 -- 1/8T
+        , [0.5] = 4 -- 1/8
+        , [0.75] = 5 -- 1/4T
+        , [1] = 6 -- 1/4
+        , [1.5] = 7 -- 1/2T
+        , [2] = 8 -- 1/2
+        , [3] = 9  -- 1T
+        , [4] = 10 -- 1
         }
         local working = deci_to_int[tracker[page.track_page][page.track_sel[page.track_page]][2]]
-        working = util.clamp(working+d,1,5)
-        local int_to_deci = {0.25,0.5,1,2,4}
+        working = util.clamp(working+d,1,10)
+        local int_to_deci = {0.1875,0.25,0.375,0.5,0.75,1,1.5,2,3,4}
         tracker[page.track_page][page.track_sel[page.track_page]][2] = int_to_deci[working]
       end
     end
