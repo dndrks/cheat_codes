@@ -991,6 +991,12 @@ function add_to_tracker(target,entry)
   redraw()
 end
 
+function append_to_tracker() -- TODO add arguments
+  if page.track_sel[page.track_page] > tracker[page.track_page].end_point then
+    tracker[page.track_page].end_point = page.track_sel[page.track_page]
+  end
+end
+
 function remove_from_tracker(target,entry)
   table.remove(tracker[target],page.track_sel[page.track_page])
   redraw()
@@ -1895,6 +1901,7 @@ function key(n,z)
           local destination = tracker[page.track_page][page.track_sel[page.track_page]]
           if source ~= nil then
             tracker_copy_prev(source,destination)
+            append_to_tracker()
           end
         end
       end

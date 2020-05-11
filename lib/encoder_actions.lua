@@ -143,6 +143,9 @@ function encoder_actions.init(n,d)
         if tracker[page.track_page][page.track_sel[page.track_page]][1] == nil then
           tracker[page.track_page][page.track_sel[page.track_page]][1] = 0
           tracker[page.track_page][page.track_sel[page.track_page]][2] = 0.25
+          if page.track_sel[page.track_page] > tracker[page.track_page].end_point then
+            tracker[page.track_page].end_point = page.track_sel[page.track_page]
+          end
         end
         tracker[page.track_page][page.track_sel[page.track_page]][1] = util.clamp(tracker[page.track_page][page.track_sel[page.track_page]][1]+d,1,16)
       end
@@ -256,21 +259,22 @@ function encoder_actions.init(n,d)
       end
     elseif menu == 8 then
       if tracker[page.track_page][page.track_sel[page.track_page]][1] ~= nil then
-        local deci_to_int =
-        { [0.1875] = 1 --1/16T
-        , [0.25] = 2 -- 1/16
-        , [0.375] = 3 -- 1/8T
-        , [0.5] = 4 -- 1/8
-        , [0.75] = 5 -- 1/4T
-        , [1] = 6 -- 1/4
-        , [1.5] = 7 -- 1/2T
-        , [2] = 8 -- 1/2
-        , [3] = 9  -- 1T
-        , [4] = 10 -- 1
+        deci_to_int =
+        { ["0.1667"] = 1 --1/16T
+        , ["0.25"] = 2 -- 1/16
+        , ["0.3333"] = 3 -- 1/8T
+        , ["0.5"] = 4 -- 1/8
+        , ["0.6667"] = 5 -- 1/4T
+        , ["1.0"] = 6 -- 1/4
+        , ["1.3333"] = 7 -- 1/2T
+        , ["2.0"] = 8 -- 1/2
+        , ["2.6667"] = 9  -- 1T
+        , ["4.0"] = 10 -- 1
         }
-        local working = deci_to_int[tracker[page.track_page][page.track_sel[page.track_page]][2]]
+        local rounded = util.round(tracker[page.track_page][page.track_sel[page.track_page]][2],0.0001)
+        local working = deci_to_int[tostring(rounded)]
         working = util.clamp(working+d,1,10)
-        local int_to_deci = {0.1875,0.25,0.375,0.5,0.75,1,1.5,2,3,4}
+        local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
         tracker[page.track_page][page.track_sel[page.track_page]][2] = int_to_deci[working]
       end
     end

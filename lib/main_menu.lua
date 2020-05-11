@@ -425,16 +425,16 @@ function main_menu.init()
     end
     --]]
     local deci_to_frac =
-    { [0.1875] = "1/16t"
-    , [0.25] = "1/16"
-    , [0.375] = "1/8t"
-    , [0.5] = "1/8"
-    , [0.75] = "1/4t"
-    , [1] = "1/4"
-    , [1.5] = "1/2t"
-    , [2] = "1/2"
-    , [3] = "1t"
-    , [4] = "1"
+    { ["0.1667"] = "1/16t"
+    , ["0.25"] = "1/16"
+    , ["0.3333"] = "1/8t"
+    , ["0.5"] = "1/8"
+    , ["0.6667"] = "1/4t"
+    , ["1.0"] = "1/4"
+    , ["1.3333"] = "1/2t"
+    , ["2.0"] = "1/2"
+    , ["2.6667"] = "1t"
+    , ["4.0"] = "1"
     }
 
     function tracker_to_screen(line)
@@ -454,7 +454,7 @@ function main_menu.init()
       screen.move(left_side and 20 or 80,vert_position)
       screen.text(tracker[page.track_page][line+1][1]==nil and "--" or tracker[page.track_page][line+1][1])
       screen.move(left_side and 35 or 95,vert_position)
-      screen.text(tracker[page.track_page][line+1][2]==nil and "--" or deci_to_frac[tracker[page.track_page][line+1][2]])
+      screen.text(tracker[page.track_page][line+1][2]==nil and "--" or deci_to_frac[tostring(util.round(tracker[page.track_page][line+1][2], 0.0001))])
     end
 
     local screen_lim = tonumber(string.format("%.0f", 9 + (((math.modf((page.track_sel[page.track_page]-1)/8))*8))))
