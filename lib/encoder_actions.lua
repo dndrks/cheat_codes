@@ -36,17 +36,18 @@ function encoder_actions.init(n,d)
       page.time_sel = util.clamp(page.time_sel+d,1,3)
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 1 then
-        page.track_page = util.clamp(page.track_page+d,1,3)
+        page.track_page = util.clamp(page.track_page+d,1,4)
       elseif page.track_page_section[page.track_page] == 2 then
-        local reasonable_max = nil
-        for i = 1,tracker[page.track_page].max_memory do
-          --if tracker[page.track_page][i][1] ~= nil and tracker[page.track_page][i][2] ~= nil then
-          if tracker[page.track_page][i][1] ~= nil then
-            reasonable_max = i
+        if page.track_page < 4 then
+          local reasonable_max = nil
+          for i = 1,tracker[page.track_page].max_memory do
+            if tracker[page.track_page][i].pad ~= nil then
+              reasonable_max = i
+            end
           end
-        end
-        if reasonable_max ~= nil then
-          page.track_sel[page.track_page] = util.clamp(page.track_sel[page.track_page]+d,1,reasonable_max+1)
+          if reasonable_max ~= nil then
+            page.track_sel[page.track_page] = util.clamp(page.track_sel[page.track_page]+d,1,reasonable_max+1)
+          end
         end
       end
     end
@@ -140,14 +141,18 @@ function encoder_actions.init(n,d)
       if page.track_page_section[page.track_page] == 1 then
         --TODO
       else
-        if tracker[page.track_page][page.track_sel[page.track_page]][1] == nil then
-          tracker[page.track_page][page.track_sel[page.track_page]][1] = 0
-          tracker[page.track_page][page.track_sel[page.track_page]][2] = 0.25
-          if page.track_sel[page.track_page] > tracker[page.track_page].end_point then
-            tracker[page.track_page].end_point = page.track_sel[page.track_page]
+        if page.track_page > 4 then
+          if tracker[page.track_page][page.track_sel[page.track_page]].pad == nil then
+            tracker[page.track_page][page.track_sel[page.track_page]].pad = 0
+            tracker[page.track_page][page.track_sel[page.track_page]].time = 0.25
+            if page.track_sel[page.track_page] > tracker[page.track_page].end_point then
+              tracker[page.track_page].end_point = page.track_sel[page.track_page]
+            end
           end
+          tracker[page.track_page][page.track_sel[page.track_page]].pad = util.clamp(tracker[page.track_page][page.track_sel[page.track_page]].pad+d,1,16)
+        else
+          tracker[1].snake = util.clamp(tracker[1].snake+d,1,8)
         end
-        tracker[page.track_page][page.track_sel[page.track_page]][1] = util.clamp(tracker[page.track_page][page.track_sel[page.track_page]][1]+d,1,16)
       end
     end
   end
@@ -258,7 +263,7 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 8 then
-      if tracker[page.track_page][page.track_sel[page.track_page]][1] ~= nil then
+      if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
         deci_to_int =
         { ["0.1667"] = 1 --1/16T
         , ["0.25"] = 2 -- 1/16
@@ -271,11 +276,11 @@ function encoder_actions.init(n,d)
         , ["2.6667"] = 9  -- 1T
         , ["4.0"] = 10 -- 1
         }
-        local rounded = util.round(tracker[page.track_page][page.track_sel[page.track_page]][2],0.0001)
+        local rounded = util.round(tracker[page.track_page][page.track_sel[page.track_page]].time,0.0001)
         local working = deci_to_int[tostring(rounded)]
         working = util.clamp(working+d,1,10)
         local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
-        tracker[page.track_page][page.track_sel[page.track_page]][2] = int_to_deci[working]
+        tracker[page.track_page][page.track_sel[page.track_page]].time = int_to_deci[working]
       end
     end
   end

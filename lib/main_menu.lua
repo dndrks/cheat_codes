@@ -407,14 +407,15 @@ function main_menu.init()
     screen.text("tracker")
     screen.level(page.track_page_section[page.track_page] == 1 and 15 or 3)
     screen.move(40,10)
-    for i = 1,3 do
-      screen.level(page.track_page == i and 15 or 3)
-      screen.move(30+(i*20),10)
-      screen.text(i)
-      screen.level(15)
-      screen.move(30+(page.track_page*20),13)
-      screen.text("_")
+    local header = {"1","2","3","fill"}
+    for i = 1,4 do
+      screen.level(page.track_page_section[page.track_page] == 1 and (page.track_page == i and 15) or 3)
+      screen.move(35+(i*15),10)
+      screen.text(header[i])
     end
+    screen.level(page.track_page_section[page.track_page] == 1 and (page.track_page == page.track_page and 15) or 3)
+    screen.move(35+(page.track_page*15),13)
+    screen.text(page.track_page < 4 and "_" or "__")
     screen.level(3)
     --[[
     for i = 0,1 do
@@ -452,18 +453,60 @@ function main_menu.init()
       screen.move(left_side and 5 or 65,vert_position)
       screen.text(line+1)
       screen.move(left_side and 20 or 80,vert_position)
-      screen.text(tracker[page.track_page][line+1][1]==nil and "--" or tracker[page.track_page][line+1][1])
+      screen.text(tracker[page.track_page][line+1].pad==nil and "--" or tracker[page.track_page][line+1].pad)
       screen.move(left_side and 35 or 95,vert_position)
-      screen.text(tracker[page.track_page][line+1][2]==nil and "--" or deci_to_frac[tostring(util.round(tracker[page.track_page][line+1][2], 0.0001))])
+      screen.text(tracker[page.track_page][line+1].time==nil and "--" or deci_to_frac[tostring(util.round(tracker[page.track_page][line+1].time, 0.0001))])
     end
 
-    local screen_lim = tonumber(string.format("%.0f", 9 + (((math.modf((page.track_sel[page.track_page]-1)/8))*8))))
 
-    if page.track_sel[page.track_page] < screen_lim then
-      for i = screen_lim - 9, screen_lim - 2 do
-        tracker_to_screen(i)
+    local snakes = 
+    { [1] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 }
+    , [2] = { 1,2,3,4,8,7,6,5,9,10,11,12,16,15,14,13 }
+    , [3] = { 1,5,9,13,2,6,10,14,3,7,11,15,4,8,12,16 }
+    , [4] = { 1,5,9,13,14,10,6,2,3,7,11,15,16,12,8,4 }
+    , [5] = { 1,2,3,4,8,12,16,15,14,13,9,5,6,7,11,10 }
+    , [6] = { 13,14,15,16,12,8,4,3,2,1,5,9,10,11,7,6 }
+    , [7] = { 1,2,5,9,6,3,4,7,10,13,14,11,8,12,15,16 }
+    , [8] = { 1,6,11,16,15,10,5,2,7,12,8,3,9,14,13,4 }
+    }
+
+    function fill_to_screen()
+      screen.level(page.track_page_section[page.track_page] == 2 and 15 or 3)
+      screen.move(0,27)
+      screen.text("snake: "..tracker[1].snake)
+    end
+
+    function snake_to_screen()
+      screen.level(3)
+      local source_options = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p"}
+      local fill_options = {}
+      for i = 1,8 do
+        fill_options[i] = {}
+      end
+      for i = 1,16 do
+        fill_options[1][snakes[tracker[1].snake][i]] = source_options[i]
+      end
+      for i = 1,16 do
+        local current_line = math.modf((i-1)/4)
+        local horiz_position = 60+((i-(4*current_line))*10)
+        local vert_position = 27+(10*((1*current_line)))
+        screen.move(horiz_position,vert_position)
+        screen.text(fill_options[1][i].." ")
       end
     end
+
+    if page.track_page < 4 then
+      local screen_lim = tonumber(string.format("%.0f", 9 + (((math.modf((page.track_sel[page.track_page]-1)/8))*8))))
+      if page.track_sel[page.track_page] < screen_lim then
+        for i = screen_lim - 9, screen_lim - 2 do
+          tracker_to_screen(i)
+        end
+      end
+    else
+      fill_to_screen()
+      snake_to_screen()
+    end
+
   elseif menu == 9 then
     screen.move(0,10)
     screen.level(3)

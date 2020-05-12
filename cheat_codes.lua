@@ -17,6 +17,7 @@ rightangleslice = include 'lib/zilchmos'
 start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
 easingFunctions = include 'lib/easing'
+midicontrol = include 'lib/midicheat'
 math.randomseed(os.time())
 
 function screenshot()
@@ -767,7 +768,7 @@ function init()
   page.track_sel = {}
   page.track_page = 1
   page.track_page_section = {}
-  for i = 1,3 do
+  for i = 1,4 do
     page.track_sel[i] = 1
     page.track_page_section[i] = 1
   end
@@ -938,6 +939,21 @@ function init()
     clock.internal.start(bpm)
   end
 
+  m = midi.connect()
+  m.event = function(data)
+    local d = midi.to_msg(data)
+    if d.type == "note_on" then
+      bank[1].id = math.abs(52-d.note)
+      selected[1].x = (5*(1-1)+1)+(math.ceil(bank[1].id/4)-1)
+      if (bank[1].id % 4) ~= 0 then
+        selected[1].y = 9-(bank[1].id % 4)
+      else
+        selected[1].y = 5
+      end
+      cheat(1,bank[1].id)
+    end
+  end
+
 end
 
 ---
@@ -949,11 +965,21 @@ function tracker_init(target)
   tracker[target].end_point = 1
   tracker[target].recording = false
   tracker[target].max_memory = 128
+  tracker[target].playing = false
+  tracker[target].snake = 1
   for i = 1,tracker[target].max_memory do
     tracker[target][i] = {}
-    for j = 1,3 do
-      tracker[target][i][j] = nil
-    end
+    tracker[target][i].pad = nil
+    tracker[target][i].time = nil
+    tracker[target][i].rate = nil
+    tracker[target][i].start_point = nil
+    tracker[target][i].end_point = nil
+    tracker[target][i].tilt = nil
+    tracker[target][i].level = nil
+    tracker[target][i].clip = nil
+    tracker[target][i].pan = nil
+    tracker[target][i].left_delay_level = nil
+    tracker[target][i].right_delay_level = nil
   end
 end
 
@@ -963,17 +989,17 @@ for i = 1,3 do
 end
 
 function snake_tracker(target,mode)
+  local prev_snake = tracker[target].snake
   if #tracker[target] > 0 then
-    clear_tracker(target)
+    clear_tracker(target) -- this becomes problematic for tracking snake mode...
   end
+  tracker[target].snake = prev_snake
   for i = 1,16 do
     tracker[target][i] = {}
-    tracker[target][i][1] = snakes[mode][i]
-    tracker[target][i][2] = 1/4
-    tracker[target][i][3] = "next"
+    tracker[target][i].pad = snakes[mode][i]
+    tracker[target][i].time = 1/4
   end
-  tracker[target].end_point = #tracker[target]
-  tracker[target].clock = clock.run(tracker_advance,target)
+  tracker[target].end_point = #snakes[mode]
 end
 
 function add_to_tracker(target,entry)
@@ -981,8 +1007,7 @@ function add_to_tracker(target,entry)
   table.insert(tracker[target],page.track_sel[page.track_page],entry)
   local reasonable_max = nil
   for i = 1,tracker[target].max_memory do
-    --if tracker[page.track_page][i][1] ~= nil and tracker[page.track_page][i][2] ~= nil then
-    if tracker[page.track_page][i][1] ~= nil then
+    if tracker[page.track_page][i].pad ~= nil then
       reasonable_max = i
     end
   end
@@ -1003,16 +1028,22 @@ function remove_from_tracker(target,entry)
 end
 
 function clear_tracker(target)
-  clock.cancel(tracker[target].clock)
+  if tracker[target].playing then
+    clock.cancel(tracker[target].clock)
+  end
   tracker_init(target)
 end
 
-function stop_tracker(target)
-  clock.cancel(tracker[target].clock)
-end
-
-function start_tracker(target)
-  tracker[target].clock = clock.run(tracker_advance,target)
+function tracker_transport(target)
+  if tracker[target][1].pad ~= nil then
+    if not tracker[target].playing then
+      tracker[target].clock = clock.run(tracker_advance,target)
+      tracker[target].playing = true
+    else
+      clock.cancel(tracker[target].clock)
+      tracker[target].playing = false
+    end
+  end
 end
 
 function tracker_advance(target)
@@ -1020,8 +1051,7 @@ function tracker_advance(target)
     if #tracker[target] > 0 then
       local step = tracker[target].step
       tracker_cheat(target,step)
-      clock.sync(tracker[target][step][2])
-      --tracker_action(tracker[1][tracker.step][3])
+      clock.sync(tracker[target][step].time)
       tracker[target].step = tracker[target].step + 1
       if tracker[target].step > tracker[target].end_point then
         tracker[target].step = tracker[target].start_point
@@ -1036,7 +1066,7 @@ function tracker_sync(target)
 end
 
 function tracker_cheat(target,step)
-  bank[target].id = tracker[target][step][1]
+  bank[target].id = tracker[target][step].pad
   selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
   if (bank[target].id % 4) ~= 0 then
     selected[target].y = 9-(bank[target].id % 4)
@@ -1891,21 +1921,34 @@ function key(n,z)
         end
       end
     elseif menu == 8 then
-      if page.track_page_section[page.track_page] == 1 then
-        page.track_page_section[page.track_page] = 2
-      elseif page.track_page_section[page.track_page] == 2 then
-        if tracker[page.track_page][page.track_sel[page.track_page]][1] ~= nil then
-          tracker_cheat(page.track_page,page.track_sel[page.track_page])
+      if key1_hold then
+        tracker_transport(page.track_page)
+      else
+        if page.track_page < 4 then
+          if page.track_page_section[page.track_page] == 1 then
+            page.track_page_section[page.track_page] = 2
+          elseif page.track_page_section[page.track_page] == 2 then
+            if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
+              tracker_cheat(page.track_page,page.track_sel[page.track_page])
+            else
+              local source = tracker[page.track_page][page.track_sel[page.track_page]-1]
+              local destination = tracker[page.track_page][page.track_sel[page.track_page]]
+              if source ~= nil then
+                tracker_copy_prev(source,destination)
+                append_to_tracker()
+              end
+            end
+          end
         else
-          local source = tracker[page.track_page][page.track_sel[page.track_page]-1]
-          local destination = tracker[page.track_page][page.track_sel[page.track_page]]
-          if source ~= nil then
-            tracker_copy_prev(source,destination)
-            append_to_tracker()
+          if page.track_page_section[page.track_page] == 1 then
+            page.track_page_section[page.track_page] = 2
+          elseif page.track_page_section[page.track_page] == 2 then
+            snake_tracker(1,tracker[1].snake)
           end
         end
       end
     end
+
   elseif n == 2 and z == 1 then
     if menu == 9 then
       if help_menu ~= "welcome" then
@@ -1924,8 +1967,9 @@ function key(n,z)
     end
     if key1_hold == true then key1_hold = false end
   end
+
   if n == 1 and z == 1 then
-    if menu == 2 or menu == 5 then
+    if menu == 2 or menu == 5 or menu == 8 then
       if key1_hold == false then
         key1_hold = true
       else
