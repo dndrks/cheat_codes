@@ -5,20 +5,41 @@ function main_menu.init()
     screen.move(0,10)
     screen.text("cheat codes")
     screen.move(10,30)
-    for i = 1,8 do
+    for i = 1,10 do
       screen.level(page.main_sel == i and 15 or 3)
       if i < 4 then
-        screen.move(10,20+(10*i))
-      elseif i < 8 then
-        screen.move(60,10*(i-1))
-      --[[elseif i == 7 then
-        screen.move(110,30)
-        --]]
-      elseif i == 8 then
+        screen.move(5,20+(10*i))
+      elseif i < 7 then
+        screen.move(50,10*(i-1))
+      elseif i < 10 then
+        screen.move(95,30+(10*(i-7)))
+      elseif i == 10 then
         screen.move(118,64)
       end
-      local selected = {"[ loops ]", "[ levels ]", "[ panning ]", "[ filters ]", "[ delay ]", "[ timing ]", "[ tkr ]", "[?]"}
-      local unselected = {"loops", "levels", "panning", "filters", "delay", "timing", "tkr", " ? "}
+      local selected =
+      { "[ loops ]"
+      , "[ levels ]"
+      , "[ pans ]"
+      , "[ filters ]"
+      , "[ delays ]"
+      , "[ timing ]"
+      , "[ trkr ]"
+      , "[ arp ]"
+      , "[ lfo ]"
+      , "[?]"
+      }
+      local unselected =
+      { "loops"
+      , "levels"
+      , "pans"
+      , "filters"
+      , "delays"
+      , "timing"
+      , "trkr"
+      , "arp"
+      , "lfo"
+      , " ? "
+      }
       if page.main_sel == i then
         screen.text(selected[i])
       else
@@ -204,7 +225,7 @@ function main_menu.init()
   elseif menu == 4 then
     screen.move(0,10)
     screen.level(3)
-    screen.text("panning")
+    screen.text("pans")
     local focused_pad = nil
     for i = 1,3 do
       if bank[i].focus_hold == true then
@@ -291,7 +312,7 @@ function main_menu.init()
   elseif menu == 6 then
     screen.move(0,10)
     screen.level(3)
-    screen.text("delay")
+    screen.text("delays")
     local options = {"rate","feed","cutoff","q","level"}
     for i = 1,5 do
       screen.level(page.delay_sel == i-1 and 15 or 3)
@@ -507,7 +528,7 @@ function main_menu.init()
       snake_to_screen()
     end
 
-  elseif menu == 9 then
+  elseif menu == 11 then
     screen.move(0,10)
     screen.level(3)
     screen.text("help")

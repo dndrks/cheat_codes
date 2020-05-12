@@ -36,7 +36,7 @@ function encoder_actions.init(n,d)
       page.time_sel = util.clamp(page.time_sel+d,1,3)
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 1 then
-        page.track_page = util.clamp(page.track_page+d,1,4)
+        --page.track_page = util.clamp(page.track_page+d,1,4)
       elseif page.track_page_section[page.track_page] == 2 then
         if page.track_page < 4 then
           local reasonable_max = nil
@@ -54,7 +54,7 @@ function encoder_actions.init(n,d)
   end
   if n == 2 then
     if menu == 1 then
-      page.main_sel = util.clamp(page.main_sel+d,1,8)
+      page.main_sel = util.clamp(page.main_sel+d,1,10)
     elseif menu == 2 then
       local id = page.loops_sel + 1
       if id ~=4 then
@@ -139,9 +139,9 @@ function encoder_actions.init(n,d)
       end
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 1 then
-        --TODO
+        page.track_page = util.clamp(page.track_page+d,1,4)
       else
-        if page.track_page > 4 then
+        if page.track_page < 4 then
           if tracker[page.track_page][page.track_sel[page.track_page]].pad == nil then
             tracker[page.track_page][page.track_sel[page.track_page]].pad = 0
             tracker[page.track_page][page.track_sel[page.track_page]].time = 0.25

@@ -19,6 +19,7 @@ grid_actions = include 'lib/grid_actions'
 easingFunctions = include 'lib/easing'
 midicontrol = include 'lib/midicheat'
 math.randomseed(os.time())
+lfo = include("lib/cc_hnds")
 
 function screenshot()
   _norns.screen_export_png("/home/we/"..menu.."-"..os.time()..".png")
@@ -1881,7 +1882,7 @@ end
 function key(n,z)
   if n == 3 and z == 1 then
     if menu == 1 then
-      for i = 1,8 do
+      for i = 1,10 do
         if page.main_sel == i then
           menu = i+1
         end
@@ -1950,7 +1951,7 @@ function key(n,z)
     end
 
   elseif n == 2 and z == 1 then
-    if menu == 9 then
+    if menu == 11 then
       if help_menu ~= "welcome" then
         help_menu = "welcome"
       else
@@ -2038,7 +2039,7 @@ function clip_jump(i,s,y,z)
     local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
     bank[i][s].start_point = (((bank[i][s].start_point - old_min) * new_range) / old_range) + new_min
     bank[i][s].end_point = bank[i][s].start_point + current_difference
-    if menu == 9 then
+    if menu == 11 then
       which_bank = i
       help_menu = "buffer jump"
     end
