@@ -944,15 +944,43 @@ function init()
   m.event = function(data)
     local d = midi.to_msg(data)
     if d.type == "note_on" then
-      bank[1].id = math.abs(52-d.note)
-      selected[1].x = (5*(1-1)+1)+(math.ceil(bank[1].id/4)-1)
-      if (bank[1].id % 4) ~= 0 then
-        selected[1].y = 9-(bank[1].id % 4)
-      else
-        selected[1].y = 5
+      local target = math.modf(d.note/33)
+      if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
+        bank[target].id = (math.abs((33*(target)) - d.note) - (3 * (target-1)))+1
+        selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
+        if (bank[target].id % 4) ~= 0 then
+          selected[target].y = 9-(bank[target].id % 4)
+        else
+          selected[target].y = 5
+        end
+        cheat(target,bank[target].id)
+        arp_add(target,bank[target].id)
       end
-      cheat(1,bank[1].id)
     end
+  end
+
+  arp = {}
+
+  function arp_init(target)
+    arp[target] = {}
+    arp[target].playing = false
+    arp[target].time = nil
+    arp[target].clock = nil
+    arp[target].step = 1
+    arp[target].notes = {}
+  end
+
+  function arp_add(target, value)
+    table.insert(arp[target].notes, value)
+  end
+
+  function arpeggiate(target, value)
+    
+  end
+
+
+  for i = 1,3 do
+    arp_init(i)
   end
 
 end
