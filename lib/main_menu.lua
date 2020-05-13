@@ -25,7 +25,7 @@ function main_menu.init()
       , "[ timing ]"
       , "[ trkr ]"
       , "[ arp ]"
-      , "[ lfo ]"
+      , "[ rnd ]"
       , "[?]"
       }
       local unselected =
@@ -37,7 +37,7 @@ function main_menu.init()
       , "timing"
       , "trkr"
       , "arp"
-      , "lfo"
+      , "rnd"
       , " ? "
       }
       if page.main_sel == i then
@@ -527,6 +527,45 @@ function main_menu.init()
       fill_to_screen()
       snake_to_screen()
     end
+
+  elseif menu == 9 then
+    local focus_arp = arp[page.arp_page]
+    screen.move(0,10)
+    screen.level(3)
+    screen.text("arp")
+    local header = {"1","2","3"}
+    for i = 1,3 do
+      screen.level(page.arp_page == i and 15 or 3)
+      screen.move(75+(i*15),10)
+      screen.text(header[i])
+    end
+    screen.move(100,10)
+    screen.move(0,60)
+    screen.font_size(15)
+    screen.level(15)
+    screen.text(focus_arp.recording and "hold" or "")
+    
+    screen.font_size(40)
+    screen.move(50,50)
+    screen.text(#focus_arp.notes > 0 and focus_arp.notes[focus_arp.step] or "")
+
+    screen.font_size(8)
+    screen.move(125,50)
+    local deci_to_frac =
+    { ["0.1667"] = "1/16t"
+    , ["0.25"] = "1/16"
+    , ["0.3333"] = "1/8t"
+    , ["0.5"] = "1/8"
+    , ["0.6667"] = "1/4t"
+    , ["1.0"] = "1/4"
+    , ["1.3333"] = "1/2t"
+    , ["2.0"] = "1/2"
+    , ["2.6667"] = "1t"
+    , ["4.0"] = "1"
+    }
+    screen.text_right(deci_to_frac[tostring(util.round(focus_arp.time, 0.0001))])
+    screen.move(125,60)
+    screen.text_right(focus_arp.mode)
 
   elseif menu == 11 then
     screen.move(0,10)
