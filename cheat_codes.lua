@@ -18,6 +18,7 @@ start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
 easingFunctions = include 'lib/easing'
 midicontrol = include 'lib/midicheat'
+arp_actions = include 'lib/arp_actions'
 math.randomseed(os.time())
 
 function screenshot()
@@ -948,7 +949,7 @@ function init()
       if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
         midi_cheat(d.note,target)
         if menu == 9 and page.arp_page == target then
-          arp_momentary(target, bank[target].id, "on")
+          arp_actions.momentary(target, bank[target].id, "on")
         end
       else
         local other_target = math.modf(d.note/17)
@@ -960,7 +961,7 @@ function init()
         if not arp[target].hold and page.arp_page == target  then
           if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
             local targeted_bank = (math.abs((33*(target)) - d.note) - (3 * (target-1)))+1
-            arp_momentary(target, targeted_bank, "off")
+            arp_actions.momentary(target, targeted_bank, "off")
           end
         end
       end
@@ -976,11 +977,15 @@ function init()
       selected[target].y = 5
     end
     cheat(target,bank[target].id)
-    --arp_add(target,bank[target].id)
   end
 
-  arp = {}
+  --arp = {}
 
+  for i = 1,3 do
+    arp_actions.init(i)
+  end
+
+  --[[
   function arp_init(target)
     arp[target] = {}
     arp[target].playing = false
@@ -1093,6 +1098,8 @@ function init()
   for i = 1,3 do
     arp_init(i)
   end
+
+  --]]
 
 end
 
@@ -2097,7 +2104,7 @@ function key(n,z)
     elseif menu == 9 then
       arp[page.arp_page].hold = not arp[page.arp_page].hold
       if not arp[page.arp_page].hold then
-        arp_clear(page.arp_page)
+        arp_actions.clear(page.arp_page)
       end
     end
 
@@ -2136,7 +2143,7 @@ function key(n,z)
         tracker_transport(page.track_page)
       end
     elseif menu == 9 then
-      arp_clear(page.arp_page)
+      arp_actions.clear(page.arp_page)
     else
       key1_hold = true
     end
