@@ -52,9 +52,11 @@ function encoder_actions.init(n,d)
       end
     elseif menu == 9 then
       page.arp_page = util.clamp(page.arp_page+d,1,3)
+      --[[
       for i = 1,3 do
-        arp[i].recording = false
+        arp[i].hold = false
       end
+      --]]
     end
   end
   if n == 2 then
@@ -566,7 +568,7 @@ end
 function ea.move_start(target,delta)
   if delta >= 0 and target.start_point < (target.end_point - delta) then
     target.start_point = util.clamp(target.start_point+delta,(1+(8*(target.clip-1))),(8.9+(8*(target.clip-1))))
-  elseif d < 0 then
+  elseif delta < 0 then
     target.start_point = util.clamp(target.start_point+delta,(1+(8*(target.clip-1))),(8.9+(8*(target.clip-1))))
   end
 end

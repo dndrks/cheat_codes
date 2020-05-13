@@ -543,7 +543,7 @@ function main_menu.init()
     screen.move(0,60)
     screen.font_size(15)
     screen.level(15)
-    screen.text(focus_arp.recording and "hold" or "")
+    screen.text(focus_arp.hold and "hold" or "")
     
     screen.font_size(40)
     screen.move(50,50)

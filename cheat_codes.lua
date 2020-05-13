@@ -947,9 +947,22 @@ function init()
       local target = math.modf(d.note/33)
       if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
         midi_cheat(d.note,target)
+        if menu == 9 and page.arp_page == target then
+          arp_momentary(target, bank[target].id, "on")
+        end
       else
         local other_target = math.modf(d.note/17)
         print(d.note, math.modf(d.note/17))
+      end
+    elseif d.type == "note_off" then
+      if menu == 9 then
+        local target = math.modf(d.note/33)
+        if not arp[target].hold and page.arp_page == target  then
+          if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
+            local targeted_bank = (math.abs((33*(target)) - d.note) - (3 * (target-1)))+1
+            arp_momentary(target, targeted_bank, "off")
+          end
+        end
       end
     end
   end
@@ -963,7 +976,7 @@ function init()
       selected[target].y = 5
     end
     cheat(target,bank[target].id)
-    arp_add(target,bank[target].id)
+    --arp_add(target,bank[target].id)
   end
 
   arp = {}
@@ -971,7 +984,7 @@ function init()
   function arp_init(target)
     arp[target] = {}
     arp[target].playing = false
-    arp[target].recording = false
+    arp[target].hold = false
     arp[target].time = 1
     arp[target].step = 1
     arp[target].notes = {}
@@ -979,8 +992,24 @@ function init()
     arp[target].clock = clock.run(arpeggiate, target)
   end
 
+  function arp_index_find(tab,el)
+    for index, value in pairs(tab) do
+      if value == el then
+        return index
+      end
+    end
+  end
+
+  function arp_momentary(target, value, state)
+    if state == "on" then
+      table.insert(arp[target].notes, value)
+    elseif state == "off" then
+      table.remove(arp[target].notes, arp_index_find(arp[target].notes, value))
+    end
+  end
+
   function arp_add(target, value)
-    if arp[target].recording then
+    if arp[target].hold then
       table.insert(arp[target].notes, value)
     end
   end
@@ -1056,7 +1085,7 @@ function init()
 
   function arp_clear(target)
     arp[target].playing = false
-    arp[target].recording = false
+    arp[target].hold = false
     arp[target].step = 1
     arp[target].notes = {}
   end
@@ -2066,7 +2095,10 @@ function key(n,z)
         end
       end
     elseif menu == 9 then
-      arp[page.arp_page].recording = not arp[page.arp_page].recording
+      arp[page.arp_page].hold = not arp[page.arp_page].hold
+      if not arp[page.arp_page].hold then
+        arp_clear(page.arp_page)
+      end
     end
 
   elseif n == 2 and z == 1 then
