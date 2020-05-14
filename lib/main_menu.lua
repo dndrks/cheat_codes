@@ -529,13 +529,13 @@ function main_menu.init()
     end
 
   elseif menu == 9 then
-    local focus_arp = arp[page.arp_page]
+    local focus_arp = arp[page.arp_pag_sel]
     screen.move(0,10)
     screen.level(3)
     screen.text("arp")
     local header = {"1","2","3"}
     for i = 1,3 do
-      screen.level(page.arp_page == i and 15 or 3)
+      screen.level(page.arp_pag_sel == i and 15 or 3)
       screen.move(75+(i*15),10)
       screen.text(header[i])
     end
@@ -547,7 +547,7 @@ function main_menu.init()
     
     screen.font_size(40)
     screen.move(50,50)
-    screen.text(#focus_arp.notes > 0 and focus_arp.notes[focus_arp.step] or "")
+    screen.text(#focus_arp.notes > 0 and focus_arp.notes[focus_arp.step] or "...")
 
     screen.font_size(8)
     screen.move(125,50)
@@ -566,6 +566,11 @@ function main_menu.init()
     screen.text_right(deci_to_frac[tostring(util.round(focus_arp.time, 0.0001))])
     screen.move(125,60)
     screen.text_right(focus_arp.mode)
+
+  elseif menu == 10 then
+    screen.move(0,10)
+    screen.level(3)
+    screen.text("rnd")
 
   elseif menu == 11 then
     screen.move(0,10)

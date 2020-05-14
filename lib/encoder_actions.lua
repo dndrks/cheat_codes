@@ -51,7 +51,7 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 9 then
-      page.arp_page = util.clamp(page.arp_page+d,1,3)
+      page.arp_pag_sel = util.clamp(page.arp_pag_sel+d,1,3)
       --[[
       for i = 1,3 do
         arp[i].hold = false
@@ -177,7 +177,7 @@ function encoder_actions.init(n,d)
       , ["2.6667"] = 9  -- 1T
       , ["4.0"] = 10 -- 1
       }
-      local focus_arp = arp[page.arp_page]
+      local focus_arp = arp[page.arp_pag_sel]
       local rounded = util.round(focus_arp.time,0.0001)
       local working = deci_to_int[tostring(rounded)]
       working = util.clamp(working+d,1,10)
@@ -318,10 +318,10 @@ function encoder_actions.init(n,d)
       , ["pend"] = 3
       , ["rnd"] = 4
       }
-      local dir = dir_to_int[arp[page.arp_page].mode]
+      local dir = dir_to_int[arp[page.arp_pag_sel].mode]
       dir = util.clamp(dir+d,1,4)
       local int_to_dir = {"fwd","bkwd","pend","rnd"}
-      arp[page.arp_page].mode = int_to_dir[dir]
+      arp[page.arp_pag_sel].mode = int_to_dir[dir]
     end
   end
   if menu == 3 then

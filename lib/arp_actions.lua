@@ -6,7 +6,7 @@ function arp_actions.init(target)
     arp[target] = {}
     arp[target].playing = false
     arp[target].hold = false
-    arp[target].time = 1
+    arp[target].time = 1/4
     arp[target].step = 1
     arp[target].notes = {}
     arp[target].mode = "fwd"

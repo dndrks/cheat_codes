@@ -18,7 +18,8 @@ start_up = include 'lib/start_up'
 grid_actions = include 'lib/grid_actions'
 easingFunctions = include 'lib/easing'
 midicontrol = include 'lib/midicheat'
-arp_actions = include 'lib/arp_actions'
+arps = include 'lib/arp_actions'
+rnd = include 'lib/rnd_actions'
 math.randomseed(os.time())
 
 function screenshot()
@@ -586,6 +587,7 @@ function init()
   
   grid_p = {}
   arc_p = {}
+  midi_p = {}
   
   rec = {}
   rec.state = 1
@@ -773,7 +775,8 @@ function init()
     page.track_sel[i] = 1
     page.track_page_section[i] = 1
   end
-  page.arp_page = 1
+  page.arp_pag_sel = 1
+  page.rnd_page_sel = 1
   
   delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
   delay = {}
@@ -948,8 +951,9 @@ function init()
       local target = math.modf(d.note/33)
       if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
         midi_cheat(d.note,target)
-        if menu == 9 and page.arp_page == target then
-          arp_actions.momentary(target, bank[target].id, "on")
+        midi_pattern_watch(d.note, target)
+        if menu == 9 and page.arp_pag_sel == target then
+          arps.momentary(target, bank[target].id, "on")
         end
       else
         local other_target = math.modf(d.note/17)
@@ -958,150 +962,92 @@ function init()
     elseif d.type == "note_off" then
       if menu == 9 then
         local target = math.modf(d.note/33)
-        if not arp[target].hold and page.arp_page == target  then
+        if not arp[target].hold and page.arp_pag_sel == target  then
           if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
             local targeted_bank = (math.abs((33*(target)) - d.note) - (3 * (target-1)))+1
-            arp_actions.momentary(target, targeted_bank, "off")
+            arps.momentary(target, targeted_bank, "off")
           end
         end
       end
     end
   end
 
-  function midi_cheat(note,target)
-    bank[target].id = (math.abs((33*(target)) - note) - (3 * (target-1)))+1
-    selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
-    if (bank[target].id % 4) ~= 0 then
-      selected[target].y = 9-(bank[target].id % 4)
-    else
-      selected[target].y = 5
-    end
-    cheat(target,bank[target].id)
-  end
-
-  --arp = {}
-
+  midi_pat = {}
   for i = 1,3 do
-    arp_actions.init(i)
-  end
-
-  --[[
-  function arp_init(target)
-    arp[target] = {}
-    arp[target].playing = false
-    arp[target].hold = false
-    arp[target].time = 1
-    arp[target].step = 1
-    arp[target].notes = {}
-    arp[target].mode = "fwd"
-    arp[target].clock = clock.run(arpeggiate, target)
-  end
-
-  function arp_index_find(tab,el)
-    for index, value in pairs(tab) do
-      if value == el then
-        return index
-      end
-    end
-  end
-
-  function arp_momentary(target, value, state)
-    if state == "on" then
-      table.insert(arp[target].notes, value)
-    elseif state == "off" then
-      table.remove(arp[target].notes, arp_index_find(arp[target].notes, value))
-    end
-  end
-
-  function arp_add(target, value)
-    if arp[target].hold then
-      table.insert(arp[target].notes, value)
-    end
-  end
-
-  function arpeggiate(target)
-    while true do
-      clock.sync(arp[target].time)
-      if #arp[target].notes > 0 then
-        if arp[target].mode == "fwd" then
-          arp_forward(target)
-        elseif arp[target].mode == "bkwd" then
-          arp_backward(target)
-        elseif arp[target].mode == "pend" then
-          arp_pendulum(target)
-        elseif arp[target].mode == "rnd" then
-          arp_random(target)
-        end
-        arp_cheat(target,arp[target].step)
-      end
-      redraw()
-    end
-  end
-
-  function arp_forward(target)
-    arp[target].step = arp[target].step + 1
-    if arp[target].step > #arp[target].notes then
-      arp[target].step = 1
-    end
-  end
-
-  function arp_backward(target)
-    arp[target].step = arp[target].step - 1
-    if arp[target].step == 0 then
-      arp[target].step = #arp[target].notes
-    end
-  end
-
-  local direction = "positive"
-
-  function arp_pendulum(target)
-    if direction == "positive" then
-      arp[target].step = arp[target].step + 1
-      if arp[target].step > #arp[target].notes then
-        arp[target].step = #arp[target].notes
-      end
-    elseif direction == "negative" then
-      arp[target].step = arp[target].step - 1
-      if arp[target].step == 0 then
-        arp[target].step = 1
-      end
-    end
-    if arp[target].step == #arp[target].notes then
-      direction = "negative"
-    elseif arp[target].step == 1 then
-      direction = "positive"
-    end
-  end
-
-  function arp_random(target)
-    arp[target].step = math.random(#arp[target].notes)
-  end
-
-  function arp_cheat(target,step)
-    bank[target].id = arp[target].notes[step]
-    selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
-    if (bank[target].id % 4) ~= 0 then
-      selected[target].y = 9-(bank[target].id % 4)
-    else
-      selected[target].y = 5
-    end
-    cheat(target,bank[target].id)
-  end
-
-  function arp_clear(target)
-    arp[target].playing = false
-    arp[target].hold = false
-    arp[target].step = 1
-    arp[target].notes = {}
+    midi_pat[i] = pattern_time.new()
+    midi_pat[i].process = midi_pattern_execute
+    midi_pat[i].tightened_start = 0
+    midi_pat[i].auto_snap = 0
+    midi_pat[i].quantize = 0
+    midi_pat[i].playmode = 1
+    midi_pat[i].random_pitch_range = 4
+    midi_pat[i].time = 4
   end
 
   for i = 1,3 do
-    arp_init(i)
+    arps.init(i)
   end
 
-  --]]
+  for i = 1,3 do
+    rnd.init(i)
+  end
 
 end
+
+---
+
+function midi_pattern_watch(note,target)
+  midi_p[target] = {}
+  midi_p[target].note = note
+  midi_p[target].target = target
+  midi_pat[target]:watch(midi_p[target])
+end
+
+function midi_pattern_execute(entry)
+  midi_cheat(entry.note, entry.target)
+end
+
+function midi_cheat(note,target)
+  bank[target].id = (math.abs((33*(target)) - note) - (3 * (target-1)))+1
+  selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
+  if (bank[target].id % 4) ~= 0 then
+    selected[target].y = 9-(bank[target].id % 4)
+  else
+    selected[target].y = 5
+  end
+  cheat(target,bank[target].id)
+end
+
+function midi_rec(note,target)
+  if midi_pat[target].count == 0 then
+    midi_rec_clock(target)
+  end
+end
+
+function midi_rec_clock(target)
+  clock.sync(midi_pat[target].time)
+  if midi_pat[target].rec == 1 then
+    midi_pat[target]:rec_stop()
+  end
+  midi_pat[target]:start()
+  midi_play_clock(target)
+  midi_pat[target].clock = clock.run(midi_play_clock, target)
+end
+
+function midi_play_clock(target)
+  while true do
+    clock.sync(4)
+    if midi_pat[target].play == 1 then
+      midi_pat[target]:stop()
+      midi_pat[target]:start()
+    end
+  end
+end
+
+function midi_rec_clear(target)
+  clock.cancel(midi_pat[target].clock)
+end
+
 
 ---
 
@@ -1232,11 +1178,7 @@ end
 
 ---
 
-rnd = {}
 
-function rnd_init()
-
-end
 
 ---
 
@@ -2102,9 +2044,9 @@ function key(n,z)
         end
       end
     elseif menu == 9 then
-      arp[page.arp_page].hold = not arp[page.arp_page].hold
-      if not arp[page.arp_page].hold then
-        arp_actions.clear(page.arp_page)
+      arp[page.arp_pag_sel].hold = not arp[page.arp_pag_sel].hold
+      if not arp[page.arp_pag_sel].hold then
+        arps.clear(page.arp_pag_sel)
       end
     end
 
@@ -2143,7 +2085,7 @@ function key(n,z)
         tracker_transport(page.track_page)
       end
     elseif menu == 9 then
-      arp_actions.clear(page.arp_page)
+      arps.clear(page.arp_pag_sel)
     else
       key1_hold = true
     end
