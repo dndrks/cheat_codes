@@ -14,37 +14,28 @@ function main_menu.init()
       elseif i < 10 then
         screen.move(95,30+(10*(i-7)))
       elseif i == 10 then
-        screen.move(118,64)
+        screen.move(115,64)
       end
-      local selected =
-      { "[ loops ]"
-      , "[ levels ]"
-      , "[ pans ]"
-      , "[ filters ]"
-      , "[ delays ]"
-      , "[ timing ]"
-      , "[ trkr ]"
-      , "[ arp ]"
-      , "[ rnd ]"
-      , "[?]"
+      local options =
+      { " loops"
+      , " levels"
+      , " pans"
+      , " filters"
+      , " delays"
+      , " timing"
+      , " trkr"
+      , " arp"
+      , " rnd"
+      , " ?"
       }
-      local unselected =
-      { "loops"
-      , "levels"
-      , "pans"
-      , "filters"
-      , "delays"
-      , "timing"
-      , "trkr"
-      , "arp"
-      , "rnd"
-      , " ? "
-      }
+      screen.text(page.main_sel == i and (">"..options[i]) or options[i])
+      --[[
       if page.main_sel == i then
         screen.text(selected[i])
       else
         screen.text(unselected[i])
       end
+      --]]
     end
   elseif menu == 2 then
     screen.move(0,10)
@@ -390,6 +381,9 @@ function main_menu.init()
       { [i] = { "P"..i  , "P"..i.."  > "..display_step[i],  "P"..i.."  x "..display_step[i]} }
       screen.move(10+(40*(i-1)),25)
       screen.text(playing_options[i][grid_pat[i].count == 0 and 1 or playing[i] == 1 and 2 or playing[i] == 0 and 3])
+      if midi_pat[i].rec == 1 then
+        screen.text(midi_pat[i].rec == 1 and (": rec") or "")
+      end
       local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
       local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
       local p_options_rand = {"low rates", "mid rates", "hi rates", "full range"}
@@ -516,12 +510,45 @@ function main_menu.init()
       end
     end
 
+    function deep_edit()
+      screen.level(page.track_page_section[page.track_page] == 4 and 15 or 3)
+      screen.move(0,30)
+      local track = tracker[page.track_page][page.track_sel[page.track_page]]
+
+      local parameters =
+      { [1] = {"pad: ", track.pad ~= nil and track.pad or "---"}
+      , [2] = {"rate: ", track.rate ~= nil and string.format("%.0f",track.rate) or "---"}
+      , [3] = {"s: ", track.start_point ~= nil and track.start_point or "---"}
+      , [4] = {"e: ", track.end_point ~= nil and track.end_point or "---"}
+      , [5] = {"loop: ", track.loop ~= nil and (track.loop == false and "no" or "yes") or "---"}
+      , [6] = {"clip: ", track.clip ~= nil and track.clip or "---"}
+      , [7] = {"pan: ", track.pan ~= nil and track.pan or "---"}
+      , [8] = {"filter: ", track.tilt ~= nil and track.tilt or "---"}
+      , [9] = {"level: ", track.level ~= nil and track.level or "---"}
+      , [10]  = {"l.del: ", track.left_delay_level ~= nil and track.left_delay_level or "---"}
+      , [11]  = {"r.del: ", track.right_delay_level ~= nil and track.right_delay_level or "---"}
+      }
+
+      for i = 1,11 do
+        local sel = page.track_param_sel[page.track_page]
+        screen.level(sel == i and 15 or 3)
+        local current = math.modf((i-1)/4)
+        local vert_position = 20+(10*(i-(4*current)))
+        screen.move(0+(45*current),vert_position)
+        screen.text(parameters[i][1]..parameters[i][2])
+      end
+    end
+
     if page.track_page < 4 then
-      local screen_lim = tonumber(string.format("%.0f", 9 + (((math.modf((page.track_sel[page.track_page]-1)/8))*8))))
-      if page.track_sel[page.track_page] < screen_lim then
-        for i = screen_lim - 9, screen_lim - 2 do
-          tracker_to_screen(i)
+      if page.track_page_section[page.track_page] ~= 4 then
+        local screen_lim = tonumber(string.format("%.0f", 9 + (((math.modf((page.track_sel[page.track_page]-1)/8))*8))))
+        if page.track_sel[page.track_page] < screen_lim then
+          for i = screen_lim - 9, screen_lim - 2 do
+            tracker_to_screen(i)
+          end
         end
+      else
+        deep_edit()
       end
     else
       fill_to_screen()

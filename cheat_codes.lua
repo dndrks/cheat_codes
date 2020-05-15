@@ -775,6 +775,10 @@ function init()
     page.track_sel[i] = 1
     page.track_page_section[i] = 1
   end
+  page.track_param_sel = {}
+  for i = 1,3 do
+    page.track_param_sel[i] = 1
+  end
   page.arp_pag_sel = 1
   page.rnd_page_sel = 1
   
@@ -899,7 +903,12 @@ function init()
     cheat(i,bank[i].id)
   end
   
-  hardware_redraw = metro.init(function() grid_redraw() arc_redraw() end, 0.02, -1)
+  hardware_redraw = metro.init(
+    function()
+      grid_redraw()
+      arc_redraw()
+    end
+    , 0.02, -1)
   hardware_redraw:start()
   
   softcut.poll_start_phase()
@@ -952,6 +961,14 @@ function init()
       if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
         midi_cheat(d.note,target)
         midi_pattern_watch(d.note, target)
+        if midi_pat[target].rec == 1 then
+          if not midi_pat[target].first_touch then
+            clock.run(midi_rec_clock, target)
+            midi_pat[target].first_touch = true
+          end
+        elseif midi_pat[target].overdub == 1 then
+          midi_pattern_overdub(d.note, target)
+        end
         if menu == 9 and page.arp_pag_sel == target then
           arps.momentary(target, bank[target].id, "on")
         end
@@ -981,7 +998,8 @@ function init()
     midi_pat[i].quantize = 0
     midi_pat[i].playmode = 1
     midi_pat[i].random_pitch_range = 4
-    midi_pat[i].time = 4
+    midi_pat[i].clock_time = 4
+    midi_pat[i].first_touch = false
   end
 
   for i = 1,3 do
@@ -1001,6 +1019,13 @@ function midi_pattern_watch(note,target)
   midi_p[target].note = note
   midi_p[target].target = target
   midi_pat[target]:watch(midi_p[target])
+end
+
+function midi_pattern_overdub(note, target)
+  midi_p[target] = {}
+  midi_p[target].note = note
+  midi_p[target].target = target
+  midi_pat[target]:overdub_event(midi_p[target],midi_pat[target].step)
 end
 
 function midi_pattern_execute(entry)
@@ -1025,27 +1050,34 @@ function midi_rec(note,target)
 end
 
 function midi_rec_clock(target)
-  clock.sync(midi_pat[target].time)
+  --clock.sync(midi_pat[target].clock_time)
+  clock.sleep((60/bpm)*midi_pat[target].clock_time)
   if midi_pat[target].rec == 1 then
     midi_pat[target]:rec_stop()
+    midi_pat[target].loop = 0
+    midi_pat[target]:start()
   end
-  midi_pat[target]:start()
-  midi_play_clock(target)
+  --midi_play_clock(target)
   midi_pat[target].clock = clock.run(midi_play_clock, target)
 end
 
 function midi_play_clock(target)
   while true do
-    clock.sync(4)
+    clock.sync(midi_pat[target].clock_time)
+    midi_pat[target]:stop()
+    midi_pat[target]:start()
+    --[[
     if midi_pat[target].play == 1 then
       midi_pat[target]:stop()
       midi_pat[target]:start()
     end
+    --]]
   end
 end
 
 function midi_rec_clear(target)
   clock.cancel(midi_pat[target].clock)
+  midi_pat[target]:stop()
 end
 
 
@@ -1070,6 +1102,7 @@ function tracker_init(target)
     tracker[target][i].tilt = nil
     tracker[target][i].level = nil
     tracker[target][i].clip = nil
+    tracker[target][i].loop = nil
     tracker[target][i].pan = nil
     tracker[target][i].left_delay_level = nil
     tracker[target][i].right_delay_level = nil
@@ -1093,6 +1126,41 @@ function snake_tracker(target,mode)
     tracker[target][i].time = 1/4
   end
   tracker[target].end_point = #snakes[mode]
+end
+
+function adjust_tracker_param()
+end
+
+function map_to_tracker(target,entry)
+  local i = entry
+  local t = target
+  local pad = bank[t][tracker[t][i].pad]
+  tracker[t][i].rate = pad.rate
+  tracker[t][i].start_point = pad.start_point
+  tracker[t][i].end_point = pad.end_point
+  tracker[t][i].tilt = pad.tilt
+  tracker[t][i].level = pad.level
+  tracker[t][i].clip = pad.clip
+  tracker[t][i].loop = pad.loop
+  tracker[t][i].pan = pad.pan
+  tracker[t][i].left_delay_level = pad.left_delay_level
+  tracker[t][i].right_delay_level = pad.right_delay_level
+end
+
+function map_from_tracker(target,entry)
+  local i = entry
+  local t = target
+  local pad = bank[t][tracker[t][i].pad]
+  pad.rate = tracker[t][i].rate
+  pad.start_point = tracker[t][i].start_point
+  pad.end_point = tracker[t][i].end_point
+  pad.tilt = tracker[t][i].tilt
+  pad.level = tracker[t][i].level
+  pad.clip = tracker[t][i].clip
+  pad.loop = tracker[t][i].loop
+  pad.pan = tracker[t][i].pan
+  pad.left_delay_level = tracker[t][i].left_delay_level
+  pad.right_delay_level = tracker[t][i].right_delay_level
 end
 
 function add_to_tracker(target,entry)
@@ -1166,6 +1234,7 @@ function tracker_cheat(target,step)
   else
     selected[target].y = 5
   end
+  map_from_tracker(target,step)
   cheat(target,bank[target].id)
 end
 
@@ -1995,6 +2064,11 @@ function key(n,z)
       local time_nav = page.time_sel
       local id = time_nav
       if time_nav >= 1 and time_nav < 4 then
+        if page.time_page_sel[time_nav] == 1 then
+          if midi_pat[time_nav].rec == 0 then
+            midi_pat[time_nav]:rec_start()
+          end
+        end
         if page.time_page_sel[time_nav] == 2 then
           random_grid_pat(id,2)
         elseif page.time_page_sel[time_nav] == 5 then
@@ -2018,7 +2092,10 @@ function key(n,z)
       end
     elseif menu == 8 then
       if key1_hold then
-        tracker_transport(page.track_page)
+        if page.track_page < 4 then
+        --tracker_transport(page.track_page)
+          page.track_page_section[page.track_page] = 4
+        end
       else
         if page.track_page < 4 then
           if page.track_page_section[page.track_page] == 1 then
@@ -2080,9 +2157,10 @@ function key(n,z)
       key1_hold = true
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 1 and page.track_page < 4 then
-        tracker[page.track_page].recording = not tracker[page.track_page].recording
-      elseif page.track_page_section[page.track_page] == 2 and page.track_page < 4 then
         tracker_transport(page.track_page)
+      elseif page.track_page_section[page.track_page] == 2 and page.track_page < 4 then
+        tracker[page.track_page].recording = not tracker[page.track_page].recording
+        key1_hold = true
       end
     elseif menu == 9 then
       arps.clear(page.arp_pag_sel)
@@ -2168,231 +2246,233 @@ function grid_entry(e)
 end
 
 function grid_redraw()
-  g:all(0)
-  
-  if grid_page == 0 then
+  if g.device ~= nil then
+    g:all(0)
     
-    for j = 0,2 do
-      for k = 1,4 do
-        k = k+(5*j)
-        for i = 8,5,-1 do
-          g:led(k,i,3)
+    if grid_page == 0 then
+      
+      for j = 0,2 do
+        for k = 1,4 do
+          k = k+(5*j)
+          for i = 8,5,-1 do
+            g:led(k,i,3)
+          end
         end
       end
-    end
-    
-    for j = 0,2 do
-      for k = (5-j),(15-j),5 do
-        for i = (4-j),1,-1 do
-          g:led(k,i,3)
+      
+      for j = 0,2 do
+        for k = (5-j),(15-j),5 do
+          for i = (4-j),1,-1 do
+            g:led(k,i,3)
+          end
         end
       end
-    end
-    
-    for i = 1,3 do
-      if grid_pat[i].quantize == 0 then
-        if grid_pat[i].rec == 1 then
-          g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
-        elseif grid_pat[i].play == 1 then
-          g:led(2+(5*(i-1)),1,9)
-        elseif grid_pat[i].count > 0 then
-          g:led(2+(5*(i-1)),1,5)
-        else
-          g:led(2+(5*(i-1)),1,3)
-        end
-      elseif grid_pat[i].quantize == 1 then
-        if grid_pat[i].rec == 1 then
-          g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
-        elseif grid_pat[i].tightened_start == 1 then
-          g:led(2+(5*(i-1)),1,9)
-        elseif grid_pat[i].count > 0 then
-          g:led(2+(5*(i-1)),1,5)
-        else
-          g:led(2+(5*(i-1)),1,3)
-        end
-      end
-    end
-    
-    for i = 1,3 do
-      if arc_pat[i].rec == 1 then
-        g:led(16,5-i,15)
-      elseif arc_pat[i].play == 1 then
-        g:led(16,5-i,9)
-      elseif arc_pat[i].count > 0 then
-        g:led(16,5-i,5)
-      else
-        g:led(16,5-i,0)
-      end
-    end
-    
-    if a.device ~= nil then
+      
       for i = 1,3 do
-        for j = 5,15,5 do
-          g:led(j,8,arc_param[j/5] == 1 and 5 or 0)
-          g:led(j,7,arc_param[j/5] == 2 and 5 or 0)
-          g:led(j,6,arc_param[j/5] == 3 and 5 or 0)
-          if arc_param[j/5] == 4 then
-            for k = 8,6,-1 do
-              g:led(j,k,5)
+        if grid_pat[i].quantize == 0 then
+          if grid_pat[i].rec == 1 then
+            g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
+          elseif grid_pat[i].play == 1 then
+            g:led(2+(5*(i-1)),1,9)
+          elseif grid_pat[i].count > 0 then
+            g:led(2+(5*(i-1)),1,5)
+          else
+            g:led(2+(5*(i-1)),1,3)
+          end
+        elseif grid_pat[i].quantize == 1 then
+          if grid_pat[i].rec == 1 then
+            g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
+          elseif grid_pat[i].tightened_start == 1 then
+            g:led(2+(5*(i-1)),1,9)
+          elseif grid_pat[i].count > 0 then
+            g:led(2+(5*(i-1)),1,5)
+          else
+            g:led(2+(5*(i-1)),1,3)
+          end
+        end
+      end
+      
+      for i = 1,3 do
+        if arc_pat[i].rec == 1 then
+          g:led(16,5-i,15)
+        elseif arc_pat[i].play == 1 then
+          g:led(16,5-i,9)
+        elseif arc_pat[i].count > 0 then
+          g:led(16,5-i,5)
+        else
+          g:led(16,5-i,0)
+        end
+      end
+      
+      if a.device ~= nil then
+        for i = 1,3 do
+          for j = 5,15,5 do
+            g:led(j,8,arc_param[j/5] == 1 and 5 or 0)
+            g:led(j,7,arc_param[j/5] == 2 and 5 or 0)
+            g:led(j,6,arc_param[j/5] == 3 and 5 or 0)
+            if arc_param[j/5] == 4 then
+              for k = 8,6,-1 do
+                g:led(j,k,5)
+              end
             end
           end
         end
       end
-    end
-    
-    for i = 1,3 do
-      if bank[i].focus_hold == false then
-        g:led(selected[i].x, selected[i].y, 15)
-        if bank[i][bank[i].id].pause == true then
-          g:led(3+(5*(i-1)),1,15)
-          g:led(3+(5*(i-1)),2,15)
-        else
-          g:led(3+(5*(i-1)),1,3)
-          g:led(3+(5*(i-1)),2,3)
-        end
-      else
-        local focus_x = (math.ceil(bank[i].focus_pad/4)+(5*(i-1)))
-        local focus_y = 8-((bank[i].focus_pad-1)%4)
-        g:led(selected[i].x, selected[i].y, 5)
-        g:led(focus_x, focus_y, 15)
-        if bank[i][bank[i].focus_pad].pause == true then
-          g:led(3+(5*(i-1)),1,15)
-          g:led(3+(5*(i-1)),2,15)
-        else
-          g:led(3+(5*(i-1)),1,3)
-          g:led(3+(5*(i-1)),2,3)
-        end
-      end
-    end
-    
-    for i = 1,3 do
-      if bank[i].focus_hold == true then
-        g:led(5*i,5,(10*bank[i][bank[i].focus_pad].crow_pad_execute)+5)
-      end
-    end
-    
-    for i,e in pairs(lit) do
-      g:led(e.x, e.y,15)
-    end
-    
-    g:led(16,8,(grid.alt*12)+3)
-    
-    for i = 1,3 do
-      if bank[i].focus_hold == false then
-        g:led(1 + (5*(i-1)), math.abs(bank[i][bank[i].id].clip-5),8)
-        g:led(2 + (5*(i-1)), math.abs(bank[i][bank[i].id].mode-5),6)
-        g:led(1+(5*(i-1)),1,0)
-        if bank[i][bank[i].id].loop == false then
-          g:led(3+(5*(i-1)),4,2)
-        elseif bank[i][bank[i].id].loop == true then
-          g:led(3+(5*(i-1)),4,4)
-        end
-      else
-        g:led(1 + (5*(i-1)), math.abs(bank[i][bank[i].focus_pad].clip-5),8)
-        g:led(2 + (5*(i-1)), math.abs(bank[i][bank[i].focus_pad].mode-5),6)
-        g:led(1+(5*(i-1)),1,10)
-        if bank[i][bank[i].focus_pad].loop == false then
-          g:led(3+(5*(i-1)),4,2)
-        elseif bank[i][bank[i].focus_pad].loop == true then
-          g:led(3+(5*(i-1)),4,4)
-        end
-      end
-    end
-    
-    if rec.clear == 0 then
-      g:led(16,8-rec.clip,(5*rec.state)+5)
-    elseif rec.clear == 1 then
-      g:led(16,8-rec.clip,3)
-    end
-  
-  else
-    
-    -- if we're on page 2...
-    
-    for i = 1,3 do
-      for j = step_seq[i].start_point,step_seq[i].end_point do
-        if j < 9 then
-          g:led((i*5)-2,9-j,2)
-          if grid.loop_mod == 1 then
-            g:led((i*5)-2,9-step_seq[i].start_point,4)
-            g:led((i*5)-2,9-step_seq[i].end_point,4)
+      
+      for i = 1,3 do
+        if bank[i].focus_hold == false then
+          g:led(selected[i].x, selected[i].y, 15)
+          if bank[i][bank[i].id].pause == true then
+            g:led(3+(5*(i-1)),1,15)
+            g:led(3+(5*(i-1)),2,15)
+          else
+            g:led(3+(5*(i-1)),1,3)
+            g:led(3+(5*(i-1)),2,3)
           end
-        elseif j >=9 then
-          g:led((i*5)-1,17-j,2)
-          if grid.loop_mod == 1 then
-            g:led((i*5)-1,17-step_seq[i].start_point,4)
-            g:led((i*5)-1,17-step_seq[i].end_point,4)
+        else
+          local focus_x = (math.ceil(bank[i].focus_pad/4)+(5*(i-1)))
+          local focus_y = 8-((bank[i].focus_pad-1)%4)
+          g:led(selected[i].x, selected[i].y, 5)
+          g:led(focus_x, focus_y, 15)
+          if bank[i][bank[i].focus_pad].pause == true then
+            g:led(3+(5*(i-1)),1,15)
+            g:led(3+(5*(i-1)),2,15)
+          else
+            g:led(3+(5*(i-1)),1,3)
+            g:led(3+(5*(i-1)),2,3)
           end
         end
       end
-    end
-    
-    for i = 1,11,5 do
-      for j = 1,8 do
-        local current = math.floor(i/5)+1
-        if step_seq[current].held == 0 then
-          g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
-          g:led(i,j,j == 9 - pattern_saver[current].load_slot and 15 or ((5*pattern_saver[current].saved[9-j])+2))
-        else
-          g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
-          g:led(i,j,j == 9 - step_seq[current][step_seq[current].held].assigned_to and 15 or ((5*pattern_saver[current].saved[9-j])+2))
+      
+      for i = 1,3 do
+        if bank[i].focus_hold == true then
+          g:led(5*i,5,(10*bank[i][bank[i].focus_pad].crow_pad_execute)+5)
         end
       end
-    end
+      
+      for i,e in pairs(lit) do
+        g:led(e.x, e.y,15)
+      end
+      
+      g:led(16,8,(grid.alt*12)+3)
+      
+      for i = 1,3 do
+        if bank[i].focus_hold == false then
+          g:led(1 + (5*(i-1)), math.abs(bank[i][bank[i].id].clip-5),8)
+          g:led(2 + (5*(i-1)), math.abs(bank[i][bank[i].id].mode-5),6)
+          g:led(1+(5*(i-1)),1,0)
+          if bank[i][bank[i].id].loop == false then
+            g:led(3+(5*(i-1)),4,2)
+          elseif bank[i][bank[i].id].loop == true then
+            g:led(3+(5*(i-1)),4,4)
+          end
+        else
+          g:led(1 + (5*(i-1)), math.abs(bank[i][bank[i].focus_pad].clip-5),8)
+          g:led(2 + (5*(i-1)), math.abs(bank[i][bank[i].focus_pad].mode-5),6)
+          g:led(1+(5*(i-1)),1,10)
+          if bank[i][bank[i].focus_pad].loop == false then
+            g:led(3+(5*(i-1)),4,2)
+          elseif bank[i][bank[i].focus_pad].loop == true then
+            g:led(3+(5*(i-1)),4,4)
+          end
+        end
+      end
+      
+      if rec.clear == 0 then
+        g:led(16,8-rec.clip,(5*rec.state)+5)
+      elseif rec.clear == 1 then
+        g:led(16,8-rec.clip,3)
+      end
     
-    for i = 1,3 do
-      for j = 1,16 do
-        if step_seq[i][j].assigned_to ~= 0 then
+    else
+      
+      -- if we're on page 2...
+      
+      for i = 1,3 do
+        for j = step_seq[i].start_point,step_seq[i].end_point do
           if j < 9 then
-            g:led((i*5)-2,9-j,4)
-          elseif j >= 9 then
-            g:led((i*5)-1,17-j,4)
+            g:led((i*5)-2,9-j,2)
+            if grid.loop_mod == 1 then
+              g:led((i*5)-2,9-step_seq[i].start_point,4)
+              g:led((i*5)-2,9-step_seq[i].end_point,4)
+            end
+          elseif j >=9 then
+            g:led((i*5)-1,17-j,2)
+            if grid.loop_mod == 1 then
+              g:led((i*5)-1,17-step_seq[i].start_point,4)
+              g:led((i*5)-1,17-step_seq[i].end_point,4)
+            end
           end
         end
       end
-      if step_seq[i].current_step < 9 then
-        g:led((i*5)-2,9-step_seq[i].current_step,15)
-      elseif step_seq[i].current_step >=9 then
-        g:led((i*5)-1,9-(step_seq[i].current_step-8),15)
+      
+      for i = 1,11,5 do
+        for j = 1,8 do
+          local current = math.floor(i/5)+1
+          if step_seq[current].held == 0 then
+            g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
+            g:led(i,j,j == 9 - pattern_saver[current].load_slot and 15 or ((5*pattern_saver[current].saved[9-j])+2))
+          else
+            g:led(i,j,(5*pattern_saver[current].saved[9-j])+2)
+            g:led(i,j,j == 9 - step_seq[current][step_seq[current].held].assigned_to and 15 or ((5*pattern_saver[current].saved[9-j])+2))
+          end
+        end
       end
-      if step_seq[i].held < 9 then
-        g:led((i*5)-2,9-step_seq[i].held,9)
-      elseif step_seq[i].held >= 9 then
-        g:led((i*5)-1,9-(step_seq[i].held-8),9)
+      
+      for i = 1,3 do
+        for j = 1,16 do
+          if step_seq[i][j].assigned_to ~= 0 then
+            if j < 9 then
+              g:led((i*5)-2,9-j,4)
+            elseif j >= 9 then
+              g:led((i*5)-1,17-j,4)
+            end
+          end
+        end
+        if step_seq[i].current_step < 9 then
+          g:led((i*5)-2,9-step_seq[i].current_step,15)
+        elseif step_seq[i].current_step >=9 then
+          g:led((i*5)-1,9-(step_seq[i].current_step-8),15)
+        end
+        if step_seq[i].held < 9 then
+          g:led((i*5)-2,9-step_seq[i].held,9)
+        elseif step_seq[i].held >= 9 then
+          g:led((i*5)-1,9-(step_seq[i].held-8),9)
+        end
       end
-    end
-    
-    for i = 1,3 do
-      g:led((i*5)-3, 9-step_seq[i].meta_duration,4)
-      g:led((i*5)-3, 9-step_seq[i].meta_step,6)
-    end
-    
-    for i = 1,3 do
-      if step_seq[i].held == 0 then
-        g:led((i*5), 9-step_seq[i][step_seq[i].current_step].meta_meta_duration,4)
-        g:led((i*5), 9-step_seq[i].meta_meta_step,6)
-      else
-        g:led((i*5), 9-step_seq[i].meta_meta_step,2)
-        g:led((i*5), 9-step_seq[i][step_seq[i].held].meta_meta_duration,4)
+      
+      for i = 1,3 do
+        g:led((i*5)-3, 9-step_seq[i].meta_duration,4)
+        g:led((i*5)-3, 9-step_seq[i].meta_step,6)
       end
-      if step_seq[i].held == 0 then
-        g:led(16,8-i,(step_seq[i].active*6)+2)
-      else
-        g:led(16,8-i,step_seq[i][step_seq[i].held].loop_pattern*4)
+      
+      for i = 1,3 do
+        if step_seq[i].held == 0 then
+          g:led((i*5), 9-step_seq[i][step_seq[i].current_step].meta_meta_duration,4)
+          g:led((i*5), 9-step_seq[i].meta_meta_step,6)
+        else
+          g:led((i*5), 9-step_seq[i].meta_meta_step,2)
+          g:led((i*5), 9-step_seq[i][step_seq[i].held].meta_meta_duration,4)
+        end
+        if step_seq[i].held == 0 then
+          g:led(16,8-i,(step_seq[i].active*6)+2)
+        else
+          g:led(16,8-i,step_seq[i][step_seq[i].held].loop_pattern*4)
+        end
       end
-    end
-    
-    g:led(16,8,(grid.alt_pp*12)+3)
-    g:led(16,2,(grid.loop_mod*9)+3)
-    
-    if grid.loop_mod == 1 then
+      
+      g:led(16,8,(grid.alt_pp*12)+3)
+      g:led(16,2,(grid.loop_mod*9)+3)
+      
+      if grid.loop_mod == 1 then
+        
+      end
       
     end
+    g:led(16,1,15*grid_page)
     
+    g:refresh()
   end
-  g:led(16,1,15*grid_page)
-  
-  g:refresh()
 end
 --/GRID
 

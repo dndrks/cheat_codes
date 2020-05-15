@@ -10,7 +10,10 @@ function pattern.new()
   setmetatable(i, pattern)
   i.rec = 0
   i.play = 0
+  i.overdub = 0
   i.prev_time = 0
+  i.over_time = 0
+  i.curr_time = {}
   i.event = {}
   i.time = {}
   i.count = 0
@@ -32,7 +35,10 @@ function pattern:clear()
   self.metro:stop()
   self.rec = 0
   self.play = 0
+  self.overdub = 0
   self.prev_time = 0
+  self.over_time = 0
+  self.curr_time = {}
   self.event = {}
   self.time = {}
   self.count = 0
@@ -85,15 +91,30 @@ function pattern:rec_event(e)
   local c = self.count + 1
   if c == 1 then
     self.prev_time = util.time()
-    --print("first event")
+    print("first event")
   else
     local t = self.prev_time
     self.prev_time = util.time()
     self.time[c-1] = self.prev_time - t
-    --print(self.time[c-1])
+    print(self.time[c-1])
   end
   self.count = c
   self.event[c] = e
+end
+
+function pattern:overdub_event(e,w)
+  --local c = self.step
+  print("overdubbing step: "..w)
+  local t = self.curr_time[w]
+  print("current time: "..t)
+  self.over_time = util.time()
+  local new_time = self.over_time - t
+  print("new time: "..new_time)
+  table.insert(self.time, w+1, new_time)
+  table.insert(self.event, w+1, e)
+  self.time[w] = self.time[w] - new_time
+  self.count = #self.event
+  self.end_point = self.count
 end
 
 --- start this pattern
@@ -117,11 +138,11 @@ function pattern:next_event()
   elseif self.step > diff and self.loop == 1 then
     self.step = self.start_point
   else
-    self.step = self.step + 1 end
-  --print("next step "..self.step)
-  --event_exec(self.event[self.step])
+    self.step = self.step + 1
+  end
   self.process(self.event[self.step])
   self.metro.time = self.time[self.step] * self.time_factor
+  self.curr_time[self.step] = util.time()
   --print("next time "..self.metro.time)
   if self.step == diff and self.loop == 0 then
     if self.play == 1 then
@@ -139,7 +160,9 @@ function pattern:stop()
     --print("stop pattern ")
     self.play = 0
     self.metro:stop()
-  else print("not playing") end
+  else
+    --print("not playing")
+  end
 end
 
 return pattern

@@ -150,7 +150,7 @@ function encoder_actions.init(n,d)
         for i = 1,3 do
           tracker[i].recording = false
         end
-      else
+      elseif page.track_page_section[page.track_page] == 2 then
         if page.track_page < 4 then
           if tracker[page.track_page][page.track_sel[page.track_page]].pad == nil then
             tracker[page.track_page][page.track_sel[page.track_page]].pad = 0
@@ -160,8 +160,13 @@ function encoder_actions.init(n,d)
             end
           end
           tracker[page.track_page][page.track_sel[page.track_page]].pad = util.clamp(tracker[page.track_page][page.track_sel[page.track_page]].pad+d,1,16)
+          map_to_tracker(page.track_page,page.track_sel[page.track_page])
         else
           tracker[1].snake = util.clamp(tracker[1].snake+d,1,8)
+        end
+      elseif page.track_page_section[page.track_page] == 4 then
+        if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
+          page.track_param_sel[page.track_page] = util.clamp(page.track_param_sel[page.track_page] + d,1,11)
         end
       end
     elseif menu == 9 then
@@ -292,24 +297,29 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 8 then
-      if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
-       local deci_to_int =
-        { ["0.1667"] = 1 --1/16T
-        , ["0.25"] = 2 -- 1/16
-        , ["0.3333"] = 3 -- 1/8T
-        , ["0.5"] = 4 -- 1/8
-        , ["0.6667"] = 5 -- 1/4T
-        , ["1.0"] = 6 -- 1/4
-        , ["1.3333"] = 7 -- 1/2T
-        , ["2.0"] = 8 -- 1/2
-        , ["2.6667"] = 9  -- 1T
-        , ["4.0"] = 10 -- 1
-        }
-        local rounded = util.round(tracker[page.track_page][page.track_sel[page.track_page]].time,0.0001)
-        local working = deci_to_int[tostring(rounded)]
-        working = util.clamp(working+d,1,10)
-        local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
-        tracker[page.track_page][page.track_sel[page.track_page]].time = int_to_deci[working]
+      if page.track_page_section[page.track_page] == 2 then
+        if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
+        local deci_to_int =
+          { ["0.1667"] = 1 --1/16T
+          , ["0.25"] = 2 -- 1/16
+          , ["0.3333"] = 3 -- 1/8T
+          , ["0.5"] = 4 -- 1/8
+          , ["0.6667"] = 5 -- 1/4T
+          , ["1.0"] = 6 -- 1/4
+          , ["1.3333"] = 7 -- 1/2T
+          , ["2.0"] = 8 -- 1/2
+          , ["2.6667"] = 9  -- 1T
+          , ["4.0"] = 10 -- 1
+          }
+          local rounded = util.round(tracker[page.track_page][page.track_sel[page.track_page]].time,0.0001)
+          local working = deci_to_int[tostring(rounded)]
+          working = util.clamp(working+d,1,10)
+          local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
+          tracker[page.track_page][page.track_sel[page.track_page]].time = int_to_deci[working]
+        end
+      elseif page.track_page_section[page.track_page] == 4 then
+        local sel = page.track_param_sel[page.track_page]
+
       end
     elseif menu == 9 then
       local dir_to_int =
