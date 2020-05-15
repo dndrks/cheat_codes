@@ -1102,10 +1102,12 @@ function tracker_init(target)
     tracker[target][i].tilt = nil
     tracker[target][i].level = nil
     tracker[target][i].clip = nil
+    tracker[target][i].mode = nil
     tracker[target][i].loop = nil
     tracker[target][i].pan = nil
     tracker[target][i].left_delay_level = nil
     tracker[target][i].right_delay_level = nil
+    tracker[target][i].triggger = true
   end
 end
 
@@ -1124,6 +1126,7 @@ function snake_tracker(target,mode)
     tracker[target][i] = {}
     tracker[target][i].pad = snakes[mode][i]
     tracker[target][i].time = 1/4
+    map_to_tracker(target,i)
   end
   tracker[target].end_point = #snakes[mode]
 end
@@ -1141,6 +1144,7 @@ function map_to_tracker(target,entry)
   tracker[t][i].tilt = pad.tilt
   tracker[t][i].level = pad.level
   tracker[t][i].clip = pad.clip
+  tracker[t][i].mode = pad.mode
   tracker[t][i].loop = pad.loop
   tracker[t][i].pan = pad.pan
   tracker[t][i].left_delay_level = pad.left_delay_level
@@ -1157,6 +1161,7 @@ function map_from_tracker(target,entry)
   pad.tilt = tracker[t][i].tilt
   pad.level = tracker[t][i].level
   pad.clip = tracker[t][i].clip
+  pad.mode = tracker[t][i].mode
   pad.loop = tracker[t][i].loop
   pad.pan = tracker[t][i].pan
   pad.left_delay_level = tracker[t][i].left_delay_level
@@ -2094,7 +2099,9 @@ function key(n,z)
       if key1_hold then
         if page.track_page < 4 then
         --tracker_transport(page.track_page)
-          page.track_page_section[page.track_page] = 4
+          if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
+            page.track_page_section[page.track_page] = 4
+          end
         end
       else
         if page.track_page < 4 then
@@ -2111,6 +2118,8 @@ function key(n,z)
                 append_to_tracker()
               end
             end
+          elseif page.track_page_section[page.track_page] == 4 then
+            tracker_cheat(page.track_page,page.track_sel[page.track_page])
           end
         else
           if page.track_page_section[page.track_page] == 1 then
@@ -2137,8 +2146,10 @@ function key(n,z)
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 2 then
         page.track_page_section[page.track_page] = 1
+      elseif page.track_page_section[page.track_page] == 4 then
+        page.track_page_section[page.track_page] = 2
       else
-      menu = 1
+        menu = 1
       end
     else
       menu = 1
@@ -2160,6 +2171,8 @@ function key(n,z)
         tracker_transport(page.track_page)
       elseif page.track_page_section[page.track_page] == 2 and page.track_page < 4 then
         tracker[page.track_page].recording = not tracker[page.track_page].recording
+        key1_hold = true
+      elseif page.track_page_section[page.track_page] == 4 then
         key1_hold = true
       end
     elseif menu == 9 then

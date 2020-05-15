@@ -20,6 +20,7 @@ end
 
 local param_targets =
 {   ['rate slew'] = rnd.rate_slew
+,   ['pan'] = rnd.pan   
 }
 
 function rnd.go(t,i)

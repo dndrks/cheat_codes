@@ -514,20 +514,37 @@ function main_menu.init()
       screen.level(page.track_page_section[page.track_page] == 4 and 15 or 3)
       screen.move(0,30)
       local track = tracker[page.track_page][page.track_sel[page.track_page]]
-
+      local rate_to_frac =
+      { [-4] = "-4"
+      , [-2] = "-2"
+      , [-1] = "-1"
+      , [-0.5] = "-1/2"
+      , [-0.25] = "-1/4"
+      , [-0.125] = "-1/8"
+      , [0.125] = "1/8"
+      , [0.25] = "1/4"
+      , [0.5] = "1/2"
+      , [1] = "1"
+      , [2] = "2"
+      , [4] = "4"
+      }
       local parameters =
       { [1] = {"pad: ", track.pad ~= nil and track.pad or "---"}
-      , [2] = {"rate: ", track.rate ~= nil and string.format("%.0f",track.rate) or "---"}
-      , [3] = {"s: ", track.start_point ~= nil and track.start_point or "---"}
-      , [4] = {"e: ", track.end_point ~= nil and track.end_point or "---"}
+      , [2] = {"rate: ", track.rate ~= nil and rate_to_frac[track.rate] or "---"}
+      , [3] = {"s: ", track.start_point ~= nil and (track.start_point-(8*(track.clip-1))) or "---"}
+      , [4] = {"e: ", track.end_point ~= nil and (track.end_point-(8*(track.clip-1))) or "---"}
       , [5] = {"loop: ", track.loop ~= nil and (track.loop == false and "no" or "yes") or "---"}
-      , [6] = {"clip: ", track.clip ~= nil and track.clip or "---"}
+      , [6] = {track.mode == 1 and "live: " or "clip: ", track.clip ~= nil and track.clip or "---"}
       , [7] = {"pan: ", track.pan ~= nil and track.pan or "---"}
       , [8] = {"filter: ", track.tilt ~= nil and track.tilt or "---"}
       , [9] = {"level: ", track.level ~= nil and track.level or "---"}
       , [10]  = {"l.del: ", track.left_delay_level ~= nil and track.left_delay_level or "---"}
       , [11]  = {"r.del: ", track.right_delay_level ~= nil and track.right_delay_level or "---"}
       }
+
+      screen.move(0,20)
+      screen.level(15)
+      screen.text("line: "..page.track_sel[page.track_page])
 
       for i = 1,11 do
         local sel = page.track_param_sel[page.track_page]

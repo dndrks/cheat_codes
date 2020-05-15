@@ -49,6 +49,15 @@ function encoder_actions.init(n,d)
             page.track_sel[page.track_page] = util.clamp(page.track_sel[page.track_page]+d,1,reasonable_max+1)
           end
         end
+      elseif page.track_page_section[page.track_page] == 4 then
+        if key1_hold == false then
+          if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
+            page.track_param_sel[page.track_page] = util.clamp(page.track_param_sel[page.track_page] + d,1,11)
+            --tracker[page.track_page][page.track_sel[page.track_page]].time = 0.25
+          end
+        else
+          page.track_sel[page.track_page] = util.clamp(page.track_sel[page.track_page] + d,tracker[page.track_page].start_point,tracker[page.track_page].end_point)
+        end
       end
     elseif menu == 9 then
       page.arp_pag_sel = util.clamp(page.arp_pag_sel+d,1,3)
@@ -165,8 +174,57 @@ function encoder_actions.init(n,d)
           tracker[1].snake = util.clamp(tracker[1].snake+d,1,8)
         end
       elseif page.track_page_section[page.track_page] == 4 then
-        if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
-          page.track_param_sel[page.track_page] = util.clamp(page.track_param_sel[page.track_page] + d,1,11)
+        local id = page.track_page
+        local sel = page.track_param_sel[id]
+        local line = page.track_sel[id]
+        if sel == 1 then
+          if tracker[id][line].pad == nil then tracker[id][line].pad = 0 end
+          tracker[id][line].pad = util.clamp(tracker[id][line].pad+d,1,16)
+          --ea.change_pad(target,delta)
+          map_to_tracker(id,line)
+        elseif sel == 2 then
+          local rate_to_int =
+          { [-4] = 1
+          , [-2] = 2
+          , [-1] = 3
+          , [-0.5] = 4
+          , [-0.25] = 5
+          , [-0.125] = 6
+          , [0.125] = 7
+          , [0.25] = 8
+          , [0.5] = 9
+          , [1] = 10
+          , [2] = 11
+          , [4] = 12
+          }
+          local tracker_rate = rate_to_int[tracker[id][line].rate]
+          local tracker_rate = util.clamp(tracker_rate+d,1,12)
+          local int_to_rate = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
+          tracker[id][line].rate = int_to_rate[tracker_rate]
+        elseif sel == 3 then
+          ea.move_start(tracker[id][line],d/loop_enc_resolution)
+        elseif sel == 4 then
+          ea.move_end(tracker[id][line],d/loop_enc_resolution)
+        elseif sel == 5 then
+          local bool_to_string = {["false"] = 1, ["true"] = 2}
+          local tracker_loop = bool_to_string[tostring(tracker[id][line].loop)]
+          tracker_loop = util.clamp(tracker_loop+d,1,2)
+          local int_to_bool = {false, true}
+          tracker[id][line].loop = int_to_bool[tracker_loop]
+        elseif sel == 6 then
+          local pre_adjust = tracker[id][line].clip
+          local current_difference = (tracker[id][line].end_point - tracker[id][line].start_point)
+          if tracker[id][line].mode == 1 and tracker[id][line].clip + d > 3 then
+            tracker[id][line].mode = 2
+            tracker[id][line].clip = 1
+          elseif tracker[id][line].mode == 2 and tracker[id][line].clip + d < 1 then
+            tracker[id][line].mode = 1
+            tracker[id][line].clip = 3
+          else
+            tracker[id][line].clip = util.clamp(tracker[id][line].clip+d,1,3)
+          end
+          tracker[id][line].start_point = tracker[id][line].start_point - ((pre_adjust - tracker[id][line].clip)*8)
+          tracker[id][line].end_point = tracker[id][line].start_point + current_difference
         end
       end
     elseif menu == 9 then
@@ -227,11 +285,14 @@ function encoder_actions.init(n,d)
           else
             which_pad = bank[id].focus_pad
           end
+          ea.move_end(bank[id][which_pad],d/loop_enc_resolution)
+          --[[
           if d <= 0 and bank[id][which_pad].start_point < bank[id][which_pad].end_point + d/loop_enc_resolution then
             bank[id][which_pad].end_point = util.clamp(bank[id][which_pad].end_point+d/loop_enc_resolution,(1+(8*(bank[id][which_pad].clip-1))),(9+(8*(bank[id][which_pad].clip-1))))
           elseif d > 0 then
             bank[id][which_pad].end_point = util.clamp(bank[id][which_pad].end_point+d/loop_enc_resolution,(1+(8*(bank[id][which_pad].clip-1))),(9+(8*(bank[id][which_pad].clip-1))))
           end
+          --]]
           if bank[id].focus_hold == false then
             softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
           end
@@ -317,9 +378,6 @@ function encoder_actions.init(n,d)
           local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
           tracker[page.track_page][page.track_sel[page.track_page]].time = int_to_deci[working]
         end
-      elseif page.track_page_section[page.track_page] == 4 then
-        local sel = page.track_param_sel[page.track_page]
-
       end
     elseif menu == 9 then
       local dir_to_int =
@@ -583,6 +641,14 @@ function ea.move_start(target,delta)
   end
 end
 
+function ea.move_end(target,delta)
+  if delta <= 0 and target.start_point < target.end_point + delta then
+    target.end_point = util.clamp(target.end_point+delta,(1+(8*(target.clip-1))),(9+(8*(target.clip-1))))
+  elseif delta > 0 then
+    target.end_point = util.clamp(target.end_point+delta,(1+(8*(target.clip-1))),(9+(8*(target.clip-1))))
+  end
+end
+
 function ea.sc.move_play_window(target)
   pad = bank[target][bank[target].id]
   softcut.loop_start(target+1,pad.start_point)
@@ -600,25 +666,3 @@ function ea.sc.move_start(target)
 end
 
 return encoder_actions
-
---[===[
-
-local encoder_actions = {}
-ea = encoder_actions
-
-ea.sc = {}
-
-ea.init(n,d)
-  -- TODO
-  local pattern_playing = false
-  if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
-    pattern_playing = true
-  else
-    pattern_playing = false
-  end
-
-    
-end
-
-
---]===]
