@@ -51,7 +51,7 @@ function main_menu.init()
       end
       for i = 1,3 do
         --if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and grid_pat[i].external_start == 0 then
-        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 then
+        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and not arp[i].playing then
           focused_pad = bank[i].id
         else
           focused_pad = bank[i].focus_pad
@@ -63,7 +63,7 @@ function main_menu.init()
             screen.text("(pad 16 overwrites bank!)")
           end
           --if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or grid_pat[i].external_start == 1 then
-          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 then
+          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing then
             screen.move(0,10)
             screen.level(3)
             screen.text("loops: bank "..i.." is pad-locked")
@@ -367,7 +367,7 @@ function main_menu.init()
       local page_line = page.time_sel
       local pattern = grid_pat[page_line]
       screen.level(page_line == i and 15 or 3)
-      if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 then
+      if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing then
         playing[i] = 1
       else
         playing[i] = 0

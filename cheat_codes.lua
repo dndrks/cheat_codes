@@ -969,7 +969,8 @@ function init()
         elseif midi_pat[target].overdub == 1 then
           midi_pattern_overdub(d.note, target)
         end
-        if menu == 9 and page.arp_pag_sel == target then
+        if menu == 9 then
+          page.arp_pag_sel = target
           arps.momentary(target, bank[target].id, "on")
         end
       else
@@ -1034,13 +1035,15 @@ end
 
 function midi_cheat(note,target)
   bank[target].id = (math.abs((33*(target)) - note) - (3 * (target-1)))+1
-  selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
-  if (bank[target].id % 4) ~= 0 then
-    selected[target].y = 9-(bank[target].id % 4)
-  else
-    selected[target].y = 5
+  if menu ~= 9 then
+    selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
+    if (bank[target].id % 4) ~= 0 then
+      selected[target].y = 9-(bank[target].id % 4)
+    else
+      selected[target].y = 5
+    end
+    cheat(target,bank[target].id)
   end
-  cheat(target,bank[target].id)
 end
 
 function midi_rec(note,target)
@@ -2335,6 +2338,9 @@ function grid_redraw()
       for i = 1,3 do
         if bank[i].focus_hold == false then
           g:led(selected[i].x, selected[i].y, 15)
+          if i == nil then print("2339") end
+          if bank[i].id == nil then print("2340", i) end
+          if bank[i][bank[i].id].pause == nil then print("2341") end
           if bank[i][bank[i].id].pause == true then
             g:led(3+(5*(i-1)),1,15)
             g:led(3+(5*(i-1)),2,15)

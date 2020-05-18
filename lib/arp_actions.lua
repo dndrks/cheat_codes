@@ -39,16 +39,19 @@ function arp_actions.arpeggiate(target)
     while true do
         clock.sync(arp[target].time)
         if #arp[target].notes > 0 then
-        if arp[target].mode == "fwd" then
-            arp_actions.forward(target)
-        elseif arp[target].mode == "bkwd" then
-            arp_actions.backward(target)
-        elseif arp[target].mode == "pend" then
-            arp_actions.pendulum(target)
-        elseif arp[target].mode == "rnd" then
-            arp_actions.random(target)
-        end
-        arp_actions.cheat(target,arp[target].step)
+            if arp[target].mode == "fwd" then
+                arp_actions.forward(target)
+            elseif arp[target].mode == "bkwd" then
+                arp_actions.backward(target)
+            elseif arp[target].mode == "pend" then
+                arp_actions.pendulum(target)
+            elseif arp[target].mode == "rnd" then
+                arp_actions.random(target)
+            end
+            arp[target].playing = true
+            arp_actions.cheat(target,arp[target].step)
+        else
+            arp[target].playing = false
         end
         redraw()
     end
@@ -68,21 +71,21 @@ function arp_actions.backward(target)
     end
 end
 
-local direction = "positive"
+direction = "positive"
 
 function arp_actions.pendulum(target)
     if direction == "positive" then
         arp[target].step = arp[target].step + 1
         if arp[target].step > #arp[target].notes then
-        arp[target].step = #arp[target].notes
+            arp[target].step = #arp[target].notes
         end
     elseif direction == "negative" then
         arp[target].step = arp[target].step - 1
         if arp[target].step == 0 then
-        arp[target].step = 1
+            arp[target].step = 1
         end
     end
-    if arp[target].step == #arp[target].notes then
+    if arp[target].step == #arp[target].notes and arp[target].step ~= 1 then
         direction = "negative"
     elseif arp[target].step == 1 then
         direction = "positive"
@@ -95,13 +98,17 @@ end
 
 function arp_actions.cheat(target,step)
     bank[target].id = arp[target].notes[step]
-    selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
-    if (bank[target].id % 4) ~= 0 then
-        selected[target].y = 9-(bank[target].id % 4)
-    else
-        selected[target].y = 5
+    if target == nil then print("103") end
+    if bank[target].id == nil then print("104", arp[target].notes[step], target, step, arp[target].notes[step-1]) end
+    if bank[target].id ~= nil then
+        selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
+        if (bank[target].id % 4) ~= 0 then
+            selected[target].y = 9-(bank[target].id % 4)
+        else
+            selected[target].y = 5
+        end
+        cheat(target,bank[target].id)
     end
-    cheat(target,bank[target].id)
 end
 
 function arp_actions.clear(target)

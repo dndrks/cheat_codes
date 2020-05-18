@@ -254,7 +254,7 @@ function encoder_actions.init(n,d)
       if id ~= 4 then
         if key1_hold or grid.alt == 1 then
           local focused_pad = nil
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and not arp[id].playing then
             focused_pad = bank[id].id
           else
             focused_pad = bank[id].focus_pad
@@ -265,7 +265,7 @@ function encoder_actions.init(n,d)
             current_offset = 0
           end
           bank[id][focused_pad].offset = math.pow(0.5, -current_offset / 12)
-          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 then
+          if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and not arp[id].playing then
             cheat(id,bank[id].id)
           end
           if focused_pad == 16 then
@@ -579,7 +579,7 @@ end
 
 function ea.change_pad(target,delta)
   pad = bank[target]
-  if grid_pat[target].play == 0 and grid_pat[target].tightened_start == 0 then
+  if grid_pat[target].play == 0 and grid_pat[target].tightened_start == 0 and not arp[target].playing then
     pad.id = util.clamp(pad.id + delta,1,16)
     selected[target].x = (math.ceil(pad.id/4)+(5*(target-1)))
     selected[target].y = 8-((pad.id-1)%4)
@@ -599,7 +599,7 @@ end
 
 function ea.change_pad_clip(target,delta)
   local focused_pad = nil
-  if grid_pat[target].play == 0 and grid_pat[target].tightened_start == 0 then
+  if grid_pat[target].play == 0 and grid_pat[target].tightened_start == 0 and not arp[target].playing then
     focused_pad = bank[target].id
   else
     focused_pad = bank[target].focus_pad
@@ -618,7 +618,7 @@ function ea.change_pad_clip(target,delta)
   end
   pad.start_point = pad.start_point - ((pre_adjust - pad.clip)*8)
   pad.end_point = pad.start_point + current_difference
-  if grid_pat[target].play == 0 and grid_pat[target].tightened_start == 0 then
+  if grid_pat[target].play == 0 and grid_pat[target].tightened_start == 0 and not arp[target].playing then
     cheat(target,bank[target].id)
   end
   if focused_pad == 16 then
