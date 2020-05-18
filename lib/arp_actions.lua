@@ -71,24 +71,28 @@ function arp_actions.backward(target)
     end
 end
 
-direction = "positive"
+local direction = {}
+
+for i = 1,3 do
+    direction[i] = "positive"
+end
 
 function arp_actions.pendulum(target)
-    if direction == "positive" then
+    if direction[target] == "positive" then
         arp[target].step = arp[target].step + 1
         if arp[target].step > #arp[target].notes then
             arp[target].step = #arp[target].notes
         end
-    elseif direction == "negative" then
+    elseif direction[target] == "negative" then
         arp[target].step = arp[target].step - 1
         if arp[target].step == 0 then
             arp[target].step = 1
         end
     end
     if arp[target].step == #arp[target].notes and arp[target].step ~= 1 then
-        direction = "negative"
+        direction[target] = "negative"
     elseif arp[target].step == 1 then
-        direction = "positive"
+        direction[target] = "positive"
     end
 end
 
