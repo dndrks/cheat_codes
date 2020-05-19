@@ -28,22 +28,26 @@ function grid_actions.init(x,y,z)
             end
             pad_clipboard = nil
             if bank[i].quantize_press == 0 then
-              cheat(i, bank[i].id)
-              grid_p[i] = {}
-              grid_p[i].action = "pads"
-              grid_p[i].i = i
-              grid_p[i].id = selected[i].id
-              grid_p[i].x = selected[i].x
-              grid_p[i].y = selected[i].y
-              grid_p[i].rate = bank[i][bank[i].id].rate
-              grid_p[i].start_point = bank[i][bank[i].id].start_point
-              grid_p[i].end_point = bank[i][bank[i].id].end_point
-              grid_p[i].rate_adjusted = false
-              grid_p[i].loop = bank[i][bank[i].id].loop
-              grid_p[i].pause = bank[i][bank[i].id].pause
-              grid_p[i].mode = bank[i][bank[i].id].mode
-              grid_p[i].clip = bank[i][bank[i].id].clip
-              grid_pat[i]:watch(grid_p[i])
+              if ((arp[i].hold and page.arp_pag_sel == i) or (menu == 9)) and grid_pat[i].rec == 0 then
+                arps.momentary(i, bank[i].id, "on")
+              else
+                cheat(i, bank[i].id)
+                grid_p[i] = {}
+                grid_p[i].action = "pads"
+                grid_p[i].i = i
+                grid_p[i].id = selected[i].id
+                grid_p[i].x = selected[i].x
+                grid_p[i].y = selected[i].y
+                grid_p[i].rate = bank[i][bank[i].id].rate
+                grid_p[i].start_point = bank[i][bank[i].id].start_point
+                grid_p[i].end_point = bank[i][bank[i].id].end_point
+                grid_p[i].rate_adjusted = false
+                grid_p[i].loop = bank[i][bank[i].id].loop
+                grid_p[i].pause = bank[i][bank[i].id].pause
+                grid_p[i].mode = bank[i][bank[i].id].mode
+                grid_p[i].clip = bank[i][bank[i].id].clip
+                grid_pat[i]:watch(grid_p[i])
+              end
             else
               table.insert(quantize_events[i],selected[i].id)
             end
@@ -68,8 +72,15 @@ function grid_actions.init(x,y,z)
         end
         redraw()
       elseif z == 0 and x > 0 + (5*(i-1)) and x <= 4 + (5*(i-1)) and y >=5 then
-        if bank[i][bank[i].id].play_mode == "momentary" then
+        local released_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+        if bank[i][released_pad].play_mode == "momentary" then
           softcut.rate(i+1,0)
+        end
+        if menu == 9 then
+          local target = i
+          if not arp[i].hold then
+            arps.momentary(i, released_pad, "off")
+          end
         end
       end
     end
@@ -402,14 +413,23 @@ function grid_actions.init(x,y,z)
           
           ---
           if grid.alt == 0 then
-            menu = 6-y
-            if key1_hold == true then key1_hold = false end
-            if menu == 2 then
-              page.loops_sel = math.floor((x/4)-1)
-            elseif menu == 5 then
-              page.filtering_sel = math.floor((x/4))
+            if y == 3 then
+              --menu = 9
+              page.arp_pag_sel = i
+              arp[i].hold = not arp[i].hold
+              if not arp[i].hold then
+                arps.clear(i)
+              end
+            else
+              menu = 6-y
+              if key1_hold == true then key1_hold = false end
+              if menu == 2 then
+                page.loops_sel = math.floor((x/4)-1)
+              elseif menu == 5 then
+                page.filtering_sel = math.floor((x/4))
+              end
+              redraw()
             end
-            redraw()
           else
             if y == 2 then
               if grid_pat[math.ceil(x/4)].playmode == 3 or grid_pat[math.ceil(x/4)].playmode == 4 then

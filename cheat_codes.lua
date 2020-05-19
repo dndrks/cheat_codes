@@ -780,6 +780,10 @@ function init()
     page.track_param_sel[i] = 1
   end
   page.arp_pag_sel = 1
+  page.arp_param_group = {}
+  for i = 1,3 do
+    page.arp_param_group[i] = 1
+  end
   page.rnd_page_sel = 1
   
   delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
@@ -897,7 +901,7 @@ function init()
     end
   end
   
-  if g then grid_redraw() end
+  --if g then grid_redraw() end
   --/GRID
   for i=1,3 do
     cheat(i,bank[i].id)
@@ -982,8 +986,9 @@ function init()
         local target = math.modf(d.note/33)
         if not arp[target].hold and page.arp_pag_sel == target  then
           if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
-            local targeted_bank = (math.abs((33*(target)) - d.note) - (3 * (target-1)))+1
-            arps.momentary(target, targeted_bank, "off")
+            local targeted_pad = (math.abs((33*(target)) - d.note) - (3 * (target-1)))+1
+            print(target, targeted_pad, "off")
+            arps.momentary(target, targeted_pad, "off")
           end
         end
       end
@@ -1010,6 +1015,8 @@ function init()
   for i = 1,3 do
     rnd.init(i)
   end
+
+  if g then grid_redraw() end
 
 end
 
@@ -2179,7 +2186,10 @@ function key(n,z)
         key1_hold = true
       end
     elseif menu == 9 then
-      arps.clear(page.arp_pag_sel)
+      page.arp_param_group[page.arp_pag_sel] = (page.arp_param_group[page.arp_pag_sel] % 2) + 1
+      if not arp[page.arp_pag_sel].hold then
+        arps.clear(page.arp_pag_sel)
+      end
     else
       key1_hold = true
     end
@@ -2384,6 +2394,11 @@ function grid_redraw()
             g:led(3+(5*(i-1)),4,2)
           elseif bank[i][bank[i].id].loop == true then
             g:led(3+(5*(i-1)),4,4)
+          end
+          if arp[i].hold == false then
+            g:led(3+(5*(i-1)),3,0)
+          else
+            g:led(3+(5*(i-1)),3,6)
           end
         else
           g:led(1 + (5*(i-1)), math.abs(bank[i][bank[i].focus_pad].clip-5),8)

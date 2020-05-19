@@ -228,24 +228,28 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 9 then
-      local deci_to_int =
-      { ["0.1667"] = 1 --1/16T
-      , ["0.25"] = 2 -- 1/16
-      , ["0.3333"] = 3 -- 1/8T
-      , ["0.5"] = 4 -- 1/8
-      , ["0.6667"] = 5 -- 1/4T
-      , ["1.0"] = 6 -- 1/4
-      , ["1.3333"] = 7 -- 1/2T
-      , ["2.0"] = 8 -- 1/2
-      , ["2.6667"] = 9  -- 1T
-      , ["4.0"] = 10 -- 1
-      }
       local focus_arp = arp[page.arp_pag_sel]
-      local rounded = util.round(focus_arp.time,0.0001)
-      local working = deci_to_int[tostring(rounded)]
-      working = util.clamp(working+d,1,10)
-      local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
-      focus_arp.time = int_to_deci[working]
+      if page.arp_param_group[page.arp_pag_sel] == 2 then
+        focus_arp.start_point = util.clamp(focus_arp.start_point+d,1,focus_arp.end_point)
+      else
+        local deci_to_int =
+        { ["0.1667"] = 1 --1/16T
+        , ["0.25"] = 2 -- 1/16
+        , ["0.3333"] = 3 -- 1/8T
+        , ["0.5"] = 4 -- 1/8
+        , ["0.6667"] = 5 -- 1/4T
+        , ["1.0"] = 6 -- 1/4
+        , ["1.3333"] = 7 -- 1/2T
+        , ["2.0"] = 8 -- 1/2
+        , ["2.6667"] = 9  -- 1T
+        , ["4.0"] = 10 -- 1
+        }
+        local rounded = util.round(focus_arp.time,0.0001)
+        local working = deci_to_int[tostring(rounded)]
+        working = util.clamp(working+d,1,10)
+        local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
+        focus_arp.time = int_to_deci[working]
+      end
     end
   end
   if n == 3 then
@@ -380,16 +384,22 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 9 then
-      local dir_to_int =
-      { ["fwd"] = 1
-      , ["bkwd"] = 2
-      , ["pend"] = 3
-      , ["rnd"] = 4
-      }
-      local dir = dir_to_int[arp[page.arp_pag_sel].mode]
-      dir = util.clamp(dir+d,1,4)
-      local int_to_dir = {"fwd","bkwd","pend","rnd"}
-      arp[page.arp_pag_sel].mode = int_to_dir[dir]
+      if page.arp_param_group[page.arp_pag_sel] == 2 then
+        if #arp[page.arp_pag_sel].notes > 0 then
+          arp[page.arp_pag_sel].end_point = util.clamp(arp[page.arp_pag_sel].end_point+d,arp[page.arp_pag_sel].start_point,#arp[page.arp_pag_sel].notes)
+        end
+      else
+        local dir_to_int =
+        { ["fwd"] = 1
+        , ["bkwd"] = 2
+        , ["pend"] = 3
+        , ["rnd"] = 4
+        }
+        local dir = dir_to_int[arp[page.arp_pag_sel].mode]
+        dir = util.clamp(dir+d,1,4)
+        local int_to_dir = {"fwd","bkwd","pend","rnd"}
+        arp[page.arp_pag_sel].mode = int_to_dir[dir]
+      end
     end
   end
   if menu == 3 then

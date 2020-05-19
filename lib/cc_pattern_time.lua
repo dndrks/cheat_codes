@@ -91,12 +91,12 @@ function pattern:rec_event(e)
   local c = self.count + 1
   if c == 1 then
     self.prev_time = util.time()
-    print("first event")
+    --print("first event")
   else
     local t = self.prev_time
     self.prev_time = util.time()
     self.time[c-1] = self.prev_time - t
-    print(self.time[c-1])
+    --print(self.time[c-1])
   end
   self.count = c
   self.event[c] = e

@@ -29,13 +29,6 @@ function main_menu.init()
       , " ?"
       }
       screen.text(page.main_sel == i and (">"..options[i]) or options[i])
-      --[[
-      if page.main_sel == i then
-        screen.text(selected[i])
-      else
-        screen.text(unselected[i])
-      end
-      --]]
     end
   elseif menu == 2 then
     screen.move(0,10)
@@ -50,7 +43,6 @@ function main_menu.init()
         screen.text("(grid-ALT sets offset for all)")
       end
       for i = 1,3 do
-        --if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and grid_pat[i].external_start == 0 then
         if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and not arp[i].playing then
           focused_pad = bank[i].id
         else
@@ -62,7 +54,6 @@ function main_menu.init()
             screen.level(6)
             screen.text("(pad 16 overwrites bank!)")
           end
-          --if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or grid_pat[i].external_start == 1 then
           if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing then
             screen.move(0,10)
             screen.level(3)
@@ -593,23 +584,32 @@ function main_menu.init()
     screen.move(50,50)
     screen.text(#focus_arp.notes > 0 and focus_arp.notes[focus_arp.step] or "...")
 
+    --screen.level(key1_hold and 3 or 15)
     screen.font_size(8)
-    screen.move(125,50)
-    local deci_to_frac =
-    { ["0.1667"] = "1/16t"
-    , ["0.25"] = "1/16"
-    , ["0.3333"] = "1/8t"
-    , ["0.5"] = "1/8"
-    , ["0.6667"] = "1/4t"
-    , ["1.0"] = "1/4"
-    , ["1.3333"] = "1/2t"
-    , ["2.0"] = "1/2"
-    , ["2.6667"] = "1t"
-    , ["4.0"] = "1"
-    }
-    screen.text_right(deci_to_frac[tostring(util.round(focus_arp.time, 0.0001))])
-    screen.move(125,60)
-    screen.text_right(focus_arp.mode)
+
+    if page.arp_param_group[page.arp_pag_sel] == 2 then
+      screen.move(125,50)
+      screen.text_right("s: "..focus_arp.start_point)
+      screen.move(125,60)
+      screen.text_right("e: "..focus_arp.end_point)
+    else
+      screen.move(125,50)
+      local deci_to_frac =
+      { ["0.1667"] = "1/16t"
+      , ["0.25"] = "1/16"
+      , ["0.3333"] = "1/8t"
+      , ["0.5"] = "1/8"
+      , ["0.6667"] = "1/4t"
+      , ["1.0"] = "1/4"
+      , ["1.3333"] = "1/2t"
+      , ["2.0"] = "1/2"
+      , ["2.6667"] = "1t"
+      , ["4.0"] = "1"
+      }
+      screen.text_right(deci_to_frac[tostring(util.round(focus_arp.time, 0.0001))])
+      screen.move(125,60)
+      screen.text_right(focus_arp.mode)
+    end
 
   elseif menu == 10 then
     screen.move(0,10)

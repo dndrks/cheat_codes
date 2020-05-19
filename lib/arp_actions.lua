@@ -10,6 +10,8 @@ function arp_actions.init(target)
     arp[target].step = 1
     arp[target].notes = {}
     arp[target].mode = "fwd"
+    arp[target].start_point = 1
+    arp[target].end_point = 1
     arp[target].clock = clock.run(arp_actions.arpeggiate, target)
 end
 
@@ -27,11 +29,13 @@ function arp_actions.momentary(target, value, state)
     elseif state == "off" then
         table.remove(arp[target].notes, arp_actions.find_index(arp[target].notes, value))
     end
+    arp[target].end_point = #arp[target].notes
 end
 
 function arp_actions.add(target, value)
     if arp[target].hold then
         table.insert(arp[target].notes, value)
+        arp[target].end_point = #arp[target].notes
     end
 end
 
@@ -59,15 +63,18 @@ end
 
 function arp_actions.forward(target)
     arp[target].step = arp[target].step + 1
-    if arp[target].step > #arp[target].notes then
-        arp[target].step = 1
+    --if arp[target].step > #arp[target].notes then
+    if arp[target].step > arp[target].end_point then
+        --arp[target].step = 1
+        arp[target].step = arp[target].start_point
     end
 end
 
 function arp_actions.backward(target)
     arp[target].step = arp[target].step - 1
     if arp[target].step == 0 then
-        arp[target].step = #arp[target].notes
+        --arp[target].step = #arp[target].notes
+        arp[target].step = arp[target].end_point
     end
 end
 
@@ -80,31 +87,44 @@ end
 function arp_actions.pendulum(target)
     if direction[target] == "positive" then
         arp[target].step = arp[target].step + 1
-        if arp[target].step > #arp[target].notes then
-            arp[target].step = #arp[target].notes
+        --if arp[target].step > #arp[target].notes then
+        if arp[target].step > arp[target].end_point then
+            --arp[target].step = #arp[target].notes
+            arp[target].step = arp[target].end_point
         end
     elseif direction[target] == "negative" then
         arp[target].step = arp[target].step - 1
+        --[[
         if arp[target].step == 0 then
             arp[target].step = 1
         end
+        --]]
+        if arp[target].step == arp[target].start_point - 1 then
+            arp[target].step = arp[target].start_point
+        end
     end
+    --[[
     if arp[target].step == #arp[target].notes and arp[target].step ~= 1 then
         direction[target] = "negative"
     elseif arp[target].step == 1 then
         direction[target] = "positive"
     end
+    --]]
+    if arp[target].step == arp[target].end_point and arp[target].step ~= arp[target].start_point then
+        direction[target] = "negative"
+    elseif arp[target].step == arp[target].start_point then
+        direction[target] = "positive"
+    end
 end
 
 function arp_actions.random(target)
-    arp[target].step = math.random(#arp[target].notes)
+    --arp[target].step = math.random(#arp[target].notes)
+    arp[target].step = math.random(arp[target].end_point)
 end
 
 function arp_actions.cheat(target,step)
-    bank[target].id = arp[target].notes[step]
-    if target == nil then print("103") end
-    if bank[target].id == nil then print("104", arp[target].notes[step], target, step, arp[target].notes[step-1]) end
-    if bank[target].id ~= nil then
+    if arp[target].notes[step] ~= nil then
+        bank[target].id = arp[target].notes[step]
         selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
         if (bank[target].id % 4) ~= 0 then
             selected[target].y = 9-(bank[target].id % 4)
@@ -120,6 +140,8 @@ function arp_actions.clear(target)
     arp[target].hold = false
     arp[target].step = 1
     arp[target].notes = {}
+    arp[target].start_point = 1
+    arp[target].end_point = 1
 end
 
 return arp_actions
