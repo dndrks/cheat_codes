@@ -4,11 +4,11 @@ rnd = {}
 
 function rnd.init(t)
     rnd[t] = {}
-    for i = 1,6 do
+    for i = 1,4 do
         rnd[t][i] = {}
         rnd[t][i].param = "rate slew"
         rnd[t][i].playing = false
-        rnd[t][i].time = 1/4
+        rnd[t][i].time = 1
         rnd[t][i].rate_slew_min = 0
         rnd[t][i].rate_slew_max = 1
         rnd[t][i].pan_min = -100
@@ -31,6 +31,8 @@ function rnd.go(t,i)
                 rnd.rate_slew(t,i)
             elseif rnd[t][i].param == "pan" then
                 rnd.pan(t,i)
+            elseif rnd[t][i].param == "delay send" then
+                rnd.delay_send(t,i)
             end
         end
     end
@@ -44,14 +46,16 @@ function rnd.rate_slew(t,i)
 end
 
 function rnd.pan(t,i)
-    --[[
-    local min = rnd[t][i].rate_slew_min
-    local max = rnd[t][i].rate_slew_max
-    local random_pan = math.random(min,max)/100
-    softcut.pan(t+1,random_pan)
-    --]]
-    --rightangleslice.pan_random(bank[t].id)
     rightangleslice.actions[3]['123'][1](bank[t][bank[t].id])
     rightangleslice.actions[3]['123'][2](bank[t][bank[t].id],t)
 end
+
+function rnd.delay_send(t,i)
+    local delay_send = math.random(0,1)
+    for j = 1,16 do
+        bank[t][j].left_delay_level = delay_send
+        bank[t][j].right_delay_level = delay_send
+    end
+end
+
 return rnd

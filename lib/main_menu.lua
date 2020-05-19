@@ -584,9 +584,7 @@ function main_menu.init()
     screen.move(50,50)
     screen.text(#focus_arp.notes > 0 and focus_arp.notes[focus_arp.step] or "...")
 
-    --screen.level(key1_hold and 3 or 15)
     screen.font_size(8)
-
     if page.arp_param_group[page.arp_pag_sel] == 2 then
       screen.move(125,50)
       screen.text_right("s: "..focus_arp.start_point)
