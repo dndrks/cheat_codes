@@ -169,7 +169,7 @@ function encoder_actions.init(n,d)
             end
           end
           tracker[page.track_page][page.track_sel[page.track_page]].pad = util.clamp(tracker[page.track_page][page.track_sel[page.track_page]].pad+d,1,16)
-          map_to_tracker(page.track_page,page.track_sel[page.track_page])
+          trackers.map_to(page.track_page,page.track_sel[page.track_page])
         else
           tracker[1].snake = util.clamp(tracker[1].snake+d,1,8)
         end
@@ -181,7 +181,7 @@ function encoder_actions.init(n,d)
           if tracker[id][line].pad == nil then tracker[id][line].pad = 0 end
           tracker[id][line].pad = util.clamp(tracker[id][line].pad+d,1,16)
           --ea.change_pad(target,delta)
-          map_to_tracker(id,line)
+          trackers.map_to(id,line)
         elseif sel == 2 then
           local rate_to_int =
           { [-4] = 1

@@ -20,6 +20,7 @@ easingFunctions = include 'lib/easing'
 midicontrol = include 'lib/midicheat'
 arps = include 'lib/arp_actions'
 rnd = include 'lib/rnd_actions'
+trackers = include 'lib/tracker'
 math.randomseed(os.time())
 
 function screenshot()
@@ -1015,6 +1016,10 @@ function init()
   for i = 1,3 do
     rnd.init(i)
   end
+  
+  for i = 1,3 do
+    trackers.init(i)
+  end
 
   if g then grid_redraw() end
 
@@ -1093,6 +1098,7 @@ end
 
 ---
 
+--[[
 function tracker_init(target)
   tracker[target] = {}
   tracker[target].step = 1
@@ -1260,6 +1266,7 @@ function tracker_copy_prev(source,destination)
   redraw()
 end
 
+--]]
 ---
 
 
@@ -2108,7 +2115,6 @@ function key(n,z)
     elseif menu == 8 then
       if key1_hold then
         if page.track_page < 4 then
-        --tracker_transport(page.track_page)
           if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
             page.track_page_section[page.track_page] = 4
           end
@@ -2119,17 +2125,17 @@ function key(n,z)
             page.track_page_section[page.track_page] = 2
           elseif page.track_page_section[page.track_page] == 2 then
             if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
-              tracker_cheat(page.track_page,page.track_sel[page.track_page])
+              trackers.cheat(page.track_page,page.track_sel[page.track_page])
             else
               local source = tracker[page.track_page][page.track_sel[page.track_page]-1]
               local destination = tracker[page.track_page][page.track_sel[page.track_page]]
               if source ~= nil then
-                tracker_copy_prev(source,destination)
-                append_to_tracker()
+                trackers.copy_prev(source,destination)
+                trackers.append()
               end
             end
           elseif page.track_page_section[page.track_page] == 4 then
-            tracker_cheat(page.track_page,page.track_sel[page.track_page])
+            trackers.cheat(page.track_page,page.track_sel[page.track_page])
           end
         else
           if page.track_page_section[page.track_page] == 1 then
@@ -2178,7 +2184,7 @@ function key(n,z)
       key1_hold = true
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 1 and page.track_page < 4 then
-        tracker_transport(page.track_page)
+        trackers.transport(page.track_page)
       elseif page.track_page_section[page.track_page] == 2 and page.track_page < 4 then
         tracker[page.track_page].recording = not tracker[page.track_page].recording
         key1_hold = true
