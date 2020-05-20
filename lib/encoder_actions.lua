@@ -105,8 +105,8 @@ function encoder_actions.init(n,d)
           end
         else
           local lbr = {1,2,4}
-          --if d >= 0 and rec.start_point + ((d/rec_loop_enc_resolution)/params:get("live_buff_rate")) < (rec.end_point - ((d/rec_loop_enc_resolution)/params:get("live_buff_rate"))) then
-          if d >= 0 and rec.start_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) < rec.end_point then
+          --if d >= 0 and rec.start_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) < rec.end_point then
+          if d >= 0 and util.round(rec.start_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),0.01) < util.round(rec.end_point,0.01) then
             rec.start_point = util.clamp(rec.start_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
           elseif d < 0 then
             rec.start_point = util.clamp(rec.start_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
@@ -306,7 +306,10 @@ function encoder_actions.init(n,d)
           params:delta("live_buff_rate",d)
         else
           local lbr = {1,2,4}
-          if d <= 0 and rec.start_point < rec.end_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) then
+          --[[if d <= 0 and rec.start_point < rec.end_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) then
+            print(rec.start_point.." < "..rec.end_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]))
+          end]]--
+          if d <= 0 and util.round(rec.start_point,0.01) < util.round(rec.end_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),0.01) then
             rec.end_point = util.clamp(rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           elseif d > 0 and rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) < 9+(8*(rec.clip-1)) then
             rec.end_point = util.clamp(rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
@@ -575,13 +578,13 @@ function ea.move_rec_window(target,delta)
   local current_difference = (target.end_point - target.start_point)
   local current_clip = 8*(target.clip-1)
   if delta >=0 then
-    if target.end_point + current_difference < (9+(8*current_clip)) then
-      target.start_point = util.clamp(target.start_point + current_difference * (delta>0 and 1 or -1), (1+(8*current_clip)),(9+(8*current_clip)))
+    if util.round(target.end_point + current_difference,0.01) < (9+current_clip) then
+      target.start_point = util.clamp(target.start_point + (current_difference * (delta > 0 and 1 or -1)), (1+current_clip),(9+current_clip))
       target.end_point = target.start_point + current_difference
     end
   else
-    if target.end_point - current_difference > (1+(8*current_clip)) then
-      target.end_point = util.clamp(target.end_point + current_difference * (delta>0 and 1 or -1), (1+(8*current_clip)),(9+(8*current_clip)))
+    if util.round(target.start_point - current_difference,0.01) >= (1+current_clip) then
+      target.end_point = util.clamp(target.end_point + current_difference * (delta>0 and 1 or -1), (1+current_clip),(9+current_clip))
       target.start_point = target.end_point - current_difference
     end
   end

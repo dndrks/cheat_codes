@@ -703,6 +703,10 @@ function init()
         grid_pat[bank].end_point = grid_pat[bank].end_point - 1
         quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step + 1
         quantized_grid_pat[bank].sub_step = 1
+      elseif quantized_grid_pat[bank].event[current][sub_step] == nil then
+        print("skipping bank "..bank..", step "..current..", sub "..sub_step.."...unsure what to do")
+        quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step + 1
+        quantized_grid_pat[bank].sub_step = 1
       end
       --increase sub_step now
       --if quantized_grid_pat[bank].current_step > #quantized_grid_pat[bank].event or quantized_grid_pat[bank].current_step > #grid_pat[bank].event then
