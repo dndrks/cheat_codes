@@ -163,7 +163,7 @@ function encoder_actions.init(n,d)
         if page.track_page < 4 then
           if tracker[page.track_page][page.track_sel[page.track_page]].pad == nil then
             tracker[page.track_page][page.track_sel[page.track_page]].pad = 0
-            tracker[page.track_page][page.track_sel[page.track_page]].time = 0.25
+            tracker[page.track_page][page.track_sel[page.track_page]].time = 3
             if page.track_sel[page.track_page] > tracker[page.track_page].end_point then
               tracker[page.track_page].end_point = page.track_sel[page.track_page]
             end
@@ -367,7 +367,8 @@ function encoder_actions.init(n,d)
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 2 then
         if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
-        local deci_to_int =
+        local numerator_to_sel =
+          --[[
           { ["0.1667"] = 1 --1/16T
           , ["0.25"] = 2 -- 1/16
           , ["0.3333"] = 3 -- 1/8T
@@ -379,11 +380,22 @@ function encoder_actions.init(n,d)
           , ["2.6667"] = 9  -- 1T
           , ["4.0"] = 10 -- 1
           }
-          local rounded = util.round(tracker[page.track_page][page.track_sel[page.track_page]].time,0.0001)
-          local working = deci_to_int[tostring(rounded)]
+          --]]
+          { [2] = 1 --1/16T
+          , [3] = 2 -- 1/16
+          , [4] = 3 -- 1/8T
+          , [6] = 4 -- 1/8
+          , [8] = 5 -- 1/4T
+          , [12] = 6 -- 1/4
+          , [16] = 7 -- 1/2T
+          , [24] = 8 -- 1/2
+          , [32] = 9  -- 1T
+          , [48] = 10 -- 1
+          }
+          local working = numerator_to_sel[tracker[page.track_page][page.track_sel[page.track_page]].time]
           working = util.clamp(working+d,1,10)
-          local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
-          tracker[page.track_page][page.track_sel[page.track_page]].time = int_to_deci[working]
+          local int_to_numerator = {2,3,4,6,8,12,16,24,32,48}
+          tracker[page.track_page][page.track_sel[page.track_page]].time = int_to_numerator[working]
         end
       end
     elseif menu == 9 then

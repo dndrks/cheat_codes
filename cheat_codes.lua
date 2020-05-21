@@ -952,6 +952,18 @@ function init()
     osc_communication = false
   end}
 
+  params:add_group("MIDI setup",9)
+  local bank_names = {"(a)","(b)","(c)"}
+  for i = 1,3 do
+    params:add_number("bank_"..i.."_midi_channel", "bank "..bank_names[i].." channel:",1,16,i)
+  end
+  for i = 1,3 do
+    params:add_number("bank_"..i.."_pad_midi_base", "bank "..bank_names[i].." pad midi base:",0,111,53)
+  end
+  for i = 1,3 do
+    params:add_number("bank_"..i.."_zilchmo_midi_base", "bank "..bank_names[i].." zilchmo midi base:",0,111,77)
+  end
+
   crow_init()
   
   task_id = clock.run(globally_clocked)
@@ -965,7 +977,36 @@ function init()
   m = midi.connect()
   m.event = function(data)
     local d = midi.to_msg(data)
-    if d.type == "note_on" then
+    for i = 1,3 do
+      if d.ch == params:get("bank_"..i.."_midi_channel") then
+        if d.note ~= nil then
+          if d.note >= params:get("bank_"..i.."_pad_midi_base") and d.note <= params:get("bank_"..i.."_pad_midi_base") + 15 then
+            if d.type == "note_on" then
+              midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
+              if menu == 9 then
+                page.arp_pag_sel = i
+                arps.momentary(i, bank[i].id, "on")
+              end
+            elseif d.type == "note_off" then
+              if menu == 9 then
+                if not arp[i].hold and page.arp_pag_sel == i  then
+                  local targeted_pad = d.note-(params:get("bank_"..i.."_pad_midi_base")-1)
+                  arps.momentary(i, targeted_pad, "off")
+                end
+              end
+            end
+          elseif d.note >= params:get("bank_"..i.."_zilchmo_midi_base") and d.note <= params:get("bank_"..i.."_zilchmo_midi_base") + 15 then
+            if d.type == "note_on" then
+              midi_zilch(d.note-(params:get("bank_"..i.."_zilchmo_midi_base")-1), i)
+            end
+          end
+        end
+      end
+    end
+    
+    --if d.type == "note_on" then
+      --print(d.ch, d.type, d.note)
+      --[[
       local target = math.modf(d.note/33)
       if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
         midi_cheat(d.note,target)
@@ -984,20 +1025,9 @@ function init()
         end
       else
         local other_target = math.modf(d.note/17)
-        print(d.note, math.modf(d.note/17))
+        --print(d.note, math.modf(d.note/17))
       end
-    elseif d.type == "note_off" then
-      if menu == 9 then
-        local target = math.modf(d.note/33)
-        if not arp[target].hold and page.arp_pag_sel == target  then
-          if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
-            local targeted_pad = (math.abs((33*(target)) - d.note) - (3 * (target-1)))+1
-            print(target, targeted_pad, "off")
-            arps.momentary(target, targeted_pad, "off")
-          end
-        end
-      end
-    end
+      --]]
   end
 
   midi_pat = {}
@@ -1050,6 +1080,48 @@ function midi_pattern_execute(entry)
 end
 
 function midi_cheat(note,target)
+  bank[target].id = note
+  if menu ~= 9 then
+    selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
+    if (bank[target].id % 4) ~= 0 then
+      selected[target].y = 9-(bank[target].id % 4)
+    else
+      selected[target].y = 5
+    end
+    cheat(target,bank[target].id)
+  end
+end
+
+function midi_zilch(note,target)
+  if note == 1 then
+    rightangleslice.actions[4]['134'][1](bank[target][bank[target].id])
+    rightangleslice.actions[4]['134'][2](bank[target][bank[target].id],target)
+  elseif note == 2 then
+    rightangleslice.actions[4]['124'][1](bank[target][bank[target].id])
+    rightangleslice.actions[4]['124'][2](bank[target][bank[target].id],target)
+  elseif note == 3 then
+    rightangleslice.actions[4]['14'][1](bank[target][bank[target].id])
+    rightangleslice.actions[4]['14'][2](bank[target][bank[target].id],target)
+  elseif note == 4 then
+    rightangleslice.actions[4]['1234'][1](bank[target][bank[target].id])
+    rightangleslice.actions[4]['1234'][2](bank[target][bank[target].id],target)
+  elseif note == 5 then
+    rightangleslice.actions[4]['12'][1](bank[target][bank[target].id])
+    rightangleslice.actions[4]['12'][2](bank[target][bank[target].id],target)
+  elseif note == 6 then
+    rightangleslice.actions[4]['34'][1](bank[target][bank[target].id])
+    rightangleslice.actions[4]['34'][2](bank[target][bank[target].id],target)
+  elseif note == 7 then
+    rightangleslice.actions[4]['23'][1](bank[target][bank[target].id])
+    rightangleslice.actions[4]['23'][2](bank[target][bank[target].id],target)
+  elseif note == 8 then
+    bank[target][bank[target].id].loop = not bank[target][bank[target].id].loop
+    softcut.loop(target+1,bank[target][bank[target].id].loop == true and 1 or 0)
+  end
+end
+
+--[[
+function midi_cheat(note,target)
   bank[target].id = (math.abs((33*(target)) - note) - (3 * (target-1)))+1
   if menu ~= 9 then
     selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
@@ -1061,6 +1133,7 @@ function midi_cheat(note,target)
     cheat(target,bank[target].id)
   end
 end
+-]]
 
 function midi_rec(note,target)
   if midi_pat[target].count == 0 then
@@ -1098,182 +1171,6 @@ function midi_rec_clear(target)
   clock.cancel(midi_pat[target].clock)
   midi_pat[target]:stop()
 end
-
-
----
-
---[[
-function tracker_init(target)
-  tracker[target] = {}
-  tracker[target].step = 1
-  tracker[target].start_point = 1
-  tracker[target].end_point = 1
-  tracker[target].recording = false
-  tracker[target].max_memory = 128
-  tracker[target].playing = false
-  tracker[target].snake = 1
-  for i = 1,tracker[target].max_memory do
-    tracker[target][i] = {}
-    tracker[target][i].pad = nil
-    tracker[target][i].time = nil
-    tracker[target][i].rate = nil
-    tracker[target][i].start_point = nil
-    tracker[target][i].end_point = nil
-    tracker[target][i].tilt = nil
-    tracker[target][i].level = nil
-    tracker[target][i].clip = nil
-    tracker[target][i].mode = nil
-    tracker[target][i].loop = nil
-    tracker[target][i].pan = nil
-    tracker[target][i].left_delay_level = nil
-    tracker[target][i].right_delay_level = nil
-    tracker[target][i].triggger = true
-  end
-end
-
-tracker = {}
-for i = 1,3 do
-  tracker_init(i)
-end
-
-function snake_tracker(target,mode)
-  local prev_snake = tracker[target].snake
-  if #tracker[target] > 0 then
-    clear_tracker(target) -- this becomes problematic for tracking snake mode...
-  end
-  tracker[target].snake = prev_snake
-  for i = 1,16 do
-    tracker[target][i] = {}
-    tracker[target][i].pad = snakes[mode][i]
-    tracker[target][i].time = 1/4
-    map_to_tracker(target,i)
-  end
-  tracker[target].end_point = #snakes[mode]
-end
-
-function adjust_tracker_param()
-end
-
-function map_to_tracker(target,entry)
-  local i = entry
-  local t = target
-  local pad = bank[t][tracker[t][i].pad]
-  tracker[t][i].rate = pad.rate
-  tracker[t][i].start_point = pad.start_point
-  tracker[t][i].end_point = pad.end_point
-  tracker[t][i].tilt = pad.tilt
-  tracker[t][i].level = pad.level
-  tracker[t][i].clip = pad.clip
-  tracker[t][i].mode = pad.mode
-  tracker[t][i].loop = pad.loop
-  tracker[t][i].pan = pad.pan
-  tracker[t][i].left_delay_level = pad.left_delay_level
-  tracker[t][i].right_delay_level = pad.right_delay_level
-end
-
-function map_from_tracker(target,entry)
-  local i = entry
-  local t = target
-  local pad = bank[t][tracker[t][i].pad]
-  pad.rate = tracker[t][i].rate
-  pad.start_point = tracker[t][i].start_point
-  pad.end_point = tracker[t][i].end_point
-  pad.tilt = tracker[t][i].tilt
-  pad.level = tracker[t][i].level
-  pad.clip = tracker[t][i].clip
-  pad.mode = tracker[t][i].mode
-  pad.loop = tracker[t][i].loop
-  pad.pan = tracker[t][i].pan
-  pad.left_delay_level = tracker[t][i].left_delay_level
-  pad.right_delay_level = tracker[t][i].right_delay_level
-end
-
-function add_to_tracker(target,entry)
-  table.remove(tracker[target],page.track_sel[page.track_page])
-  table.insert(tracker[target],page.track_sel[page.track_page],entry)
-  local reasonable_max = nil
-  for i = 1,tracker[target].max_memory do
-    if tracker[page.track_page][i].pad ~= nil then
-      reasonable_max = i
-    end
-  end
-  tracker[target].end_point = reasonable_max
-  page.track_sel[page.track_page] = page.track_sel[page.track_page] + 1
-  redraw()
-end
-
-function append_to_tracker() -- TODO add arguments
-  if page.track_sel[page.track_page] > tracker[page.track_page].end_point then
-    tracker[page.track_page].end_point = page.track_sel[page.track_page]
-  end
-end
-
-function remove_from_tracker(target,entry)
-  table.remove(tracker[target],page.track_sel[page.track_page])
-  redraw()
-end
-
-function clear_tracker(target)
-  if tracker[target].playing then
-    clock.cancel(tracker[target].clock)
-  end
-  tracker_init(target)
-end
-
-function tracker_transport(target)
-  if tracker[target][1].pad ~= nil then
-    if not tracker[target].playing then
-      tracker[target].clock = clock.run(tracker_advance,target)
-      tracker[target].playing = true
-    else
-      clock.cancel(tracker[target].clock)
-      tracker[target].playing = false
-    end
-  end
-end
-
-function tracker_advance(target)
-  while true do
-    if #tracker[target] > 0 then
-      local step = tracker[target].step
-      tracker_cheat(target,step)
-      clock.sync(tracker[target][step].time)
-      tracker[target].step = tracker[target].step + 1
-      if tracker[target].step > tracker[target].end_point then
-        tracker[target].step = tracker[target].start_point
-      end
-    end
-    redraw()
-  end
-end
-
-function tracker_sync(target)
-  tracker[target].step = tracker[target].start_point - 1
-end
-
-function tracker_cheat(target,step)
-  bank[target].id = tracker[target][step].pad
-  selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
-  if (bank[target].id % 4) ~= 0 then
-    selected[target].y = 9-(bank[target].id % 4)
-  else
-    selected[target].y = 5
-  end
-  map_from_tracker(target,step)
-  cheat(target,bank[target].id)
-end
-
-function tracker_copy_prev(source,destination)
-  for k,v in pairs(source) do
-    destination[k] = v
-  end
-  redraw()
-end
-
---]]
----
-
-
 
 ---
 
@@ -1330,6 +1227,7 @@ function one_shot_clock()
 end
 
 function compare_rec_resolution(x)
+  local current_mult = (rec.end_point - rec.start_point) / (1/rec_loop_enc_resolution)
   local resolutions =
     { [1] = 10
     , [2] = 100
@@ -1341,9 +1239,8 @@ function compare_rec_resolution(x)
     }
   rec_loop_enc_resolution = resolutions[x]
   if x > 2 then
-    rec.start_point = 1+(8*(rec.clip-1))
     local lbr = {1,2,4}
-    rec.end_point = (1+(8*(rec.clip-1) + (1/rec_loop_enc_resolution))/lbr[params:get("live_buff_rate")])
+    rec.end_point = rec.start_point + (((1/rec_loop_enc_resolution)*current_mult)/lbr[params:get("live_buff_rate")])
     softcut.loop_start(1,rec.start_point)
     softcut.loop_end(1,rec.end_point)
     redraw()
@@ -2145,7 +2042,7 @@ function key(n,z)
           if page.track_page_section[page.track_page] == 1 then
             page.track_page_section[page.track_page] = 2
           elseif page.track_page_section[page.track_page] == 2 then
-            snake_tracker(1,tracker[1].snake)
+            trackers.snake(1,tracker[1].snake)
           end
         end
       end

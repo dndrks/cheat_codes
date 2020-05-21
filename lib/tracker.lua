@@ -31,6 +31,17 @@ function tracktions.init(target)
   end
 end
 
+local snakes = 
+{ [1] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 }
+, [2] = { 1,2,3,4,8,7,6,5,9,10,11,12,16,15,14,13 }
+, [3] = { 1,5,9,13,2,6,10,14,3,7,11,15,4,8,12,16 }
+, [4] = { 1,5,9,13,14,10,6,2,3,7,11,15,16,12,8,4 }
+, [5] = { 1,2,3,4,8,12,16,15,14,13,9,5,6,7,11,10 }
+, [6] = { 13,14,15,16,12,8,4,3,2,1,5,9,10,11,7,6 }
+, [7] = { 1,2,5,9,6,3,4,7,10,13,14,11,8,12,15,16 }
+, [8] = { 1,6,11,16,15,10,5,2,7,12,8,3,9,14,13,4 }
+}
+
 function tracktions.snake(target,mode)
   local prev_snake = tracker[target].snake
   if #tracker[target] > 0 then
@@ -40,7 +51,7 @@ function tracktions.snake(target,mode)
   for i = 1,16 do
     tracker[target][i] = {}
     tracker[target][i].pad = snakes[mode][i]
-    tracker[target][i].time = 1/4
+    tracker[target][i].time = 3
     tracktions.map_to(target,i)
   end
   tracker[target].end_point = #snakes[mode]
