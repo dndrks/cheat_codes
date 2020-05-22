@@ -32,6 +32,7 @@ function zilchmos.init(k,i)
   -- here's where we call the action
   if grid.alt == 0 then
     p_action( b[p] )
+    trackers.inherit(which_bank,p)
   else
     z.map( p_action, b ) -- or map it over the whole bank
   end
@@ -44,6 +45,7 @@ end
 function zilchmos.map( fn, bank ) -- this is a local bank, represents bank[i]
   for i=1,16 do -- will execute for each of the 16 elements in bank
     fn( bank[i] ) -- pass each pad to the supplied function
+    trackers.inherit(which_bank,i)
   end
 end
 

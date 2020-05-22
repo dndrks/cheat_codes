@@ -198,12 +198,7 @@ function grid_actions.init(x,y,z)
     for i = 1,3 do
       if x == (3)+(5*(i-1)) and y == 4 and z == 1 then
         which_bank = i
-        local which_pad = nil
-        if bank[i].focus_hold == false then
-          which_pad = bank[i].id
-        else
-          which_pad = bank[i].focus_pad
-        end
+        local which_pad = bank[i].focus_hold == true and bank[i].focus_pad or bank[i].id
         if bank[i][which_pad].loop == true then
           if grid.alt == 0 then
             bank[i][which_pad].loop = false
@@ -221,6 +216,7 @@ function grid_actions.init(x,y,z)
           else
             for j = 1,16 do
               bank[i][j].loop = true
+              trackers.inherit(i,j)
             end
           end
           if bank[i].focus_hold == false then
@@ -230,6 +226,7 @@ function grid_actions.init(x,y,z)
         if menu == 11 then
           help_menu = "loop"
         end
+        trackers.inherit(i,which_pad)
       end
       redraw()
     end
@@ -265,6 +262,7 @@ function grid_actions.init(x,y,z)
             clip_jump(current, j, y, z)
           end
         end
+        trackers.inherit(current,bank[current].focus_hold == true and bank[current].focus_pad or bank[current].id)
         if z == 0 then
           redraw()
           if bank[current].focus_hold == false then
@@ -310,6 +308,7 @@ function grid_actions.init(x,y,z)
             which_bank = current
             help_menu = "mode"
           end
+          trackers.inherit(current,bank[current].focus_hold == true and bank[current].focus_pad or bank[current].id)
         end
       end
     end

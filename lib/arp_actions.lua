@@ -63,9 +63,7 @@ end
 
 function arp_actions.forward(target)
     arp[target].step = arp[target].step + 1
-    --if arp[target].step > #arp[target].notes then
     if arp[target].step > arp[target].end_point then
-        --arp[target].step = 1
         arp[target].step = arp[target].start_point
     end
 end
@@ -73,7 +71,6 @@ end
 function arp_actions.backward(target)
     arp[target].step = arp[target].step - 1
     if arp[target].step == 0 then
-        --arp[target].step = #arp[target].notes
         arp[target].step = arp[target].end_point
     end
 end
@@ -87,29 +84,15 @@ end
 function arp_actions.pendulum(target)
     if direction[target] == "positive" then
         arp[target].step = arp[target].step + 1
-        --if arp[target].step > #arp[target].notes then
         if arp[target].step > arp[target].end_point then
-            --arp[target].step = #arp[target].notes
             arp[target].step = arp[target].end_point
         end
     elseif direction[target] == "negative" then
         arp[target].step = arp[target].step - 1
-        --[[
-        if arp[target].step == 0 then
-            arp[target].step = 1
-        end
-        --]]
         if arp[target].step == arp[target].start_point - 1 then
             arp[target].step = arp[target].start_point
         end
     end
-    --[[
-    if arp[target].step == #arp[target].notes and arp[target].step ~= 1 then
-        direction[target] = "negative"
-    elseif arp[target].step == 1 then
-        direction[target] = "positive"
-    end
-    --]]
     if arp[target].step == arp[target].end_point and arp[target].step ~= arp[target].start_point then
         direction[target] = "negative"
     elseif arp[target].step == arp[target].start_point then
@@ -118,7 +101,6 @@ function arp_actions.pendulum(target)
 end
 
 function arp_actions.random(target)
-    --arp[target].step = math.random(#arp[target].notes)
     arp[target].step = math.random(arp[target].end_point)
 end
 

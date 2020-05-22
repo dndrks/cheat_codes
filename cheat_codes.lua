@@ -952,13 +952,16 @@ function init()
     osc_communication = false
   end}
 
-  params:add_group("MIDI setup",9)
+  params:add_group("MIDI setup",12)
   local bank_names = {"(a)","(b)","(c)"}
   for i = 1,3 do
-    params:add_number("bank_"..i.."_midi_channel", "bank "..bank_names[i].." channel:",1,16,i)
+    params:add_number("bank_"..i.."_midi_channel", "bank "..bank_names[i].." pad channel:",1,16,i)
   end
   for i = 1,3 do
     params:add_number("bank_"..i.."_pad_midi_base", "bank "..bank_names[i].." pad midi base:",0,111,53)
+  end
+  for i = 1,3 do
+    params:add_number("bank_"..i.."_zilchmo_midi_channel", "bank "..bank_names[i].." zilchmo channel:",1,16,i)
   end
   for i = 1,3 do
     params:add_number("bank_"..i.."_zilchmo_midi_base", "bank "..bank_names[i].." zilchmo midi base:",0,111,77)
@@ -995,10 +998,13 @@ function init()
                 end
               end
             end
-          elseif d.note >= params:get("bank_"..i.."_zilchmo_midi_base") and d.note <= params:get("bank_"..i.."_zilchmo_midi_base") + 15 then
-            if d.type == "note_on" then
-              midi_zilch(d.note-(params:get("bank_"..i.."_zilchmo_midi_base")-1), i)
-            end
+          end
+        end
+      end
+      if d.ch == params:get("bank_"..i.."_zilchmo_midi_channel") then
+        if d.note >= params:get("bank_"..i.."_zilchmo_midi_base") and d.note <= params:get("bank_"..i.."_zilchmo_midi_base") + 15 then
+          if d.type == "note_on" then
+            midi_zilch(d.note-(params:get("bank_"..i.."_zilchmo_midi_base")-1), i)
           end
         end
       end
@@ -1097,11 +1103,11 @@ function midi_zilch(note,target)
     rightangleslice.actions[4]['134'][1](bank[target][bank[target].id])
     rightangleslice.actions[4]['134'][2](bank[target][bank[target].id],target)
   elseif note == 2 then
-    rightangleslice.actions[4]['124'][1](bank[target][bank[target].id])
-    rightangleslice.actions[4]['124'][2](bank[target][bank[target].id],target)
-  elseif note == 3 then
     rightangleslice.actions[4]['14'][1](bank[target][bank[target].id])
     rightangleslice.actions[4]['14'][2](bank[target][bank[target].id],target)
+  elseif note == 3 then
+    rightangleslice.actions[4]['124'][1](bank[target][bank[target].id])
+    rightangleslice.actions[4]['124'][2](bank[target][bank[target].id],target)
   elseif note == 4 then
     rightangleslice.actions[4]['1234'][1](bank[target][bank[target].id])
     rightangleslice.actions[4]['1234'][2](bank[target][bank[target].id],target)

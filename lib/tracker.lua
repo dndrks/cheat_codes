@@ -27,7 +27,7 @@ function tracktions.init(target)
     tracker[target][i].pan = nil
     tracker[target][i].left_delay_level = nil
     tracker[target][i].right_delay_level = nil
-    tracker[target][i].triggger = true
+    tracker[target][i].trigger = true
   end
 end
 
@@ -64,34 +64,56 @@ function tracktions.map_to(target,entry)
   local i = entry
   local t = target
   local pad = bank[t][tracker[t][i].pad]
-  tracker[t][i].rate = pad.rate
-  tracker[t][i].start_point = pad.start_point
-  tracker[t][i].end_point = pad.end_point
-  tracker[t][i].tilt = pad.tilt
-  tracker[t][i].level = pad.level
-  tracker[t][i].clip = pad.clip
-  tracker[t][i].mode = pad.mode
-  tracker[t][i].loop = pad.loop
-  tracker[t][i].pan = pad.pan
-  tracker[t][i].left_delay_level = pad.left_delay_level
-  tracker[t][i].right_delay_level = pad.right_delay_level
+  local parameters = 
+  { "rate"
+  , "start_point"
+  , "end_point"
+  , "tilt"
+  , "level"
+  , "clip"
+  , "mode"
+  , "loop"
+  , "pan"
+  , "left_delay_level"
+  , "right_delay_level"
+  }
+  for j = 1,#parameters do
+    if tracker[t][i][parameters[j]] ~= pad[parameters[j]] then
+      tracker[t][i][parameters[j]] = pad[parameters[j]]
+    end
+  end
 end
 
 function tracktions.map_from(target,entry)
   local i = entry
   local t = target
   local pad = bank[t][tracker[t][i].pad]
-  pad.rate = tracker[t][i].rate
-  pad.start_point = tracker[t][i].start_point
-  pad.end_point = tracker[t][i].end_point
-  pad.tilt = tracker[t][i].tilt
-  pad.level = tracker[t][i].level
-  pad.clip = tracker[t][i].clip
-  pad.mode = tracker[t][i].mode
-  pad.loop = tracker[t][i].loop
-  pad.pan = tracker[t][i].pan
-  pad.left_delay_level = tracker[t][i].left_delay_level
-  pad.right_delay_level = tracker[t][i].right_delay_level
+  for k,v in pairs(tracker[t][i]) do
+    pad[k] = v
+  end
+end
+
+function tracktions.map_similar(target,entry)
+  local i = entry
+  local t = target
+  for j = 1,#tracker[t] do
+    if tracker[t][j].pad == nil then break end
+    if tracker[t][j].pad == tracker[t][i].pad then
+      for k,v in pairs(tracker[t][i]) do
+        tracker[t][j][k] = v
+      end
+    end
+  end
+end
+
+function tracktions.inherit(target,pad)
+  local t = target
+  for i = 1,#tracker[t] do
+    if tracker[t][i].pad == nil then break end
+    if tracker[t][i].pad == pad then
+      tracktions.map_to(t,i)
+    end
+  end
 end
 
 function tracktions.add(target,entry)
@@ -174,7 +196,7 @@ function tracktions.cheat(target,step)
   else
     selected[target].y = 5
   end
-  tracktions.map_from(target,step)
+  --tracktions.map_from(target,step)
   cheat(target,bank[target].id)
 end
 

@@ -226,6 +226,7 @@ function encoder_actions.init(n,d)
           tracker[id][line].start_point = tracker[id][line].start_point - ((pre_adjust - tracker[id][line].clip)*8)
           tracker[id][line].end_point = tracker[id][line].start_point + current_difference
         end
+        --trackers.map_similar(id,line)
       end
     elseif menu == 9 then
       local focus_arp = arp[page.arp_pag_sel]
