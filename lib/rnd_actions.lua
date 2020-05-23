@@ -4,7 +4,7 @@ rnd = {}
 
 function rnd.init(t)
     rnd[t] = {}
-    for i = 1,4 do
+    for i = 1,6 do
         rnd[t][i] = {}
         rnd[t][i].param = "rate slew"
         rnd[t][i].playing = false
@@ -20,7 +20,8 @@ end
 
 local param_targets =
 {   ['rate slew'] = rnd.rate_slew
-,   ['pan'] = rnd.pan   
+,   ['pan'] = rnd.pan
+,   ['rate'] = rnd.rate
 }
 
 function rnd.go(t,i)
@@ -30,9 +31,13 @@ function rnd.go(t,i)
             if rnd[t][i].param == "rate slew" then
                 rnd.rate_slew(t,i)
             elseif rnd[t][i].param == "pan" then
-                rnd.pan(t,i)
+                rnd.pan(t)
             elseif rnd[t][i].param == "delay send" then
                 rnd.delay_send(t,i)
+            elseif rnd[t][i].param == "rate" then
+                rnd.rate(t)
+            elseif rnd[t][i].param == "loop" then
+                rnd.loop(t)
             end
         end
     end
@@ -45,9 +50,26 @@ function rnd.rate_slew(t,i)
     softcut.rate_slew_time(t+1,random_slew)
 end
 
-function rnd.pan(t,i)
+function rnd.pan(t)
     rightangleslice.actions[3]['123'][1](bank[t][bank[t].id])
     rightangleslice.actions[3]['123'][2](bank[t][bank[t].id],t)
+end
+
+function rnd.rate(t)
+    local rates = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
+    softcut.rate(t+1,rates[math.random(1,#rates)])
+end
+
+function rnd.loop(t)
+    local pre_loop = bank[t][bank[t].id].loop
+    local loop = math.random(0,1)
+    if loop == 0 then
+        bank[t][bank[t].id].loop = true
+        cheat(t,bank[t].id)
+    else
+        bank[t][bank[t].id].loop = false
+        softcut.loop(t+1,0)
+    end
 end
 
 function rnd.delay_send(t,i)

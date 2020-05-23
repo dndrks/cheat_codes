@@ -116,6 +116,15 @@ function tracktions.inherit(target,pad)
   end
 end
 
+--[[
+function tracktions.inherit(target,pad)
+  local t = target
+  if tracker[t][tracker[t].step].pad == pad then
+    tracktions.map_to(t,tracker[t].step)
+  end
+end
+--]]
+
 function tracktions.add(target,entry)
   table.remove(tracker[target],page.track_sel[page.track_page])
   table.insert(tracker[target],page.track_sel[page.track_page],entry)

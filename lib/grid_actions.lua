@@ -28,7 +28,8 @@ function grid_actions.init(x,y,z)
             end
             pad_clipboard = nil
             if bank[i].quantize_press == 0 then
-              if ((arp[i].hold and page.arp_pag_sel == i) or (menu == 9)) and grid_pat[i].rec == 0 then
+              --if ((arp[i].hold and page.arp_pag_sel == i) or (menu == 9)) and grid_pat[i].rec == 0 then
+              if (arp[i].hold or (menu == 9)) and grid_pat[i].rec == 0 then
                 arps.momentary(i, bank[i].id, "on")
               else
                 cheat(i, bank[i].id)
@@ -260,6 +261,7 @@ function grid_actions.init(x,y,z)
         else
           for j = 1,16 do
             clip_jump(current, j, y, z)
+            trackers.inherit(current,j)
           end
         end
         trackers.inherit(current,bank[current].focus_hold == true and bank[current].focus_pad or bank[current].id)
@@ -287,6 +289,7 @@ function grid_actions.init(x,y,z)
             for k = 1,16 do
               local current = math.sqrt(math.abs(x-3))
               bank[current][k].mode = math.abs(i-5)
+              trackers.inherit(current,k)
             end
           end
           local current = math.sqrt(math.abs(x-3))

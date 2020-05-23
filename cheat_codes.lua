@@ -1002,9 +1002,11 @@ function init()
         end
       end
       if d.ch == params:get("bank_"..i.."_zilchmo_midi_channel") then
-        if d.note >= params:get("bank_"..i.."_zilchmo_midi_base") and d.note <= params:get("bank_"..i.."_zilchmo_midi_base") + 15 then
-          if d.type == "note_on" then
-            midi_zilch(d.note-(params:get("bank_"..i.."_zilchmo_midi_base")-1), i)
+        if d.note ~= nil then
+          if d.note >= params:get("bank_"..i.."_zilchmo_midi_base") and d.note <= params:get("bank_"..i.."_zilchmo_midi_base") + 15 then
+            if d.type == "note_on" then
+              midi_zilch(d.note-(params:get("bank_"..i.."_zilchmo_midi_base")-1), i)
+            end
           end
         end
       end
@@ -2031,7 +2033,10 @@ function key(n,z)
           if page.track_page_section[page.track_page] == 1 then
             page.track_page_section[page.track_page] = 2
           elseif page.track_page_section[page.track_page] == 2 then
+            page.track_page_section[page.track_page] = 3
+          elseif page.track_page_section[page.track_page] == 3 then
             if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
+              tracker[page.track_page].step = page.track_sel[page.track_page]
               trackers.cheat(page.track_page,page.track_sel[page.track_page])
             else
               local source = tracker[page.track_page][page.track_sel[page.track_page]-1]
@@ -2042,12 +2047,15 @@ function key(n,z)
               end
             end
           elseif page.track_page_section[page.track_page] == 4 then
+            tracker[page.track_page].step = page.track_sel[page.track_page]
             trackers.cheat(page.track_page,page.track_sel[page.track_page])
           end
         else
           if page.track_page_section[page.track_page] == 1 then
             page.track_page_section[page.track_page] = 2
           elseif page.track_page_section[page.track_page] == 2 then
+            page.track_page_section[page.track_page] = 3
+          elseif page.track_page_section[page.track_page] == 3 then
             trackers.snake(1,tracker[1].snake)
           end
         end
@@ -2067,10 +2075,12 @@ function key(n,z)
         menu = 1
       end
     elseif menu == 8 then
-      if page.track_page_section[page.track_page] == 2 then
-        page.track_page_section[page.track_page] = 1
-      elseif page.track_page_section[page.track_page] == 4 then
+      if page.track_page_section[page.track_page] == 3 then
         page.track_page_section[page.track_page] = 2
+      elseif page.track_page_section[page.track_page] == 4 then
+        page.track_page_section[page.track_page] = 3
+      elseif page.track_page_section[page.track_page] == 2 then
+        page.track_page_section[page.track_page] = 1
       else
         menu = 1
       end
@@ -2092,7 +2102,7 @@ function key(n,z)
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 1 and page.track_page < 4 then
         trackers.transport(page.track_page)
-      elseif page.track_page_section[page.track_page] == 2 and page.track_page < 4 then
+      elseif page.track_page_section[page.track_page] == 3 and page.track_page < 4 then
         tracker[page.track_page].recording = not tracker[page.track_page].recording
         key1_hold = true
       elseif page.track_page_section[page.track_page] == 4 then

@@ -450,8 +450,9 @@ function main_menu.init()
       local vert_position = 30+(10*(line-(4*current)))
       local left_side = current % 2 == 0
       screen.move(left_side and 0 or 60,tracker[page.track_page].step == line+1 and vert_position or 0)
+      screen.level(15)
       screen.text(">")
-      if page.track_page_section[page.track_page] == 1 then
+      if page.track_page_section[page.track_page] ~= 3 then
         screen.level(3)
       else  
         screen.level(page.track_sel[page.track_page] - 1 == line and 15 or 3)
@@ -477,7 +478,7 @@ function main_menu.init()
     }
 
     function fill_to_screen()
-      screen.level(page.track_page_section[page.track_page] == 2 and 15 or 3)
+      screen.level(page.track_page_section[page.track_page] == 3 and 15 or 3)
       screen.move(0,27)
       screen.text("snake: "..tracker[1].snake)
     end

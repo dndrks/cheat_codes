@@ -36,8 +36,11 @@ function encoder_actions.init(n,d)
       page.time_sel = util.clamp(page.time_sel+d,1,3)
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 1 then
-        --page.track_page = util.clamp(page.track_page+d,1,4)
-      elseif page.track_page_section[page.track_page] == 2 then
+        page.track_page = util.clamp(page.track_page+d,1,4)
+        for i = 1,3 do
+          tracker[i].recording = false
+        end
+      elseif page.track_page_section[page.track_page] == 3 then
         if page.track_page < 4 then
           local reasonable_max = nil
           for i = 1,tracker[page.track_page].max_memory do
@@ -155,11 +158,13 @@ function encoder_actions.init(n,d)
       end
     elseif menu == 8 then
       if page.track_page_section[page.track_page] == 1 then
+        --[[
         page.track_page = util.clamp(page.track_page+d,1,4)
         for i = 1,3 do
           tracker[i].recording = false
         end
-      elseif page.track_page_section[page.track_page] == 2 then
+        --]]
+      elseif page.track_page_section[page.track_page] == 3 then
         if page.track_page < 4 then
           if tracker[page.track_page][page.track_sel[page.track_page]].pad == nil then
             tracker[page.track_page][page.track_sel[page.track_page]].pad = 0
@@ -366,7 +371,7 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 8 then
-      if page.track_page_section[page.track_page] == 2 then
+      if page.track_page_section[page.track_page] == 3 then
         if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
         local numerator_to_sel =
           --[[
