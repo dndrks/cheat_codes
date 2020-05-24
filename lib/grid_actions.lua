@@ -28,7 +28,7 @@ function grid_actions.init(x,y,z)
             end
             pad_clipboard = nil
             if bank[i].quantize_press == 0 then
-              --if ((arp[i].hold and page.arp_pag_sel == i) or (menu == 9)) and grid_pat[i].rec == 0 then
+              --if ((arp[i].hold and page.arp_page_sel == i) or (menu == 9)) and grid_pat[i].rec == 0 then
               if (arp[i].hold or (menu == 9)) and grid_pat[i].rec == 0 then
                 arps.momentary(i, bank[i].id, "on")
               else
@@ -417,7 +417,7 @@ function grid_actions.init(x,y,z)
           if grid.alt == 0 then
             if y == 3 then
               --menu = 9
-              page.arp_pag_sel = i
+              page.arp_page_sel = i
               arp[i].hold = not arp[i].hold
               if not arp[i].hold then
                 arps.clear(i)

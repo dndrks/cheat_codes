@@ -565,13 +565,13 @@ function main_menu.init()
     end
 
   elseif menu == 9 then
-    local focus_arp = arp[page.arp_pag_sel]
+    local focus_arp = arp[page.arp_page_sel]
     screen.move(0,10)
     screen.level(3)
     screen.text("arp")
     local header = {"1","2","3"}
     for i = 1,3 do
-      screen.level(page.arp_pag_sel == i and 15 or 3)
+      screen.level(page.arp_page_sel == i and 15 or 3)
       screen.move(75+(i*15),10)
       screen.text(header[i])
     end
@@ -586,7 +586,7 @@ function main_menu.init()
     screen.text(#focus_arp.notes > 0 and focus_arp.notes[focus_arp.step] or "...")
 
     screen.font_size(8)
-    if page.arp_param_group[page.arp_pag_sel] == 2 then
+    if page.arp_param_group[page.arp_page_sel] == 2 then
       screen.move(125,50)
       screen.text_right("s: "..focus_arp.start_point)
       screen.move(125,60)
@@ -614,6 +614,40 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("rnd")
+    local header = {"1","2","3"}
+    screen.level(page.rnd_page_section == 1 and 15 or 3)
+    for i = 1,3 do
+      screen.level(page.rnd_page_section == 1 and (page.rnd_page == i and 15) or 3)
+      screen.move(75+(i*15),10)
+      screen.text(header[i])
+    end
+    screen.level(3)
+    screen.level(page.rnd_page_section == 2 and 15 or 3)
+    screen.font_size(40)
+    screen.move(0,50)
+    screen.text(page.rnd_page_sel[page.rnd_page])
+    screen.font_size(8)
+    local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
+    local edit_line = page.rnd_page_edit[page.rnd_page]
+    screen.move(30,30)
+    screen.level(page.rnd_page_section == 3 and (edit_line == 1 and 15 or 3) or 3)
+    screen.text("param: "..current.param)
+    screen.move(30,40)
+    screen.level(page.rnd_page_section == 3 and (edit_line == 2 and 15 or 3) or 3)
+    screen.text("active: "..(tostring(current.playing) == "true" and "yes" or "no"))
+    screen.move(30,50)
+    screen.level(page.rnd_page_section == 3 and (edit_line == 3 and 15 or 3) or 3)
+    screen.text("clock: "..current.num.."/"..current.denom)
+    screen.move(30,60)
+    screen.level(page.rnd_page_section == 3 and (edit_line == 4 and 15 or 3) or 3)
+    local params_to_lims =
+    { ["pan"] = {"min: "..(current.pan_min < 0 and "L " or "R ")..math.abs(current.pan_min), "max: "..(current.pan_max > 0 and "R " or "L ")..math.abs(current.pan_max)}
+    , ["rate"] = {"min: "..current.rate_min, "max: "..current.rate_max}
+    , ["rate slew"] = {"min: "..current.rate_slew_min, "max: "..current.rate_slew_max}
+    , ["delay send"] = {"",""}
+    , ["loop"] = {"",""}
+    }
+    screen.text(params_to_lims[current.param][1].." "..params_to_lims[current.param][2])
 
   elseif menu == 11 then
     screen.move(0,10)

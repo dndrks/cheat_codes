@@ -784,12 +784,19 @@ function init()
   for i = 1,3 do
     page.track_param_sel[i] = 1
   end
-  page.arp_pag_sel = 1
+  page.arp_page_sel = 1
   page.arp_param_group = {}
   for i = 1,3 do
     page.arp_param_group[i] = 1
   end
-  page.rnd_page_sel = 1
+  page.rnd_page = 1
+  page.rnd_page_section = 1
+  page.rnd_page_sel = {}
+  page.rnd_page_edit = {}
+  for i = 1,3 do
+    page.rnd_page_sel[i] = 1
+    page.rnd_page_edit[i] = 1
+  end
   
   delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
   delay = {}
@@ -987,12 +994,12 @@ function init()
             if d.type == "note_on" then
               midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
               if menu == 9 then
-                page.arp_pag_sel = i
+                page.arp_page_sel = i
                 arps.momentary(i, bank[i].id, "on")
               end
             elseif d.type == "note_off" then
               if menu == 9 then
-                if not arp[i].hold and page.arp_pag_sel == i  then
+                if not arp[i].hold and page.arp_page_sel == i  then
                   local targeted_pad = d.note-(params:get("bank_"..i.."_pad_midi_base")-1)
                   arps.momentary(i, targeted_pad, "off")
                 end
@@ -1028,7 +1035,7 @@ function init()
           midi_pattern_overdub(d.note, target)
         end
         if menu == 9 then
-          page.arp_pag_sel = target
+          page.arp_page_sel = target
           arps.momentary(target, bank[target].id, "on")
         end
       else
@@ -1577,7 +1584,7 @@ function step_sequence()
         if step_seq[i].meta_meta_step == 1 then
           step_seq[i].current_step = step_seq[i].current_step + 1
           if step_seq[i].current_step > step_seq[i].end_point then step_seq[i].current_step = step_seq[i].start_point end
-          current = step_seq[i].current_step
+          local current = step_seq[i].current_step
           if grid_pat[i].rec == 0 and step_seq[i][current].assigned_to ~= 0 then
             pattern_saver[i].load_slot = step_seq[i][current].assigned_to
             test_load(step_seq[i][current].assigned_to+((i-1)*8),i)
@@ -2061,9 +2068,15 @@ function key(n,z)
         end
       end
     elseif menu == 9 then
-      arp[page.arp_pag_sel].hold = not arp[page.arp_pag_sel].hold
-      if not arp[page.arp_pag_sel].hold then
-        arps.clear(page.arp_pag_sel)
+      arp[page.arp_page_sel].hold = not arp[page.arp_page_sel].hold
+      if not arp[page.arp_page_sel].hold then
+        arps.clear(page.arp_page_sel)
+      end
+    elseif menu == 10 then
+      if page.rnd_page_section == 1 then
+        page.rnd_page_section = 2
+      elseif page.rnd_page_section == 2 then
+        page.rnd_page_section = 3
       end
     end
 
@@ -2081,6 +2094,14 @@ function key(n,z)
         page.track_page_section[page.track_page] = 3
       elseif page.track_page_section[page.track_page] == 2 then
         page.track_page_section[page.track_page] = 1
+      else
+        menu = 1
+      end
+    elseif menu == 10 then
+      if page.rnd_page_section == 2 then
+        page.rnd_page_section = 1
+      elseif page.rnd_page_section == 3 then
+        page.rnd_page_section = 2
       else
         menu = 1
       end
@@ -2109,9 +2130,9 @@ function key(n,z)
         key1_hold = true
       end
     elseif menu == 9 then
-      page.arp_param_group[page.arp_pag_sel] = (page.arp_param_group[page.arp_pag_sel] % 2) + 1
-      if not arp[page.arp_pag_sel].hold then
-        arps.clear(page.arp_pag_sel)
+      page.arp_param_group[page.arp_page_sel] = (page.arp_param_group[page.arp_page_sel] % 2) + 1
+      if not arp[page.arp_page_sel].hold then
+        arps.clear(page.arp_page_sel)
       end
     else
       key1_hold = true

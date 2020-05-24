@@ -4,15 +4,20 @@ rnd = {}
 
 function rnd.init(t)
     rnd[t] = {}
-    for i = 1,6 do
+    local targets = {"pan","rate","rate slew","delay send","loop"}
+    for i = 1,5 do
         rnd[t][i] = {}
-        rnd[t][i].param = "rate slew"
+        rnd[t][i].param = targets[i]
         rnd[t][i].playing = false
-        rnd[t][i].time = 1
+        rnd[t][i].num = 1
+        rnd[t][i].denom = 1
+        rnd[t][i].time = rnd[t][i].num / rnd[t][i].denom
         rnd[t][i].rate_slew_min = 0
         rnd[t][i].rate_slew_max = 1
         rnd[t][i].pan_min = -100
         rnd[t][i].pan_max = 100
+        rnd[t][i].rate_min = 0.125
+        rnd[t][i].rate_max = 4
         rnd[t][i].clock = clock.run(rnd.go, t, i)
     end
     math.randomseed(os.time())
@@ -35,7 +40,7 @@ function rnd.go(t,i)
             elseif rnd[t][i].param == "delay send" then
                 rnd.delay_send(t,i)
             elseif rnd[t][i].param == "rate" then
-                rnd.rate(t)
+                rnd.rate(t,i)
             elseif rnd[t][i].param == "loop" then
                 rnd.loop(t)
             end
@@ -44,8 +49,8 @@ function rnd.go(t,i)
 end
 
 function rnd.rate_slew(t,i)
-    local min = rnd[t][i].rate_slew_min * 1000
-    local max = rnd[t][i].rate_slew_max * 1000
+    local min = util.round(rnd[t][i].rate_slew_min * 1000)
+    local max = util.round(rnd[t][i].rate_slew_max * 1000)
     local random_slew = math.random(min,max)/10000
     softcut.rate_slew_time(t+1,random_slew)
 end
@@ -55,9 +60,21 @@ function rnd.pan(t)
     rightangleslice.actions[3]['123'][2](bank[t][bank[t].id],t)
 end
 
-function rnd.rate(t)
-    local rates = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
-    softcut.rate(t+1,rates[math.random(1,#rates)])
+function rnd.rate(t,i)
+    local rates = {0.125,0.25,0.5,1,2,4}
+    local rates_to_int =
+    {   [0.125] = 1
+    ,   [0.25] = 2
+    ,   [0.5] = 3
+    ,   [1] = 4
+    ,   [2] = 5
+    ,   [4] = 6
+    }
+    local min = rates_to_int[rnd[t][i].rate_min]
+    local max = rates_to_int[rnd[t][i].rate_max]
+    local rand_rate = rates[math.random(min,max)]
+    local rev = math.random(0,1)
+    softcut.rate(t+1,rand_rate*(rev == 0 and -1 or 1))
 end
 
 function rnd.loop(t)

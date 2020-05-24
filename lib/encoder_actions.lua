@@ -63,12 +63,22 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 9 then
-      page.arp_pag_sel = util.clamp(page.arp_pag_sel+d,1,3)
+      page.arp_page_sel = util.clamp(page.arp_page_sel+d,1,3)
       --[[
       for i = 1,3 do
         arp[i].hold = false
       end
       --]]
+    elseif menu == 10 then
+      if page.rnd_page_section == 1 then
+        page.rnd_page = util.clamp(page.rnd_page+d,1,3)
+      elseif page.rnd_page_section == 2 then
+        page.rnd_page_sel[page.rnd_page] = util.clamp(page.rnd_page_sel[page.rnd_page]+d,1,#rnd[page.rnd_page])
+        page.rnd_page_edit[page.rnd_page] = 1
+      elseif page.rnd_page_section == 3 then
+        local reasonable_max = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]].param == "loop" and 3 or 4
+        page.rnd_page_edit[page.rnd_page] = util.clamp(page.rnd_page_edit[page.rnd_page]+d,1,reasonable_max)
+      end
     end
   end
   if n == 2 then
@@ -234,8 +244,8 @@ function encoder_actions.init(n,d)
         --trackers.map_similar(id,line)
       end
     elseif menu == 9 then
-      local focus_arp = arp[page.arp_pag_sel]
-      if page.arp_param_group[page.arp_pag_sel] == 2 then
+      local focus_arp = arp[page.arp_page_sel]
+      if page.arp_param_group[page.arp_page_sel] == 2 then
         focus_arp.start_point = util.clamp(focus_arp.start_point+d,1,focus_arp.end_point)
       else
         local deci_to_int =
@@ -255,6 +265,48 @@ function encoder_actions.init(n,d)
         working = util.clamp(working+d,1,10)
         local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
         focus_arp.time = int_to_deci[working]
+      end
+    elseif menu == 10 then
+      local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
+      if page.rnd_page_section == 3 then
+        if page.rnd_page_edit[page.rnd_page] == 1 then
+          local target_to_int =
+          { ["pan"] = 1
+          , ["rate"] = 2
+          , ["rate slew"] = 3
+          , ["delay send"] = 4
+          , ["loop"] = 5
+          }
+          local which = current.param
+          local working = util.clamp(target_to_int[which]+d,1,5)
+          local int_to_target = {"pan","rate","rate slew","delay send","loop"}
+          current.param = int_to_target[working]
+        elseif page.rnd_page_edit[page.rnd_page] == 2 then
+          local bool_to_int = current.playing and 1 or 0
+          local working = util.clamp(bool_to_int+d,0,1)
+          current.playing = working == 1 and true or false
+        elseif page.rnd_page_edit[page.rnd_page] == 3 then
+          current.num = util.clamp(current.num+d,1,32)
+          current.time = current.num / current.denom
+        elseif page.rnd_page_edit[page.rnd_page] == 4 then
+          if current.param == "pan" then
+            current.pan_min = util.clamp(current.pan_min+d,-100,current.pan_max-1)
+          elseif current.param == "rate" then
+            local rates_to_mins = 
+            { [0.125] = 1
+            , [0.25] = 2
+            , [0.5] = 3
+            , [1] = 4
+            , [2] = 5
+            , [4] = 6
+            }
+            local working = util.clamp(rates_to_mins[current.rate_min]+d,1,rates_to_mins[current.rate_max])
+            local mins_to_rates = {0.125,0.25,0.5,1,2,4}
+            current.rate_min = mins_to_rates[working]
+          elseif current.param == "rate slew" then
+            current.rate_slew_min = util.clamp(current.rate_slew_min+d/100,0,current.rate_slew_max-0.01)
+          end
+        end
       end
     end
   end
@@ -405,9 +457,9 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 9 then
-      if page.arp_param_group[page.arp_pag_sel] == 2 then
-        if #arp[page.arp_pag_sel].notes > 0 then
-          arp[page.arp_pag_sel].end_point = util.clamp(arp[page.arp_pag_sel].end_point+d,arp[page.arp_pag_sel].start_point,#arp[page.arp_pag_sel].notes)
+      if page.arp_param_group[page.arp_page_sel] == 2 then
+        if #arp[page.arp_page_sel].notes > 0 then
+          arp[page.arp_page_sel].end_point = util.clamp(arp[page.arp_page_sel].end_point+d,arp[page.arp_page_sel].start_point,#arp[page.arp_page_sel].notes)
         end
       else
         local dir_to_int =
@@ -416,10 +468,36 @@ function encoder_actions.init(n,d)
         , ["pend"] = 3
         , ["rnd"] = 4
         }
-        local dir = dir_to_int[arp[page.arp_pag_sel].mode]
+        local dir = dir_to_int[arp[page.arp_page_sel].mode]
         dir = util.clamp(dir+d,1,4)
         local int_to_dir = {"fwd","bkwd","pend","rnd"}
-        arp[page.arp_pag_sel].mode = int_to_dir[dir]
+        arp[page.arp_page_sel].mode = int_to_dir[dir]
+      end
+    elseif menu == 10 then
+      local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
+      if page.rnd_page_section == 3 then
+        if page.rnd_page_edit[page.rnd_page] == 3 then
+          current.denom = util.clamp(current.denom+d,1,32)
+          current.time = current.num / current.denom
+        elseif page.rnd_page_edit[page.rnd_page] == 4 then
+          if current.param == "pan" then
+            current.pan_max = util.clamp(current.pan_max+d,current.pan_min+1,100)
+          elseif current.param == "rate" then
+            local rates_to_mins = 
+            { [0.125] = 1
+            , [0.25] = 2
+            , [0.5] = 3
+            , [1] = 4
+            , [2] = 5
+            , [4] = 6
+            }
+            local working = util.clamp(rates_to_mins[current.rate_max]+d,rates_to_mins[current.rate_min],6)
+            local maxes_to_rates = {0.125,0.25,0.5,1,2,4}
+            current.rate_max = maxes_to_rates[working]
+          elseif current.param == "rate slew" then
+            current.rate_slew_max = util.clamp(current.rate_slew_max+d/100,current.rate_slew_min+0.01,1)
+          end
+        end
       end
     end
   end
