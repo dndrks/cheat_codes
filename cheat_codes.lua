@@ -1714,6 +1714,13 @@ function reset_all_banks( banks )
   end
 end
 
+function find_the_key(t,val)
+  for k,v in pairs(t) do
+    if v == val then return k end
+  end
+  return nil
+end
+
 function cheat(b,i)
   env_counter[b]:stop()
   local pad = bank[b][i]

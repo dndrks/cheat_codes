@@ -646,6 +646,7 @@ function main_menu.init()
     , ["rate slew"] = {"min: "..current.rate_slew_min, "max: "..current.rate_slew_max}
     , ["delay send"] = {"",""}
     , ["loop"] = {"",""}
+    , ["semitone offset"] = {current.offset_scale:lower(),""}
     }
     screen.text(params_to_lims[current.param][1].." "..params_to_lims[current.param][2])
 

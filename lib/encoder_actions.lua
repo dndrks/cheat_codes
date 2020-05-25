@@ -270,17 +270,7 @@ function encoder_actions.init(n,d)
       local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
       if page.rnd_page_section == 3 then
         if page.rnd_page_edit[page.rnd_page] == 1 then
-          local target_to_int =
-          { ["pan"] = 1
-          , ["rate"] = 2
-          , ["rate slew"] = 3
-          , ["delay send"] = 4
-          , ["loop"] = 5
-          }
-          local which = current.param
-          local working = util.clamp(target_to_int[which]+d,1,5)
-          local int_to_target = {"pan","rate","rate slew","delay send","loop"}
-          current.param = int_to_target[working]
+          current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
         elseif page.rnd_page_edit[page.rnd_page] == 2 then
           local bool_to_int = current.playing and 1 or 0
           local working = util.clamp(bool_to_int+d,0,1)
@@ -304,7 +294,16 @@ function encoder_actions.init(n,d)
             local mins_to_rates = {0.125,0.25,0.5,1,2,4}
             current.rate_min = mins_to_rates[working]
           elseif current.param == "rate slew" then
-            current.rate_slew_min = util.clamp(current.rate_slew_min+d/100,0,current.rate_slew_max-0.01)
+            current.rate_slew_min = util.clamp(current.rate_slew_min+d,0,current.rate_slew_max-1)
+          elseif current.param == "semitone offset" then
+            local which_scale = nil
+            for i = 1,47 do
+              if MusicUtil.SCALES[i].name == current.offset_scale then
+                which_scale = i
+              end
+            end
+            local working = util.clamp(which_scale+d,1,47)
+            current.offset_scale = MusicUtil.SCALES[working].name
           end
         end
       end
@@ -495,7 +494,7 @@ function encoder_actions.init(n,d)
             local maxes_to_rates = {0.125,0.25,0.5,1,2,4}
             current.rate_max = maxes_to_rates[working]
           elseif current.param == "rate slew" then
-            current.rate_slew_max = util.clamp(current.rate_slew_max+d/100,current.rate_slew_min+0.01,1)
+            current.rate_slew_max = util.clamp(current.rate_slew_max+d,current.rate_slew_min+1,10)
           end
         end
       end

@@ -3,11 +3,12 @@ local rnd_actions = {}
 rnd = {}
 
 function rnd.init(t)
+    MusicUtil = require "musicutil"
     rnd[t] = {}
-    local targets = {"pan","rate","rate slew","delay send","loop"}
+    rnd.targets = {"pan","rate","rate slew","delay send","loop","semitone offset"}
     for i = 1,5 do
         rnd[t][i] = {}
-        rnd[t][i].param = targets[i]
+        rnd[t][i].param = rnd.targets[i]
         rnd[t][i].playing = false
         rnd[t][i].num = 1
         rnd[t][i].denom = 1
@@ -18,6 +19,8 @@ function rnd.init(t)
         rnd[t][i].pan_max = 100
         rnd[t][i].rate_min = 0.125
         rnd[t][i].rate_max = 4
+        rnd[t][i].offset_scale = MusicUtil.SCALES[13].name
+        rnd[t][i].offset_octave = 2
         rnd[t][i].clock = clock.run(rnd.go, t, i)
     end
     math.randomseed(os.time())
@@ -43,6 +46,8 @@ function rnd.go(t,i)
                 rnd.rate(t,i)
             elseif rnd[t][i].param == "loop" then
                 rnd.loop(t)
+            elseif rnd[t][i].param == "semitone offset" then
+                rnd.offset(t)
             end
         end
     end
@@ -95,6 +100,12 @@ function rnd.delay_send(t,i)
         bank[t][j].left_delay_level = delay_send
         bank[t][j].right_delay_level = delay_send
     end
+end
+
+function rnd.offset(t,i)
+    local scale = MusicUtil.generate_scale(0,rnd[t][i].offset_scale,rnd[t][i].offset_octave)
+    local rand_offset = scale[math.random(1,#scale)]
+    softcut.rate(t+1,bank[t][bank[t].id].rate*(math.pow(0.5, -rand_offset / 12)))
 end
 
 return rnd
