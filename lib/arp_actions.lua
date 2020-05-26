@@ -13,6 +13,7 @@ function arp_actions.init(target)
     arp[target].start_point = 1
     arp[target].end_point = 1
     arp[target].clock = clock.run(arp_actions.arpeggiate, target)
+    arp[target].retrigger = true
 end
 
 function arp_actions.find_index(tab,el)
@@ -113,7 +114,13 @@ function arp_actions.cheat(target,step)
         else
             selected[target].y = 5
         end
-        cheat(target,bank[target].id)
+        if arp[target].retrigger then
+            cheat(target,bank[target].id)
+        else
+            if arp[target].notes[step] ~= arp[target].notes[step-1] then
+                cheat(target,bank[target].id)
+            end
+        end
     end
 end
 

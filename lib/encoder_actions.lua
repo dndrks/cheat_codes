@@ -56,28 +56,22 @@ function encoder_actions.init(n,d)
         if key1_hold == false then
           if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
             page.track_param_sel[page.track_page] = util.clamp(page.track_param_sel[page.track_page] + d,1,11)
-            --tracker[page.track_page][page.track_sel[page.track_page]].time = 0.25
           end
         else
           page.track_sel[page.track_page] = util.clamp(page.track_sel[page.track_page] + d,tracker[page.track_page].start_point,tracker[page.track_page].end_point)
         end
       end
     elseif menu == 9 then
-      page.arp_page_sel = util.clamp(page.arp_page_sel+d,1,3)
-      --[[
-      for i = 1,3 do
-        arp[i].hold = false
+      if key1_hold then
+        local working = arp[page.arp_page_sel].retrigger and 1 or 0
+        working = util.clamp(working+d,0,1)
+        arp[page.arp_page_sel].retrigger = (working == 1 and true or false)
+      else
+        page.arp_page_sel = util.clamp(page.arp_page_sel+d,1,3)
       end
-      --]]
     elseif menu == 10 then
       if page.rnd_page_section == 1 then
         page.rnd_page = util.clamp(page.rnd_page+d,1,3)
-      elseif page.rnd_page_section == 2 then
-        page.rnd_page_sel[page.rnd_page] = util.clamp(page.rnd_page_sel[page.rnd_page]+d,1,#rnd[page.rnd_page])
-        page.rnd_page_edit[page.rnd_page] = 1
-      elseif page.rnd_page_section == 3 then
-        local reasonable_max = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]].param == "loop" and 3 or 4
-        page.rnd_page_edit[page.rnd_page] = util.clamp(page.rnd_page_edit[page.rnd_page]+d,1,reasonable_max)
       end
     end
   end
@@ -118,7 +112,6 @@ function encoder_actions.init(n,d)
           end
         else
           local lbr = {1,2,4}
-          --if d >= 0 and rec.start_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) < rec.end_point then
           if d >= 0 and util.round(rec.start_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),0.01) < util.round(rec.end_point,0.01) then
             rec.start_point = util.clamp(rec.start_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(8.9+(8*(rec.clip-1))))
           elseif d < 0 then
@@ -195,7 +188,6 @@ function encoder_actions.init(n,d)
         if sel == 1 then
           if tracker[id][line].pad == nil then tracker[id][line].pad = 0 end
           tracker[id][line].pad = util.clamp(tracker[id][line].pad+d,1,16)
-          --ea.change_pad(target,delta)
           trackers.map_to(id,line)
         elseif sel == 2 then
           local rate_to_int =
@@ -249,63 +241,33 @@ function encoder_actions.init(n,d)
         focus_arp.start_point = util.clamp(focus_arp.start_point+d,1,focus_arp.end_point)
       else
         local deci_to_int =
-        { ["0.1667"] = 1 --1/16T
-        , ["0.25"] = 2 -- 1/16
-        , ["0.3333"] = 3 -- 1/8T
-        , ["0.5"] = 4 -- 1/8
-        , ["0.6667"] = 5 -- 1/4T
-        , ["1.0"] = 6 -- 1/4
-        , ["1.3333"] = 7 -- 1/2T
-        , ["2.0"] = 8 -- 1/2
-        , ["2.6667"] = 9  -- 1T
-        , ["4.0"] = 10 -- 1
+        { ["0.125"] = 1 --1/32
+        , ["0.1667"] = 2 --1/16T
+        , ["0.25"] = 3 -- 1/16
+        , ["0.3333"] = 4 -- 1/8T
+        , ["0.5"] = 5 -- 1/8
+        , ["0.6667"] = 6 -- 1/4T
+        , ["1.0"] = 7 -- 1/4
+        , ["1.3333"] = 8 -- 1/2T
+        , ["2.0"] = 9 -- 1/2
+        , ["2.6667"] = 10  -- 1T
+        , ["4.0"] = 11 -- 1
         }
         local rounded = util.round(focus_arp.time,0.0001)
         local working = deci_to_int[tostring(rounded)]
-        working = util.clamp(working+d,1,10)
-        local int_to_deci = {1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
+        working = util.clamp(working+d,1,11)
+        local int_to_deci = {0.125,1/6,0.25,1/3,0.5,2/3,1,4/3,2,8/3,4}
         focus_arp.time = int_to_deci[working]
       end
     elseif menu == 10 then
-      local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
-      if page.rnd_page_section == 3 then
-        if page.rnd_page_edit[page.rnd_page] == 1 then
-          current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
-        elseif page.rnd_page_edit[page.rnd_page] == 2 then
-          local bool_to_int = current.playing and 1 or 0
-          local working = util.clamp(bool_to_int+d,0,1)
-          current.playing = working == 1 and true or false
-        elseif page.rnd_page_edit[page.rnd_page] == 3 then
-          current.num = util.clamp(current.num+d,1,32)
-          current.time = current.num / current.denom
-        elseif page.rnd_page_edit[page.rnd_page] == 4 then
-          if current.param == "pan" then
-            current.pan_min = util.clamp(current.pan_min+d,-100,current.pan_max-1)
-          elseif current.param == "rate" then
-            local rates_to_mins = 
-            { [0.125] = 1
-            , [0.25] = 2
-            , [0.5] = 3
-            , [1] = 4
-            , [2] = 5
-            , [4] = 6
-            }
-            local working = util.clamp(rates_to_mins[current.rate_min]+d,1,rates_to_mins[current.rate_max])
-            local mins_to_rates = {0.125,0.25,0.5,1,2,4}
-            current.rate_min = mins_to_rates[working]
-          elseif current.param == "rate slew" then
-            current.rate_slew_min = util.clamp(current.rate_slew_min+d,0,current.rate_slew_max-1)
-          elseif current.param == "semitone offset" then
-            local which_scale = nil
-            for i = 1,47 do
-              if MusicUtil.SCALES[i].name == current.offset_scale then
-                which_scale = i
-              end
-            end
-            local working = util.clamp(which_scale+d,1,47)
-            current.offset_scale = MusicUtil.SCALES[working].name
-          end
-        end
+      local selected_slot = page.rnd_page_sel[page.rnd_page]
+      if page.rnd_page_section == 2 then
+        page.rnd_page_sel[page.rnd_page] = util.clamp(selected_slot+d,1,#rnd[page.rnd_page])
+        page.rnd_page_edit[page.rnd_page] = 1
+      elseif page.rnd_page_section == 3 then
+        local current_param = rnd[page.rnd_page][selected_slot].param
+        local reasonable_max = (current_param == "loop" or current_param == "delay send") and 2 or 3
+        page.rnd_page_edit[page.rnd_page] = util.clamp(page.rnd_page_edit[page.rnd_page]+d,1,reasonable_max)
       end
     end
   end
@@ -347,13 +309,6 @@ function encoder_actions.init(n,d)
             which_pad = bank[id].focus_pad
           end
           ea.move_end(bank[id][which_pad],d/loop_enc_resolution)
-          --[[
-          if d <= 0 and bank[id][which_pad].start_point < bank[id][which_pad].end_point + d/loop_enc_resolution then
-            bank[id][which_pad].end_point = util.clamp(bank[id][which_pad].end_point+d/loop_enc_resolution,(1+(8*(bank[id][which_pad].clip-1))),(9+(8*(bank[id][which_pad].clip-1))))
-          elseif d > 0 then
-            bank[id][which_pad].end_point = util.clamp(bank[id][which_pad].end_point+d/loop_enc_resolution,(1+(8*(bank[id][which_pad].clip-1))),(9+(8*(bank[id][which_pad].clip-1))))
-          end
-          --]]
           if bank[id].focus_hold == false then
             softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
           end
@@ -363,9 +318,6 @@ function encoder_actions.init(n,d)
           params:delta("live_buff_rate",d)
         else
           local lbr = {1,2,4}
-          --[[if d <= 0 and rec.start_point < rec.end_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) then
-            print(rec.start_point.." < "..rec.end_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]))
-          end]]--
           if d <= 0 and util.round(rec.start_point,0.01) < util.round(rec.end_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),0.01) then
             rec.end_point = util.clamp(rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           elseif d > 0 and rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) < 9+(8*(rec.clip-1)) then
@@ -425,19 +377,6 @@ function encoder_actions.init(n,d)
       if page.track_page_section[page.track_page] == 3 then
         if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
         local numerator_to_sel =
-          --[[
-          { ["0.1667"] = 1 --1/16T
-          , ["0.25"] = 2 -- 1/16
-          , ["0.3333"] = 3 -- 1/8T
-          , ["0.5"] = 4 -- 1/8
-          , ["0.6667"] = 5 -- 1/4T
-          , ["1.0"] = 6 -- 1/4
-          , ["1.3333"] = 7 -- 1/2T
-          , ["2.0"] = 8 -- 1/2
-          , ["2.6667"] = 9  -- 1T
-          , ["4.0"] = 10 -- 1
-          }
-          --]]
           { [2] = 1 --1/16T
           , [3] = 2 -- 1/16
           , [4] = 3 -- 1/8T
@@ -475,12 +414,22 @@ function encoder_actions.init(n,d)
     elseif menu == 10 then
       local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
       if page.rnd_page_section == 3 then
-        if page.rnd_page_edit[page.rnd_page] == 3 then
-          current.denom = util.clamp(current.denom+d,1,32)
+        if page.rnd_page_edit[page.rnd_page] == 1 then
+          current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
+        elseif page.rnd_page_edit[page.rnd_page] == 2 then
+          if key1_hold then
+            current.denom = util.clamp(current.denom+d,1,32)
+          else
+            current.num = util.clamp(current.num+d,1,32)
+          end
           current.time = current.num / current.denom
-        elseif page.rnd_page_edit[page.rnd_page] == 4 then
+        elseif page.rnd_page_edit[page.rnd_page] == 3 then
           if current.param == "pan" then
-            current.pan_max = util.clamp(current.pan_max+d,current.pan_min+1,100)
+            if key1_hold then
+              current.pan_max = util.clamp(current.pan_max+d,current.pan_min+1,100)
+            else
+              current.pan_min = util.clamp(current.pan_min+d,-100,current.pan_max-1)
+            end
           elseif current.param == "rate" then
             local rates_to_mins = 
             { [0.125] = 1
@@ -490,11 +439,30 @@ function encoder_actions.init(n,d)
             , [2] = 5
             , [4] = 6
             }
-            local working = util.clamp(rates_to_mins[current.rate_max]+d,rates_to_mins[current.rate_min],6)
-            local maxes_to_rates = {0.125,0.25,0.5,1,2,4}
-            current.rate_max = maxes_to_rates[working]
+            if key1_hold then
+              local working = util.clamp(rates_to_mins[current.rate_max]+d,rates_to_mins[current.rate_min],6)
+              local maxes_to_rates = {0.125,0.25,0.5,1,2,4}
+              current.rate_max = maxes_to_rates[working]
+            else
+              local working = util.clamp(rates_to_mins[current.rate_min]+d,1,rates_to_mins[current.rate_max])
+              local mins_to_rates = {0.125,0.25,0.5,1,2,4}
+              current.rate_min = mins_to_rates[working]
+            end
           elseif current.param == "rate slew" then
-            current.rate_slew_max = util.clamp(current.rate_slew_max+d,current.rate_slew_min+1,10)
+            if key1_hold then
+              current.rate_slew_max = util.clamp(current.rate_slew_max+d,current.rate_slew_min+1,10)
+            else
+              current.rate_slew_min = util.clamp(current.rate_slew_min+d,0,current.rate_slew_max-1)
+            end
+          elseif current.param == "semitone offset" then
+            local which_scale = nil
+            for i = 1,#MusicUtil.SCALES do
+              if MusicUtil.SCALES[i].name == current.offset_scale then
+                which_scale = i
+              end
+            end
+            local working = util.clamp(which_scale+d,1,47)
+            current.offset_scale = MusicUtil.SCALES[working].name
           end
         end
       end

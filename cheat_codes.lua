@@ -585,6 +585,10 @@ end
 local lit = {}
 
 function init()
+
+  for i = 1,3 do
+    norns.enc.sens(i,2)
+  end
   
   grid_p = {}
   arc_p = {}
@@ -2081,9 +2085,22 @@ function key(n,z)
       end
     elseif menu == 10 then
       if page.rnd_page_section == 1 then
-        page.rnd_page_section = 2
+        if key1_hold then
+          for i = 1,5 do
+            rnd.transport(page.rnd_page,i,"off")
+          end
+        else
+          page.rnd_page_section = 2
+        end
       elseif page.rnd_page_section == 2 then
-        page.rnd_page_section = 3
+        if key1_hold then
+          local rnd_bank = page.rnd_page
+          local rnd_slot = page.rnd_page_sel[rnd_bank]
+          local state = tostring(rnd[rnd_bank][rnd_slot].playing)
+          rnd.transport(rnd_bank,rnd_slot,state == "false" and "on" or "off")
+        else
+          page.rnd_page_section = 3
+        end
       end
     end
 
@@ -2137,6 +2154,7 @@ function key(n,z)
         key1_hold = true
       end
     elseif menu == 9 then
+      key1_hold = true
       page.arp_param_group[page.arp_page_sel] = (page.arp_param_group[page.arp_page_sel] % 2) + 1
       if not arp[page.arp_page_sel].hold then
         arps.clear(page.arp_page_sel)

@@ -575,6 +575,11 @@ function main_menu.init()
       screen.move(75+(i*15),10)
       screen.text(header[i])
     end
+    if key1_hold then
+      screen.move(0,20)
+      screen.level(15)
+      screen.text("retrigger: "..(tostring(focus_arp.retrigger) == "true" and "yes" or "no"))
+    end
     screen.move(100,10)
     screen.move(0,60)
     screen.font_size(15)
@@ -594,7 +599,8 @@ function main_menu.init()
     else
       screen.move(125,50)
       local deci_to_frac =
-      { ["0.1667"] = "1/16t"
+      { ["0.125"] = "1/32"
+      , ["0.1667"] = "1/16t"
       , ["0.25"] = "1/16"
       , ["0.3333"] = "1/8t"
       , ["0.5"] = "1/8"
@@ -621,25 +627,53 @@ function main_menu.init()
       screen.move(75+(i*15),10)
       screen.text(header[i])
     end
+    screen.level(page.rnd_page_section == 1 and (page.rnd_page == page.rnd_page and 15) or 3)
+    screen.move(75+(page.rnd_page*15),13)
+    screen.text("_")
+    screen.level(3)
+    screen.move(0,20)
+    if page.rnd_page_section == 1 then
+      local some_playing = {}
+      some_playing[page.rnd_page] = false
+      for j = 1,5 do
+        if rnd[page.rnd_page][j].playing then
+          some_playing[page.rnd_page] = true
+          break
+        end
+      end
+      screen.text(tostring(some_playing[page.rnd_page]) == "true" and ("K1+K3 to kill all running in "..page.rnd_page) or "")
+    end
     screen.level(3)
     screen.level(page.rnd_page_section == 2 and 15 or 3)
     screen.font_size(40)
     screen.move(0,50)
     screen.text(page.rnd_page_sel[page.rnd_page])
-    screen.font_size(8)
     local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
     local edit_line = page.rnd_page_edit[page.rnd_page]
+    screen.font_size(8)
+    screen.move(0,60)
+    screen.text(tostring(current.playing) == "true" and "running" or "")
+    screen.level(3)
+    screen.move(0,20)
+    if page.rnd_page_section == 2 then
+      screen.text(tostring(current.playing) == "false" and "K1+K3: run / K3: edit / E2: <->" or "K1+K3: kill / K3: edit / E2: <->")
+    elseif page.rnd_page_section == 3 then
+      if edit_line < 2 then
+        screen.text("E2: nav / E3: mod / K2: back")
+      else
+        screen.text("E3: mod / K1+E3: mod alt")
+      end
+        
+    end
+    screen.font_size(8)
     screen.move(30,30)
     screen.level(page.rnd_page_section == 3 and (edit_line == 1 and 15 or 3) or 3)
     screen.text("param: "..current.param)
     screen.move(30,40)
     screen.level(page.rnd_page_section == 3 and (edit_line == 2 and 15 or 3) or 3)
-    screen.text("active: "..(tostring(current.playing) == "true" and "yes" or "no"))
+    screen.text("clock: "..current.num.."/"..current.denom)
     screen.move(30,50)
     screen.level(page.rnd_page_section == 3 and (edit_line == 3 and 15 or 3) or 3)
-    screen.text("clock: "..current.num.."/"..current.denom)
-    screen.move(30,60)
-    screen.level(page.rnd_page_section == 3 and (edit_line == 4 and 15 or 3) or 3)
     local params_to_lims =
     { ["pan"] = {"min: "..(current.pan_min < 0 and "L " or "R ")..math.abs(current.pan_min), "max: "..(current.pan_max > 0 and "R " or "L ")..math.abs(current.pan_max)}
     , ["rate"] = {"min: "..current.rate_min, "max: "..current.rate_max}

@@ -2,8 +2,9 @@ local rnd_actions = {}
 
 rnd = {}
 
+MusicUtil = include "lib/cc_musicutil"
+
 function rnd.init(t)
-    MusicUtil = require "musicutil"
     rnd[t] = {}
     rnd.targets = {"pan","rate","rate slew","delay send","loop","semitone offset"}
     for i = 1,5 do
@@ -19,9 +20,8 @@ function rnd.init(t)
         rnd[t][i].pan_max = 100
         rnd[t][i].rate_min = 0.125
         rnd[t][i].rate_max = 4
-        rnd[t][i].offset_scale = MusicUtil.SCALES[13].name
+        rnd[t][i].offset_scale = MusicUtil.SCALES[1].name
         rnd[t][i].offset_octave = 2
-        rnd[t][i].clock = clock.run(rnd.go, t, i)
     end
     math.randomseed(os.time())
 end
@@ -32,24 +32,52 @@ local param_targets =
 ,   ['rate'] = rnd.rate
 }
 
-function rnd.go(t,i)
+function rnd.transport(t,i,state)
+    if state == "on" then
+        if not rnd[t][i].playing then
+            rnd[t][i].clock = clock.run(rnd.advance, t, i)
+            rnd[t][i].playing = true
+        end
+    elseif state == "off" then
+        if rnd[t][i].playing then
+            clock.cancel(rnd[t][i].clock)
+            rnd[t][i].playing = false
+        end
+    end
+end
+
+function rnd.advance(t,i)
     while true do
         clock.sync(rnd[t][i].time)
-        if rnd[t][i].playing then
-            if rnd[t][i].param == "rate slew" then
-                rnd.rate_slew(t,i)
-            elseif rnd[t][i].param == "pan" then
-                rnd.pan(t)
-            elseif rnd[t][i].param == "delay send" then
-                rnd.delay_send(t,i)
-            elseif rnd[t][i].param == "rate" then
-                rnd.rate(t,i)
-            elseif rnd[t][i].param == "loop" then
-                rnd.loop(t)
-            elseif rnd[t][i].param == "semitone offset" then
-                rnd.offset(t)
-            end
+        if rnd[t][i].param == "rate slew" then
+            rnd.rate_slew(t,i)
+        elseif rnd[t][i].param == "pan" then
+            rnd.pan(t)
+        elseif rnd[t][i].param == "delay send" then
+            rnd.delay_send(t,i)
+        elseif rnd[t][i].param == "rate" then
+            rnd.rate(t,i)
+        elseif rnd[t][i].param == "loop" then
+            rnd.loop(t)
+        elseif rnd[t][i].param == "semitone offset" then
+            rnd.offset(t,i)
         end
+    end
+end
+
+function rnd.restore_default(t,i)
+    if rnd[t][i].param == "rate slew" then
+        softcut.rate_slew_time(t+1,params:get("rate slew time "..t))
+    elseif rnd[t][i].param == "pan" then
+        softcut.pan(t+1,bank[t][bank[t].id].pan)
+    elseif rnd[t][i].param == "delay send" then
+        
+    elseif rnd[t][i].param == "rate" then
+        softcut.rate(t+1,bank[t][bank[t].id].rate*bank[t][bank[t].id].offset)
+    elseif rnd[t][i].param == "loop" then
+        softcut.loop(t+1,bank[t][bank[t].id].loop)
+    elseif rnd[t][i].param == "semitone offset" then
+        softcut.rate(t+1,bank[t][bank[t].id].rate*bank[t][bank[t].id].offset)
     end
 end
 
