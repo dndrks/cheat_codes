@@ -1660,6 +1660,7 @@ function reset_all_banks( banks )
     b.snap_to_bars = 1
     b.quantize_press = 0
     b.quantize_press_div = 1
+    b.alt_lock = false
     for k = 1,16 do
 -- TODO suggest nesting tables for delay,filter,tilt etc
       b[k] = {}
@@ -2345,6 +2346,9 @@ function grid_redraw()
       for i = 1,3 do
         if bank[i].focus_hold == true then
           g:led(5*i,5,(10*bank[i][bank[i].focus_pad].crow_pad_execute)+5)
+        else
+          local alt = bank[i].alt_lock and 1 or 0
+          g:led(5*i,5,15*alt)
         end
       end
       

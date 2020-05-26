@@ -201,7 +201,8 @@ function grid_actions.init(x,y,z)
         which_bank = i
         local which_pad = bank[i].focus_hold == true and bank[i].focus_pad or bank[i].id
         if bank[i][which_pad].loop == true then
-          if grid.alt == 0 then
+          --if grid.alt == 0 then
+          if not bank[i].alt_lock then
             bank[i][which_pad].loop = false
           else
             for j = 1,16 do
@@ -212,7 +213,8 @@ function grid_actions.init(x,y,z)
             softcut.loop(i+1,0)
           end
         else
-          if grid.alt == 0 then
+          --if grid.alt == 0 then
+          if not bank[i].alt_lock then
             bank[i][which_pad].loop = true
           else
             for j = 1,16 do
@@ -252,7 +254,8 @@ function grid_actions.init(x,y,z)
       if x == 1 or x == 6 or x == 11 then
         local which_pad = nil
         local current = math.sqrt(math.abs(x-2))
-        if grid.alt == 0 then
+        --if grid.alt == 0 then
+        if not bank[current].alt_lock then
           if bank[current].focus_hold == false then
             clip_jump(current, bank[current].id, y, z)
           else
@@ -278,7 +281,8 @@ function grid_actions.init(x,y,z)
       for j = 2,12,5 do
         if x == j and y == i and z == 1 then
           local which_pad = nil
-          if grid.alt == 0 then
+          --if grid.alt == 0 then
+          if not bank[math.sqrt(math.abs(x-3))].alt_lock then
             local current = math.sqrt(math.abs(x-3))
             if bank[current].focus_hold == false then
               bank[current][bank[current].id].mode = math.abs(i-5)
@@ -376,7 +380,8 @@ function grid_actions.init(x,y,z)
                 redraw()
               elseif grid.alt == 0 and arc_switcher[x/5] == 3 then
                  arc_param[x/5] = 4
-              elseif grid.alt == 1 then
+              --elseif grid.alt == 1 then
+              elseif bank[i].alt_lock then
                 if y == 8 then
                   sixteen_slices(x/5)
                 elseif y == 7 then
@@ -404,6 +409,10 @@ function grid_actions.init(x,y,z)
               end
             end
           end
+        else
+          if x == i*5 then
+            bank[i].alt_lock = not bank[i].alt_lock
+          end
         end
       end
     end
@@ -414,7 +423,8 @@ function grid_actions.init(x,y,z)
         if z == 1 and x == k+(5*(i-1)) and y == k then
           
           ---
-          if grid.alt == 0 then
+          --if grid.alt == 0 then
+          if not bank[i].alt_lock then
             if y == 3 then
               --menu = 9
               page.arp_page_sel = i

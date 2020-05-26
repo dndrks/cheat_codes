@@ -30,7 +30,8 @@ function zilchmos.init(k,i)
   local sc_action = z.actions[k][finger][2]
 
   -- here's where we call the action
-  if grid.alt == 0 then
+  --if grid.alt == 0 then
+  if not b.alt_lock then
     p_action( b[p] )
     trackers.inherit(which_bank,p)
   else
