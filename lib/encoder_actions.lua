@@ -461,7 +461,7 @@ function encoder_actions.init(n,d)
                 which_scale = i
               end
             end
-            local working = util.clamp(which_scale+d,1,47)
+            local working = util.clamp(which_scale+d,1,#MusicUtil.SCALES)
             current.offset_scale = MusicUtil.SCALES[working].name
           end
         end

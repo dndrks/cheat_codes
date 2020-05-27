@@ -17,18 +17,21 @@ function arp_actions.init(target)
 end
 
 function arp_actions.find_index(tab,el)
-    for index, value in pairs(tab) do
-        if value == el then
-        return index
-        end
+    local rev = {}
+    for k,v in pairs(tab) do
+        rev[v]=k
     end
+    return rev[el]
 end
 
 function arp_actions.momentary(target, value, state)
     if state == "on" then
         table.insert(arp[target].notes, value)
     elseif state == "off" then
-        table.remove(arp[target].notes, arp_actions.find_index(arp[target].notes, value))
+        local removed_note = arp_actions.find_index(arp[target].notes,value)
+        if removed_note ~= nil then
+            table.remove(arp[target].notes, removed_note)
+        end
     end
     arp[target].end_point = #arp[target].notes
 end

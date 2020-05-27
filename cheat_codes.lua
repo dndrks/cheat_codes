@@ -2089,6 +2089,7 @@ function key(n,z)
         if key1_hold then
           for i = 1,5 do
             rnd.transport(page.rnd_page,i,"off")
+            rnd.restore_default(page.rnd_page,i)
           end
         else
           page.rnd_page_section = 2
@@ -2099,6 +2100,9 @@ function key(n,z)
           local rnd_slot = page.rnd_page_sel[rnd_bank]
           local state = tostring(rnd[rnd_bank][rnd_slot].playing)
           rnd.transport(rnd_bank,rnd_slot,state == "false" and "on" or "off")
+          if state == "true" then
+            rnd.restore_default(rnd_bank,rnd_slot)
+          end
         else
           page.rnd_page_section = 3
         end

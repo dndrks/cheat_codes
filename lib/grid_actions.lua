@@ -52,6 +52,9 @@ function grid_actions.init(x,y,z)
             else
               table.insert(quantize_events[i],selected[i].id)
             end
+          else
+            local released_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+            arps.momentary(i, released_pad, "off")
           end
         else
           if grid.alt == 0 then

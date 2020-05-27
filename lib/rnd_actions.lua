@@ -75,7 +75,7 @@ function rnd.restore_default(t,i)
     elseif rnd[t][i].param == "rate" then
         softcut.rate(t+1,bank[t][bank[t].id].rate*bank[t][bank[t].id].offset)
     elseif rnd[t][i].param == "loop" then
-        softcut.loop(t+1,bank[t][bank[t].id].loop)
+        softcut.loop(t+1,bank[t][bank[t].id].loop == true and 1 or 0)
     elseif rnd[t][i].param == "semitone offset" then
         softcut.rate(t+1,bank[t][bank[t].id].rate*bank[t][bank[t].id].offset)
     end
