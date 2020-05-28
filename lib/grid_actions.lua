@@ -273,7 +273,7 @@ function grid_actions.init(x,y,z)
     if y == 4 or y == 3 or y == 2 then
       if x == 1 or x == 6 or x == 11 then
         local which_pad = nil
-        local current = math.sqrt(math.abs(x-2))
+        local current = util.round(math.sqrt(math.abs(x-2)))
         --if grid.alt == 0 then
         if not bank[current].alt_lock then
           if bank[current].focus_hold == false then
@@ -418,20 +418,33 @@ function grid_actions.init(x,y,z)
       --end
     end
     
-    if y == 5 and z == 1 then
-      for i = 1,3 do
-        if bank[i].focus_hold == true then
-          if x == i*5 then
-            bank[i][bank[i].focus_pad].crow_pad_execute = (bank[i][bank[i].focus_pad].crow_pad_execute + 1)%2
-            if grid.alt == 1 then
-              for j = 1,16 do
-                bank[i][j].crow_pad_execute = bank[i][bank[i].focus_pad].crow_pad_execute
+    if y == 5 then
+      if z == 1 then
+        for i = 1,3 do
+          if bank[i].focus_hold == true then
+            if x == i*5 then
+              bank[i][bank[i].focus_pad].crow_pad_execute = (bank[i][bank[i].focus_pad].crow_pad_execute + 1)%2
+              if grid.alt == 1 then
+                for j = 1,16 do
+                  bank[i][j].crow_pad_execute = bank[i][bank[i].focus_pad].crow_pad_execute
+                end
               end
             end
+          else
+            --[[
+            if x == i*5 then
+              bank[i].alt_lock = not bank[i].alt_lock
+            end
+            --]]
           end
+        end
+      end
+      if x == 5 or x == 10 or x == 15 then
+        if grid.alt == 0 then
+          bank[x/5].alt_lock = z == 1 and true or false
         else
-          if x == i*5 then
-            bank[i].alt_lock = not bank[i].alt_lock
+          if z == 1 then
+            bank[x/5].alt_lock = not bank[x/5].alt_lock
           end
         end
       end
