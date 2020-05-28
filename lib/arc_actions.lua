@@ -19,13 +19,13 @@ function aa.init(n,d)
     local sc_action = aa.actions[arc_param[n]][2]
     if grid.alt == 0 then
       if arc_param[n] < 4 then
-        p_action(this_pad,d/80)
+        p_action(this_pad,d/200)
       else
         aa.map(p_action, this_bank, d/1000, n)
       end
     else
       if arc_param[n] < 4 then
-        aa.map(p_action,this_bank,d/80)
+        aa.map(p_action,this_bank,d/200)
       else
         p_action(this_pad,d/1000, n)
       end

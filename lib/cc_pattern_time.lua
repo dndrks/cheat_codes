@@ -112,9 +112,15 @@ function pattern:overdub_event(e,w)
   print("new time: "..new_time)
   table.insert(self.time, w+1, new_time)
   table.insert(self.event, w+1, e)
-  self.time[w] = self.time[w] - new_time
   self.count = #self.event
   self.end_point = self.count
+  clock.run(trythis, w, new_time)
+  --self.time[w] = self.time[w] - new_time
+end
+
+function trythis(r,n_t)
+  clock.sleep(grid_pat[1].time[r])
+  grid_pat[1].time[r] = grid_pat[1].time[r] - n_t
 end
 
 --- start this pattern
