@@ -36,7 +36,8 @@ arc_param = {}
 arc_switcher = {}
 for i = 1,3 do
   arc_param[i] = 1
-  arc_switcher[i] = 0
+  --arc_switcher[i] = 0
+  arc_switcher[i] = {}
 end
 arc_control = {}
 for i = 1,3 do
@@ -2314,6 +2315,12 @@ function grid_redraw()
               for k = 8,6,-1 do
                 g:led(j,k,5)
               end
+            elseif arc_param[j/5] == 5 then
+              g:led(j,8,5)
+              g:led(j,7,5)
+            elseif arc_param[j/5] == 6 then
+              g:led(j,7,5)
+              g:led(j,6,5)
             end
           end
         end
@@ -2685,7 +2692,18 @@ arc_redraw = function()
       elseif tilt_to_led > 0.20 then
         a:segment(i, util.linlin(-1, 1, (tau*(1/4)), (tau*1.24)+0.4, tilt_to_led-0.1), tau*(1/4)+0.1, 15)
       end
-      
+    end
+    if arc_param[i] == 5 then
+      local level_to_led = bank[i][bank[i].id].level
+        for j = 1,17 do
+          a:led(i,(math.floor(util.linlin(0,2,5,70,(level_to_led)-(1/8*j))))+16,15)
+        end
+    end
+    if arc_param[i] == 6 then
+      local pan_to_led = bank[i][bank[i].id].pan
+      a:led(i,(math.floor(util.linlin(-1,1,10,55,pan_to_led)))+22,4)
+      a:led(i,(math.floor(util.linlin(-1,1,10,55,pan_to_led)))+17,15)
+      a:led(i,(math.floor(util.linlin(-1,1,10,55,pan_to_led)))+12,4)
     end
   end
   

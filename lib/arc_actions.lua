@@ -8,7 +8,7 @@ aa.sc = {}
 function aa.init(n,d)
 
   local this_bank = bank[arc_control[n]]
-  if n < 4 then
+  if n ~= 4 then
     if this_bank.focus_hold == false then
       which_pad = this_bank.id
     else
@@ -18,14 +18,14 @@ function aa.init(n,d)
     local p_action = aa.actions[arc_param[n]][1]
     local sc_action = aa.actions[arc_param[n]][2]
     if grid.alt == 0 then
-      if arc_param[n] < 4 then
-        p_action(this_pad,d/200)
+      if arc_param[n] ~= 4 then
+        p_action(this_pad,d)
       else
         aa.map(p_action, this_bank, d/1000, n)
       end
     else
-      if arc_param[n] < 4 then
-        aa.map(p_action,this_bank,d/200)
+      if arc_param[n] ~= 4 then
+        aa.map(p_action,this_bank,d)
       else
         p_action(this_pad,d/1000, n)
       end
@@ -88,7 +88,7 @@ function aa.move_window(target, delta)
   local current_difference = (target.end_point - target.start_point)
   local current_clip = 8*(target.clip-1)
   if target.start_point + current_difference <= 9+current_clip then
-    target.start_point = util.clamp(target.start_point + delta, 1+current_clip, 9+current_clip)
+    target.start_point = util.clamp(target.start_point + delta/300, 1+current_clip, 9+current_clip)
     target.end_point = target.start_point + current_difference
   else
     target.end_point = (9+current_clip)
@@ -98,12 +98,12 @@ end
 
 function aa.move_start(target, delta)
   local current_clip = 8*(target.clip-1)
-  target.start_point = util.clamp(target.start_point + delta, (1+current_clip), target.end_point-0.01)
+  target.start_point = util.clamp(target.start_point + delta/300, (1+current_clip), target.end_point-0.01)
 end
 
 function aa.move_end(target, delta)
   local current_clip = 8*(target.clip-1)
-  target.end_point = util.clamp(target.end_point + delta, target.start_point+0.01, (9+current_clip))
+  target.end_point = util.clamp(target.end_point + delta/300, target.start_point+0.01, (9+current_clip))
 end
 
 function aa.change_tilt(target, delta, enc)
@@ -123,6 +123,14 @@ function aa.change_tilt(target, delta, enc)
   end
 end
 
+function aa.change_pan(target, delta)
+  target.pan = util.clamp(target.pan + delta/300,-1,1)
+end
+
+function aa.change_level(target, delta)
+  target.level = util.clamp(target.level + delta/1000,0,2)
+end
+
 function aa.sc.move_window(enc, target)
   softcut.loop_start(enc+1,target.start_point)
   softcut.loop_end(enc+1,target.end_point)
@@ -140,11 +148,21 @@ function aa.sc.change_tilt(enc, target)
   slew_filter(enc,slew_counter[enc].prev_tilt,target.tilt,target.q,target.q,15)
 end
 
+function aa.sc.change_pan(enc, target)
+  softcut.pan(enc+1,target.pan)
+end
+
+function aa.sc.change_level(enc, target)
+  softcut.level(enc+1,target.level)
+end
+
 aa.actions =
   { [1] = { aa.move_window    , aa.sc.move_window }
   , [2] = { aa.move_start     , aa.sc.move_start }
   , [3] = { aa.move_end       , aa.sc.move_end }
   , [4] = { aa.change_tilt    , aa.sc.change_tilt }
+  , [5] = { aa.change_level   , aa.sc.change_level  }
+  , [6] = { aa.change_pan     , aa.sc.change_pan  }
   }
 
 return arc_actions

@@ -1,5 +1,10 @@
 grid_actions = {}
 
+held_query = {}
+for i = 1,3 do
+  held_query[i] = 0
+end
+
 function grid_actions.init(x,y,z)
   
   if osc_communication == true then osc_communication = false end
@@ -385,37 +390,41 @@ function grid_actions.init(x,y,z)
       end
     end
     
+
     for i = 8,6,-1 do
-      --if z == 1 then
-        if x == 5 or x == 10 or x == 15 then
-          if y == i then
-            if z == 1 then
-              arc_switcher[x/5] = arc_switcher[x/5] + 1
-              if grid.alt == 0 and arc_switcher[x/5] == 1 then
-                arc_param[x/5] = 9-y
-                if menu == 11 then
-                  which_bank = x/5
-                  help_menu = "arc params"
+      if x == 5 or x == 10 or x == 15 then
+        if y == i then
+          if z == 1 then
+            table.insert(arc_switcher[x/5],y)
+            held_query[x/5] = #arc_switcher[x/5]
+          elseif z == 0 then
+            held_query[x/5] = held_query[x/5] - 1
+            if held_query[x/5] == 0 then
+              if #arc_switcher[x/5] == 1 then
+                if arc_switcher[x/5][1] == 8 then
+                  arc_param[x/5] = 1
+                elseif arc_switcher[x/5][1] == 7 then
+                  arc_param[x/5] = 2
+                elseif arc_switcher[x/5][1] == 6 then
+                  arc_param[x/5] = 3
                 end
-                redraw()
-              elseif grid.alt == 0 and arc_switcher[x/5] == 3 then
-                 arc_param[x/5] = 4
-              --elseif grid.alt == 1 then
-              elseif bank[x/5].alt_lock then
-                if y == 8 then
-                  sixteen_slices(x/5)
-                elseif y == 7 then
-                  rec_to_pad(x/5)
-                elseif y == 6 then
-                  pad_to_rec(x/5)
+              elseif #arc_switcher[x/5] == 2 then
+                total = arc_switcher[x/5][1] + arc_switcher[x/5][2]
+                if total == 15 then
+                  arc_param[x/5] = 5
+                elseif total == 13 then
+                  arc_param[x/5] = 6
                 end
+              elseif #arc_switcher[x/5] == 3 then
+                arc_param[x/5] = 4
+              elseif #arc_switcher[x/5] > 3 then
+                arc_switcher[x/5] = {}
               end
-            elseif z == 0 then
-              arc_switcher[x/5] = arc_switcher[x/5] - 1
+              arc_switcher[x/5] = {}
             end
           end
         end
-      --end
+      end
     end
     
     if y == 5 then
