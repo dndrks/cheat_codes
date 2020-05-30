@@ -349,6 +349,7 @@ function encoder_actions.init(n,d)
         elseif time_page[page_line] == 1 then
           if pattern.rec ~= 1 then
             pattern.playmode = util.clamp(pattern.playmode+d,1,4)
+            midi_pat[page_line].playmode = util.clamp(midi_pat[page_line].playmode+d,1,4)
             set_pattern_mode(page_line)
           end
         elseif time_page[page_line] == 4 and bank[page_line].crow_execute ~= 1 then

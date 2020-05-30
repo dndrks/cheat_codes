@@ -1131,7 +1131,8 @@ end
 
 function midi_cheat(note,target)
   bank[target].id = note
-  if menu ~= 9 then
+  --if menu ~= 9 then
+  if not arp[target].playing then
     selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
     if (bank[target].id % 4) ~= 0 then
       selected[target].y = 9-(bank[target].id % 4)
@@ -1181,7 +1182,11 @@ function synced_loop(target)
   clock.sync(4)
   while true do
     clock.sync(target.clock_time)
+    local overdub_flag = target.overdub
     target:stop()
+    if overdub_flag == 1 then
+      target.overdub = 1
+    end
     target:start()
   end
 end
@@ -1192,7 +1197,7 @@ function pattern_length_to_bars(target)
     for i = 1,#target.event do
       total_time = total_time + target.time[i]
     end
-    local clean_bars_from_time = util.round(total_time/((60/bpm)*4),0.25)
+    local clean_bars_from_time = util.round(total_time/((60/bpm)*4),0.5)
     local add_time = (((60/bpm)*4) * clean_bars_from_time) - total_time
     print(add_time, clean_bars_from_time)
     target.time[#target.event] = target.time[#target.event] + add_time
@@ -2028,19 +2033,24 @@ function key(n,z)
       local time_nav = page.time_sel
       local id = time_nav
       if time_nav >= 1 and time_nav < 4 then
-        if page.time_page_sel[time_nav] == 1 then
-          if midi_pat[time_nav].rec == 0 then
-            if midi_pat[time_nav].count == 0 then
-              midi_pat[time_nav]:rec_start()
-            else
-              midi_pat[time_nav].overdub = midi_pat[time_nav].overdub == 0 and 1 or 0
-            end
-          elseif midi_pat[time_nav].rec == 1 then
-            midi_pat[time_nav]:rec_stop()
-            if midi_pat[time_nav].playmode == 1 then
-              midi_pat[time_nav]:start()
-            elseif midi_pat[time_nav].playmode == 2 then
-              start_synced_loop(midi_pat[time_nav])
+        if g.device == nil and grid_pat[time_nav].count == 0 then
+          if page.time_page_sel[time_nav] == 1 then
+            if midi_pat[time_nav].playmode < 3 then
+              if midi_pat[time_nav].rec == 0 then
+                if midi_pat[time_nav].count == 0 then
+                  midi_pat[time_nav]:rec_start()
+                else
+                  midi_pat[time_nav].overdub = midi_pat[time_nav].overdub == 0 and 1 or 0
+                end
+              elseif midi_pat[time_nav].rec == 1 then
+                midi_pat[time_nav]:rec_stop()
+                if midi_pat[time_nav].playmode == 1 then
+                  midi_pat[time_nav]:start()
+                elseif midi_pat[time_nav].playmode == 2 then
+                  midi_pat[time_nav]:start()
+                  start_synced_loop(midi_pat[time_nav])
+                end
+              end
             end
           end
         end
