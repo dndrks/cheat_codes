@@ -54,23 +54,6 @@ function grid_actions.init(x,y,z)
                 grid_p[i].clip = bank[i][bank[i].id].clip
                 grid_pat[i]:watch(grid_p[i])
               end
-              if grid_pat[i].overdub == 1 then
-                grid_p[i] = {}
-                grid_p[i].action = "pads"
-                grid_p[i].i = i
-                grid_p[i].id = selected[i].id
-                grid_p[i].x = selected[i].x
-                grid_p[i].y = selected[i].y
-                grid_p[i].rate = bank[i][bank[i].id].rate
-                grid_p[i].start_point = bank[i][bank[i].id].start_point
-                grid_p[i].end_point = bank[i][bank[i].id].end_point
-                grid_p[i].rate_adjusted = false
-                grid_p[i].loop = bank[i][bank[i].id].loop
-                grid_p[i].pause = bank[i][bank[i].id].pause
-                grid_p[i].mode = bank[i][bank[i].id].mode
-                grid_p[i].clip = bank[i][bank[i].id].clip
-                grid_pat[i]:overdub_event(grid_p[i], grid_pat[i].step)
-              end
             else
               table.insert(quantize_events[i],selected[i].id)
             end
@@ -394,33 +377,43 @@ function grid_actions.init(x,y,z)
     for i = 8,6,-1 do
       if x == 5 or x == 10 or x == 15 then
         if y == i then
-          if z == 1 then
-            table.insert(arc_switcher[x/5],y)
-            held_query[x/5] = #arc_switcher[x/5]
-          elseif z == 0 then
-            held_query[x/5] = held_query[x/5] - 1
-            if held_query[x/5] == 0 then
-              if #arc_switcher[x/5] == 1 then
-                if arc_switcher[x/5][1] == 8 then
-                  arc_param[x/5] = 1
-                elseif arc_switcher[x/5][1] == 7 then
-                  arc_param[x/5] = 2
-                elseif arc_switcher[x/5][1] == 6 then
-                  arc_param[x/5] = 3
+          if grid.alt == 0 then
+            if z == 1 then
+              table.insert(arc_switcher[x/5],y)
+              held_query[x/5] = #arc_switcher[x/5]
+            elseif z == 0 then
+              held_query[x/5] = held_query[x/5] - 1
+              if held_query[x/5] == 0 then
+                if #arc_switcher[x/5] == 1 then
+                  if arc_switcher[x/5][1] == 8 then
+                    arc_param[x/5] = 1
+                  elseif arc_switcher[x/5][1] == 7 then
+                    arc_param[x/5] = 2
+                  elseif arc_switcher[x/5][1] == 6 then
+                    arc_param[x/5] = 3
+                  end
+                elseif #arc_switcher[x/5] == 2 then
+                  total = arc_switcher[x/5][1] + arc_switcher[x/5][2]
+                  if total == 15 then
+                    arc_param[x/5] = 5
+                  elseif total == 13 then
+                    arc_param[x/5] = 6
+                  end
+                elseif #arc_switcher[x/5] == 3 then
+                  arc_param[x/5] = 4
+                elseif #arc_switcher[x/5] > 3 then
+                  arc_switcher[x/5] = {}
                 end
-              elseif #arc_switcher[x/5] == 2 then
-                total = arc_switcher[x/5][1] + arc_switcher[x/5][2]
-                if total == 15 then
-                  arc_param[x/5] = 5
-                elseif total == 13 then
-                  arc_param[x/5] = 6
-                end
-              elseif #arc_switcher[x/5] == 3 then
-                arc_param[x/5] = 4
-              elseif #arc_switcher[x/5] > 3 then
                 arc_switcher[x/5] = {}
               end
-              arc_switcher[x/5] = {}
+            end
+          elseif grid.alt == 1 then
+            if y == 8 then
+              sixteen_slices(x/5)
+            elseif y == 7 then
+              rec_to_pad(x/5)
+            elseif y == 6 then
+              pad_to_rec(x/5)
             end
           end
         end

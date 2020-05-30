@@ -22,12 +22,8 @@ function pattern.new()
   i.loop = 1
   i.start_point = 0
   i.end_point = 0
-  i.clock = nil
-  i.clock_time = 1
 
-  i.metro = metro.init(function() i:next_event() end,1,1)
-
-  i.process = function(_) print("event") end
+  --i.clocked = clock.run(i:next_event)
 
   return i
 end
@@ -48,8 +44,6 @@ function pattern:clear()
   self.time_factor = 1
   self.start_point = 0
   self.end_point = 0
-  self.clock = nil
-  self.clock_time = 1
 end
 
 --- adjust the time factor of this pattern.
@@ -92,9 +86,24 @@ function pattern:watch(e)
   end
 end
 
+function pattern:recording(e)
+    while true do
+        clock.sync(1/4)
+        self.count = self.count + 1
+        table.insert(self.event,self.count,"tick")
+    end
+end
+
+
+
 --- record event
 function pattern:rec_event(e)
-  local c = self.count + 1
+    clock.sync(1/4)
+    
+    local c = self.count + 1
+
+
+
   if c == 1 then
     self.prev_time = util.time()
     --print("first event")
@@ -116,7 +125,6 @@ function pattern:overdub_event(e)
   self.time[c-1] = self.prev_time - t
   table.insert(self.time, c, a - self.time[c-1])
   table.insert(self.event, c, e)
-  --midi_clock_linearize_overdub(1)
   self.step = self.step + 1
   self.count = self.count + 1
   self.end_point = self.count
@@ -180,22 +188,5 @@ function pattern:set_overdub(s)
     self.overdub = 0
   end
 end
-
---[[
-
-function pattern:start_synced_loop()
-  self.clock = clock.run(self.synced_loop)
-end
-
-function pattern:synced_loop()
-  clock.sync(4)
-  while true do
-    clock.sync(8)
-    self.metro:stop()
-    self.metro:start()
-  end
-end
-
---]]
 
 return pattern

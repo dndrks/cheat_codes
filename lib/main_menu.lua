@@ -374,6 +374,8 @@ function main_menu.init()
       screen.text(playing_options[i][grid_pat[i].count == 0 and 1 or playing[i] == 1 and 2 or playing[i] == 0 and 3])
       if midi_pat[i].rec == 1 then
         screen.text(midi_pat[i].rec == 1 and (": rec") or "")
+      elseif midi_pat[i].play == 1 then
+        screen.text(midi_pat[i].overdub == 0 and (" > "..midi_pat[i].step) or ": over")
       end
       local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
       local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}

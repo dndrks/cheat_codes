@@ -563,6 +563,65 @@ function midi_clock_linearize(bank)
   quantized_grid_pat[bank].sub_step = 1
 end
 
+function q1(bank)
+  c = quantized_grid_pat[bank].current_step + 1
+  ac = quantized_grid_pat[bank].sub_step
+  removed = #quantized_grid_pat[bank].event[quantized_grid_pat[bank].current_step] - quantized_grid_pat[bank].sub_step
+  print(c, ac, removed)
+end
+
+function q2(bank)
+  for i = quantized_grid_pat[bank].sub_step,#quantized_grid_pat[bank].event[quantized_grid_pat[bank].current_step] do
+    table.remove(quantized_grid_pat[bank].event[c-1],ac)
+  end
+end
+
+function q3(bank)
+  table.insert(quantized_grid_pat[bank].event,c,{"something"})
+end
+
+function q4(bank)
+  if removed ~= 0 then
+    for i = 1,removed do
+      table.insert(quantized_grid_pat[bank].event[c],"nothing")
+    end
+  end
+end
+
+function midi_clock_linearize_overdub(bank)
+  local curr = quantized_grid_pat[bank].current_step + 1
+  local sub = quantized_grid_pat[bank].sub_step
+  local removed = #quantized_grid_pat[bank].event[quantized_grid_pat[bank].current_step] - quantized_grid_pat[bank].sub_step
+  for i = quantized_grid_pat[bank].sub_step,#quantized_grid_pat[bank].event[quantized_grid_pat[bank].current_step] do
+    table.remove(quantized_grid_pat[bank].event[curr-1],sub)
+  end
+  table.insert(quantized_grid_pat[bank].event,curr,{"something"})
+  if removed ~= 0 then
+    for i = 1,removed do
+      table.insert(quantized_grid_pat[bank].event[curr],"nothing")
+    end
+  end
+  if quantized_grid_pat[bank].current_step < grid_pat[bank].end_point then
+    quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step + 1
+  else
+    quantized_grid_pat[bank].current_step = 1
+  end
+  quantized_grid_pat[bank].sub_step = 1
+end
+
+  --[[
+  local c = self.step + 1
+  local t = self.prev_time
+  self.prev_time = util.time()
+  local a = self.time[c-1]
+  self.time[c-1] = self.prev_time - t
+  table.insert(self.time, c, a - self.time[c-1])
+  table.insert(self.event, c, e)
+  self.step = self.step + 1
+  self.count = self.count + 1
+  self.end_point = self.count
+  --]]
+
 key1_hold = false
 
 grid.alt = 0
@@ -683,7 +742,7 @@ function init()
     if current == 0 then
       current = grid_pat[bank].start_point
     end
-    if grid_pat[bank].tightened_start == 1 and grid_pat[bank].count > 0 then
+    if grid_pat[bank].tightened_start == 1 and grid_pat[bank].count > 0 and current <= grid_pat[bank].end_point and quantized_grid_pat[bank].event[current] ~= nil then
       if quantized_grid_pat[bank].event[current][sub_step] == "something" then
         --print(current, sub_step, "+++")
         if grid_pat[bank].step == 0 then
@@ -734,6 +793,8 @@ function init()
         --quantized_grid_pat[bank].current_step = quantized_grid_pat[bank].current_step + 1
       end
       quantized_grid_pat[bank].sub_step = quantized_grid_pat[bank].sub_step + 1
+    else
+      quantized_grid_pat[bank].current_step = 1
     end
   end
 
@@ -998,6 +1059,7 @@ function init()
           if d.note >= params:get("bank_"..i.."_pad_midi_base") and d.note <= params:get("bank_"..i.."_pad_midi_base") + 15 then
             if d.type == "note_on" then
               midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
+              midi_pattern_watch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
               if menu == 9 then
                 page.arp_page_sel = i
                 arps.momentary(i, bank[i].id, "on")
@@ -1023,31 +1085,6 @@ function init()
         end
       end
     end
-    
-    --if d.type == "note_on" then
-      --print(d.ch, d.type, d.note)
-      --[[
-      local target = math.modf(d.note/33)
-      if d.note <= (33*(target)) + (15+(3*(target-1))) and d.note >= 33*target +(3*(target-1)) then
-        midi_cheat(d.note,target)
-        midi_pattern_watch(d.note, target)
-        if midi_pat[target].rec == 1 then
-          if not midi_pat[target].first_touch then
-            clock.run(midi_rec_clock, target)
-            midi_pat[target].first_touch = true
-          end
-        elseif midi_pat[target].overdub == 1 then
-          midi_pattern_overdub(d.note, target)
-        end
-        if menu == 9 then
-          page.arp_page_sel = target
-          arps.momentary(target, bank[target].id, "on")
-        end
-      else
-        local other_target = math.modf(d.note/17)
-        --print(d.note, math.modf(d.note/17))
-      end
-      --]]
   end
 
   midi_pat = {}
@@ -1086,13 +1123,6 @@ function midi_pattern_watch(note,target)
   midi_p[target].note = note
   midi_p[target].target = target
   midi_pat[target]:watch(midi_p[target])
-end
-
-function midi_pattern_overdub(note, target)
-  midi_p[target] = {}
-  midi_p[target].note = note
-  midi_p[target].target = target
-  midi_pat[target]:overdub_event(midi_p[target],midi_pat[target].step)
 end
 
 function midi_pattern_execute(entry)
@@ -1140,50 +1170,33 @@ function midi_zilch(note,target)
   end
 end
 
---[[
-function midi_cheat(note,target)
-  bank[target].id = (math.abs((33*(target)) - note) - (3 * (target-1)))+1
-  if menu ~= 9 then
-    selected[target].x = (5*(target-1)+1)+(math.ceil(bank[target].id/4)-1)
-    if (bank[target].id % 4) ~= 0 then
-      selected[target].y = 9-(bank[target].id % 4)
-    else
-      selected[target].y = 5
-    end
-    cheat(target,bank[target].id)
-  end
-end
--]]
-
-function midi_rec(note,target)
-  if midi_pat[target].count == 0 then
-    midi_rec_clock(target)
+function start_synced_loop(target)
+  if target.count > 0 then
+    pattern_length_to_bars(target)
+    target.clock = clock.run(synced_loop, target)
   end
 end
 
-function midi_rec_clock(target)
-  --clock.sync(midi_pat[target].clock_time)
-  clock.sleep((60/bpm)*midi_pat[target].clock_time)
-  if midi_pat[target].rec == 1 then
-    midi_pat[target]:rec_stop()
-    midi_pat[target].loop = 0
-    midi_pat[target]:start()
-  end
-  --midi_play_clock(target)
-  midi_pat[target].clock = clock.run(midi_play_clock, target)
-end
-
-function midi_play_clock(target)
+function synced_loop(target)
+  clock.sync(4)
   while true do
-    clock.sync(midi_pat[target].clock_time)
-    midi_pat[target]:stop()
-    midi_pat[target]:start()
-    --[[
-    if midi_pat[target].play == 1 then
-      midi_pat[target]:stop()
-      midi_pat[target]:start()
+    clock.sync(target.clock_time)
+    target:stop()
+    target:start()
+  end
+end
+
+function pattern_length_to_bars(target)
+  if target.rec == 0 and target.count > 0 then 
+    local total_time = 0
+    for i = 1,#target.event do
+      total_time = total_time + target.time[i]
     end
-    --]]
+    local clean_bars_from_time = util.round(total_time/((60/bpm)*4),0.25)
+    local add_time = (((60/bpm)*4) * clean_bars_from_time) - total_time
+    print(add_time, clean_bars_from_time)
+    target.time[#target.event] = target.time[#target.event] + add_time
+    target.clock_time = 4 * clean_bars_from_time
   end
 end
 
@@ -2017,7 +2030,18 @@ function key(n,z)
       if time_nav >= 1 and time_nav < 4 then
         if page.time_page_sel[time_nav] == 1 then
           if midi_pat[time_nav].rec == 0 then
-            midi_pat[time_nav]:rec_start()
+            if midi_pat[time_nav].count == 0 then
+              midi_pat[time_nav]:rec_start()
+            else
+              midi_pat[time_nav].overdub = midi_pat[time_nav].overdub == 0 and 1 or 0
+            end
+          elseif midi_pat[time_nav].rec == 1 then
+            midi_pat[time_nav]:rec_stop()
+            if midi_pat[time_nav].playmode == 1 then
+              midi_pat[time_nav]:start()
+            elseif midi_pat[time_nav].playmode == 2 then
+              start_synced_loop(midi_pat[time_nav])
+            end
           end
         end
         if page.time_page_sel[time_nav] == 2 then
@@ -2038,6 +2062,11 @@ function key(n,z)
             grid_pat[id].tightened_start = 0
             grid_pat[id]:clear()
             pattern_saver[id].load_slot = 0
+          end
+          if midi_pat[id].count > 0 then
+            midi_pat[id]:rec_stop()
+            midi_pat[id]:stop()
+            midi_pat[id]:clear()
           end
         end
       end
