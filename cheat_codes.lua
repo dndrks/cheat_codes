@@ -1126,7 +1126,9 @@ function midi_pattern_watch(note,target)
 end
 
 function midi_pattern_execute(entry)
-  midi_cheat(entry.note, entry.target)
+  if entry ~= nil then
+    midi_cheat(entry.note, entry.target)
+  end
 end
 
 function midi_cheat(note,target)
@@ -1208,6 +1210,74 @@ end
 function midi_rec_clear(target)
   clock.cancel(midi_pat[target].clock)
   midi_pat[target]:stop()
+end
+
+function shuffle_midi_pat(target)
+  pattern = midi_pat[target]
+  for i = #pattern.event,2,-1 do
+    local j = math.random(i)
+    local original, shuffled = pattern.event[i], pattern.event[j]
+    original.note, shuffled.note = shuffled.note, original.note
+    original.target, shuffled.target = shuffled.target, original.target
+  end
+end
+
+function random_midi_pat(target)
+  local pattern = midi_pat[target]
+  local auto_pat = params:get("random_patterning")
+  if pattern.playmode == 2 then
+    clock.sync(1/4)
+  end
+  local count = auto_pat == 1 and math.random(2,24) or 16
+  if pattern.count > 0 or pattern.rec == 1 then
+    pattern:rec_stop()
+    pattern:stop()
+    pattern.tightened_start = 0
+    pattern:clear()
+  end
+  for i = 1,count do
+    pattern.event[i] = {}
+    local constructed = pattern.event[i]
+    constructed.id = auto_pat == 1 and math.random(1,16) or snakes[auto_pat-1][i]
+    local new_rates = 
+    { [1] = math.pow(2,math.random(-3,-1))*((math.random(1,2)*2)-3)
+    , [2] = math.pow(2,math.random(-1,1))*((math.random(1,2)*2)-3)
+    , [3] = math.pow(2,math.random(1,2))*((math.random(1,2)*2)-3)
+    , [4] = math.pow(2,math.random(-2,2))*((math.random(1,2)*2)-3)
+    }
+    constructed.rate = new_rates[pattern.random_pitch_range]
+    local assigning_pad = bank[which][constructed.id]
+    assigning_pad.rate = constructed.rate
+    local new_levels = 
+    { [0.125] = 1.75
+    , [0.25]  = 1.5
+    , [0.5]   = 1.25
+    , [1.0]   = 1.0
+    , [2.0]   = 0.75
+    , [4.0]   = 0.5
+    }
+    assigning_pad.level = new_levels[math.abs(constructed.rate)]
+    constructed.loop = assigning_pad.loop
+    constructed.mode = assigning_pad.mode
+    constructed.pause = assigning_pad.pause
+    constructed.start_point = (math.random(10,75)/10)+(8*(assigning_pad.clip-1))
+    constructed.clip = assigning_pad.clip
+    constructed.end_point = constructed.start_point + (math.random(1,15)/10)
+    constructed.rate_adjusted = false
+    assigning_pad.fifth = false
+    constructed.x = (5*(which-1)+1)+(math.ceil(constructed.id/4)-1)
+    if (constructed.id % 4) ~= 0 then
+      constructed.y = 9-(constructed.id % 4)
+    else
+      constructed.y = 5
+    end
+    constructed.action = "pads"
+    constructed.i = which
+    pattern.time[i] = auto_pat == 1 and ((60/bpm) / math.pow(2,math.random(-2,2))) or (60/bpm) / 4
+  end
+  pattern.count = count
+  pattern.start_point = 1
+  pattern.end_point = count
 end
 
 ---
@@ -2055,7 +2125,11 @@ function key(n,z)
           end
         end
         if page.time_page_sel[time_nav] == 2 then
-          random_grid_pat(id,2)
+          if g.device ~= nil then
+            random_grid_pat(id,2)
+          else
+            shuffle_midi_pat(id)
+          end
         elseif page.time_page_sel[time_nav] == 5 then
           if not key1_hold then
             if grid_pat[id].playmode == 3 or grid_pat[id].playmode == 4 then

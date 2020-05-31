@@ -342,20 +342,21 @@ function encoder_actions.init(n,d)
     elseif menu == 7 then
       local time_page = page.time_page_sel
       local page_line = page.time_sel
-      local pattern = grid_pat[page_line]
+      local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
       if page_line <= 4 then
         if time_page[page_line] == 3 then
           bank[page_line].crow_execute = util.clamp(bank[page_line].crow_execute+d,0,1)
         elseif time_page[page_line] == 1 then
           if pattern.rec ~= 1 then
-            pattern.playmode = util.clamp(pattern.playmode+d,1,4)
-            midi_pat[page_line].playmode = util.clamp(midi_pat[page_line].playmode+d,1,4)
+            --if there's no grid attached, there's no need for quant + quant+trim
+            pattern.playmode = util.clamp(pattern.playmode+d,1,g.device ~= nil and 4 or 2)
+            --midi_pat[page_line].playmode = util.clamp(midi_pat[page_line].playmode+d,1,2)
             set_pattern_mode(page_line)
           end
         elseif time_page[page_line] == 4 and bank[page_line].crow_execute ~= 1 then
           crow.count_execute[page_line] = util.clamp(crow.count_execute[page_line]+d,1,16)
         elseif time_page[page_line] == 5 then
-          pattern.random_pitch_range = util.clamp(pattern.random_pitch_range+d,1,4)
+         pattern.random_pitch_range = util.clamp(pattern.random_pitch_range+d,1,4)
         elseif time_page[page_line] == 6 then
           if pattern.rec ~= 1 and pattern.count > 0 then
             pattern.start_point = util.clamp(pattern.start_point+d,1,pattern.end_point)

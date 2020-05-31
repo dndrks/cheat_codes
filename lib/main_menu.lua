@@ -356,7 +356,8 @@ function main_menu.init()
     for i = 1,3 do
       local time_page = page.time_page_sel
       local page_line = page.time_sel
-      local pattern = grid_pat[page_line]
+      --local pattern = grid_pat[page_line]
+      local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
       screen.level(page_line == i and 15 or 3)
       if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing then
         playing[i] = 1
