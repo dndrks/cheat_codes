@@ -43,7 +43,7 @@ function main_menu.init()
         screen.text("(grid-ALT sets offset for all)")
       end
       for i = 1,3 do
-        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and not arp[i].playing then
+        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and not arp[i].playing and midi_pat[id].play == 0 then
           focused_pad = bank[i].id
         else
           focused_pad = bank[i].focus_pad
@@ -54,7 +54,7 @@ function main_menu.init()
             screen.level(6)
             screen.text("(pad 16 overwrites bank!)")
           end
-          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing then
+          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing or midi_pat[id].play == 1 then
             screen.move(0,10)
             screen.level(3)
             screen.text("loops: bank "..i.." is pad-locked")
@@ -377,6 +377,8 @@ function main_menu.init()
         screen.text(midi_pat[i].rec == 1 and (": rec") or "")
       elseif midi_pat[i].play == 1 then
         screen.text(midi_pat[i].overdub == 0 and (" > "..midi_pat[i].step) or ": over")
+      elseif midi_pat[i].play == 0 and midi_pat[i].count > 0 then
+        screen.text(" x ")
       end
       local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
       local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}

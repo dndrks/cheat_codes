@@ -1074,6 +1074,13 @@ function init()
             end
           end
         end
+        if d.type == "cc" then
+          if d.cc == 1 then
+            bank[1][bank[1].id].start_point = util.clamp(util.linlin(0,127,1,9,d.val),1,bank[1][bank[1].id].end_point-0.1)
+          elseif d.cc == 2 then
+            bank[1][bank[1].id].end_point = util.clamp(util.linlin(0,127,1,9,d.val),bank[1][bank[1].id].start_point+0.1,9)
+          end
+        end
       end
       if d.ch == params:get("bank_"..i.."_zilchmo_midi_channel") then
         if d.note ~= nil then
@@ -1086,6 +1093,16 @@ function init()
       end
     end
   end
+
+  function midi_redraw()
+    local start_to_cc = util.round(util.linlin(1,9,0,127,bank[1][bank[1].id].start_point))
+    m:cc(1,start_to_cc,1)
+    local end_to_cc = util.round(util.linlin(1,9,0,127,bank[1][bank[1].id].end_point))
+    m:cc(2,end_to_cc,1)
+    local tilt_to_cc = util.round(util.linlin(-1,1,0,127,bank[1][bank[1].id].tilt))
+    m:cc(3,tilt_to_cc,1)
+  end
+
 
   midi_pat = {}
   for i = 1,3 do
@@ -1905,6 +1922,9 @@ function cheat(b,i)
   if osc_communication == true then
     osc_redraw(b)
   end
+  if m ~= nil then
+    midi_redraw()
+  end
 end
 
 function envelope(i)
@@ -2289,6 +2309,15 @@ function key(n,z)
     if menu == 7 then
       local time_nav = page.time_sel
       local id = time_nav
+      if midi_pat[id].play == 1 then
+        midi_pat[id]:stop()
+        if midi_pat[id].clock ~= nil then
+          clock.cancel(midi_pat[id].clock)
+        end
+      else
+        midi_pat[id]:start()
+        midi_pat[id].clock = clock.run(synced_loop, midi_pat[id])
+      end
       if grid_pat[id].count > 0 then
         if grid_pat[id].quantize == 0 then
           if grid_pat[id].play == 1 then
