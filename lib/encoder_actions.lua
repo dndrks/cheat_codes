@@ -72,6 +72,11 @@ function encoder_actions.init(n,d)
     elseif menu == 10 then
       if page.rnd_page_section == 1 then
         page.rnd_page = util.clamp(page.rnd_page+d,1,3)
+      elseif page.rnd_page_section == 3 then
+        local selected_slot = page.rnd_page_sel[page.rnd_page]
+        local current_param = rnd[page.rnd_page][selected_slot].param
+        local reasonable_max = (current_param == "loop" or current_param == "delay send") and 2 or 3
+        page.rnd_page_edit[page.rnd_page] = util.clamp(page.rnd_page_edit[page.rnd_page]+d,1,reasonable_max)
       end
     end
   end
@@ -265,9 +270,49 @@ function encoder_actions.init(n,d)
         page.rnd_page_sel[page.rnd_page] = util.clamp(selected_slot+d,1,#rnd[page.rnd_page])
         page.rnd_page_edit[page.rnd_page] = 1
       elseif page.rnd_page_section == 3 then
-        local current_param = rnd[page.rnd_page][selected_slot].param
-        local reasonable_max = (current_param == "loop" or current_param == "delay send") and 2 or 3
-        page.rnd_page_edit[page.rnd_page] = util.clamp(page.rnd_page_edit[page.rnd_page]+d,1,reasonable_max)
+        local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
+        if page.rnd_page_edit[page.rnd_page] == 1 then
+          if current.playing then
+            local pre_change = find_the_key(rnd.targets,current.param)
+            rnd.restore_default(page.rnd_page,pre_change)
+            print(page.rnd_page,pre_change, rnd[page.rnd_page][pre_change].param)
+          end
+          current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
+        elseif page.rnd_page_edit[page.rnd_page] == 2 then
+          if key1_hold then
+            current.denom = util.clamp(current.denom+d,1,32)
+          else
+            current.num = util.clamp(current.num+d,1,32)
+          end
+          current.time = current.num / current.denom
+        elseif page.rnd_page_edit[page.rnd_page] == 3 then
+          if current.param == "pan" then
+            current.pan_min = util.clamp(current.pan_min+d,-100,current.pan_max-1)
+          elseif current.param == "rate" then
+            local rates_to_mins = 
+            { [0.125] = 1
+            , [0.25] = 2
+            , [0.5] = 3
+            , [1] = 4
+            , [2] = 5
+            , [4] = 6
+            }
+            local working = util.clamp(rates_to_mins[current.rate_min]+d,1,rates_to_mins[current.rate_max])
+            local mins_to_rates = {0.125,0.25,0.5,1,2,4}
+            current.rate_min = mins_to_rates[working]
+          elseif current.param == "rate slew" then
+            current.rate_slew_min = util.clamp(current.rate_slew_min+d/10,0,current.rate_slew_max-0.1)
+          elseif current.param == "semitone offset" then
+            local which_scale = nil
+            for i = 1,#MusicUtil.SCALES do
+              if MusicUtil.SCALES[i].name == current.offset_scale then
+                which_scale = i
+              end
+            end
+            local working = util.clamp(which_scale+d,1,#MusicUtil.SCALES)
+            current.offset_scale = MusicUtil.SCALES[working].name
+          end
+        end
       end
     end
   end
@@ -349,14 +394,18 @@ function encoder_actions.init(n,d)
         elseif time_page[page_line] == 1 then
           if pattern.rec ~= 1 then
             --if there's no grid attached, there's no need for quant + quant+trim
-            pattern.playmode = util.clamp(pattern.playmode+d,1,g.device ~= nil and 4 or 2)
-            --midi_pat[page_line].playmode = util.clamp(midi_pat[page_line].playmode+d,1,2)
-            set_pattern_mode(page_line)
+            if not key1_hold then
+              pattern.playmode = util.clamp(pattern.playmode+d,1,g.device ~= nil and 4 or 2)
+              --midi_pat[page_line].playmode = util.clamp(midi_pat[page_line].playmode+d,1,2)
+              set_pattern_mode(page_line)
+            elseif key1_hold and pattern.play == 0 and pattern.playmode == 2 then
+              pattern.rec_clock_time = util.clamp(pattern.rec_clock_time+d,1,64)
+            end
           end
         elseif time_page[page_line] == 4 and bank[page_line].crow_execute ~= 1 then
           crow.count_execute[page_line] = util.clamp(crow.count_execute[page_line]+d,1,16)
         elseif time_page[page_line] == 5 then
-         pattern.random_pitch_range = util.clamp(pattern.random_pitch_range+d,1,4)
+         pattern.random_pitch_range = util.clamp(pattern.random_pitch_range+d,1,5)
         elseif time_page[page_line] == 6 then
           if pattern.rec ~= 1 and pattern.count > 0 then
             pattern.start_point = util.clamp(pattern.start_point+d,1,pattern.end_point)
@@ -419,19 +468,11 @@ function encoder_actions.init(n,d)
         if page.rnd_page_edit[page.rnd_page] == 1 then
           current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
         elseif page.rnd_page_edit[page.rnd_page] == 2 then
-          if key1_hold then
-            current.denom = util.clamp(current.denom+d,1,32)
-          else
-            current.num = util.clamp(current.num+d,1,32)
-          end
+          current.denom = util.clamp(current.denom+d,1,32)
           current.time = current.num / current.denom
         elseif page.rnd_page_edit[page.rnd_page] == 3 then
           if current.param == "pan" then
-            if key1_hold then
-              current.pan_max = util.clamp(current.pan_max+d,current.pan_min+1,100)
-            else
-              current.pan_min = util.clamp(current.pan_min+d,-100,current.pan_max-1)
-            end
+            current.pan_max = util.clamp(current.pan_max+d,current.pan_min+1,100)
           elseif current.param == "rate" then
             local rates_to_mins = 
             { [0.125] = 1
@@ -441,30 +482,13 @@ function encoder_actions.init(n,d)
             , [2] = 5
             , [4] = 6
             }
-            if key1_hold then
-              local working = util.clamp(rates_to_mins[current.rate_max]+d,rates_to_mins[current.rate_min],6)
-              local maxes_to_rates = {0.125,0.25,0.5,1,2,4}
-              current.rate_max = maxes_to_rates[working]
-            else
-              local working = util.clamp(rates_to_mins[current.rate_min]+d,1,rates_to_mins[current.rate_max])
-              local mins_to_rates = {0.125,0.25,0.5,1,2,4}
-              current.rate_min = mins_to_rates[working]
-            end
+            local working = util.clamp(rates_to_mins[current.rate_max]+d,rates_to_mins[current.rate_min],6)
+            local maxes_to_rates = {0.125,0.25,0.5,1,2,4}
+            current.rate_max = maxes_to_rates[working]
           elseif current.param == "rate slew" then
-            if key1_hold then
-              current.rate_slew_max = util.clamp(current.rate_slew_max+d,current.rate_slew_min+1,10)
-            else
-              current.rate_slew_min = util.clamp(current.rate_slew_min+d,0,current.rate_slew_max-1)
-            end
+            current.rate_slew_max = util.clamp(current.rate_slew_max+d/10,current.rate_slew_min+0.1,20)
           elseif current.param == "semitone offset" then
-            local which_scale = nil
-            for i = 1,#MusicUtil.SCALES do
-              if MusicUtil.SCALES[i].name == current.offset_scale then
-                which_scale = i
-              end
-            end
-            local working = util.clamp(which_scale+d,1,#MusicUtil.SCALES)
-            current.offset_scale = MusicUtil.SCALES[working].name
+            -- nothing!
           end
         end
       end

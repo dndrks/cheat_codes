@@ -124,7 +124,8 @@ end
 
 --- start this pattern
 function pattern:start()
-  if self.count > 0 then
+  --if self.count > 0 then
+  if self.count > 0 and self.rec == 0 then
     --print("start pattern ")
     self.prev_time = util.time()
     self.process(self.event[self.start_point])

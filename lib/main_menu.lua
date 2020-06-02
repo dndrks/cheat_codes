@@ -382,13 +382,13 @@ function main_menu.init()
       end
       local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
       local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
-      local p_options_rand = {"low rates", "mid rates", "hi rates", "full range"}
+      local p_options_rand = {"low rates", "mid rates", "hi rates", "full range", "keep rates"}
       if page.time_scroll[page_line] == 1 then
         for j = 1,3 do
           screen.level(time_page[page_line] == j and 15 or 3)
           screen.move(10,40+(10*(j-1)))
           screen.text(p_options[j])
-          local mode_options = {"loose","distro","quant","quant+trim"}
+          local mode_options = {"loose","distro "..string.format("%.4g", pattern.rec_clock_time/4),"quant","quant+trim"}
           local fine_options = {mode_options[pattern.playmode], pattern.count > 0 and pattern.rec == 0 and "[K3]" or "(no pat!)", bank[page_line].crow_execute == 1 and "pads" or "clk"}
           screen.move(80,40+(10*(j-1)))
           screen.text(fine_options[j])
@@ -661,14 +661,13 @@ function main_menu.init()
     screen.level(3)
     screen.move(0,20)
     if page.rnd_page_section == 2 then
-      screen.text(tostring(current.playing) == "false" and "K1+K3: run / K3: edit / E2: <->" or "K1+K3: kill / K3: edit / E2: <->")
+      screen.text(tostring(current.playing) == "false" and "K1+K3: run / K3: edit / E1: <->" or "K1+K3: kill / K3: edit / E1: <->")
     elseif page.rnd_page_section == 3 then
       if edit_line < 2 then
-        screen.text("E2: nav / E3: mod / K2: back")
+        screen.text("E1: nav / E2: mod / K2: back")
       else
-        screen.text("E3: mod / K1+E3: mod alt")
-      end
-        
+        screen.text("E2: mod L / E3: mod R")
+      end 
     end
     screen.font_size(8)
     screen.move(30,30)
@@ -682,7 +681,7 @@ function main_menu.init()
     local params_to_lims =
     { ["pan"] = {"min: "..(current.pan_min < 0 and "L " or "R ")..math.abs(current.pan_min), "max: "..(current.pan_max > 0 and "R " or "L ")..math.abs(current.pan_max)}
     , ["rate"] = {"min: "..current.rate_min, "max: "..current.rate_max}
-    , ["rate slew"] = {"min: "..current.rate_slew_min, "max: "..current.rate_slew_max}
+    , ["rate slew"] = {"min: "..string.format("%.1f",current.rate_slew_min), "max: "..string.format("%.1f",current.rate_slew_max)}
     , ["delay send"] = {"",""}
     , ["loop"] = {"",""}
     , ["semitone offset"] = {current.offset_scale:lower(),""}

@@ -322,14 +322,15 @@ function random_grid_pat(which,mode)
       pattern.event[i] = {}
       local constructed = pattern.event[i]
       constructed.id = auto_pat == 1 and math.random(1,16) or snakes[auto_pat-1][i]
+      local assigning_pad = bank[which][constructed.id]
       local new_rates = 
       { [1] = math.pow(2,math.random(-3,-1))*((math.random(1,2)*2)-3)
       , [2] = math.pow(2,math.random(-1,1))*((math.random(1,2)*2)-3)
       , [3] = math.pow(2,math.random(1,2))*((math.random(1,2)*2)-3)
       , [4] = math.pow(2,math.random(-2,2))*((math.random(1,2)*2)-3)
+      , [5] = assigning_pad.rate
       }
       constructed.rate = new_rates[pattern.random_pitch_range]
-      local assigning_pad = bank[which][constructed.id]
       assigning_pad.rate = constructed.rate
       local new_levels = 
       { [0.125] = 1.75
@@ -699,7 +700,7 @@ function init()
     grid_pat[i].auto_snap = 0
     grid_pat[i].quantize = 0
     grid_pat[i].playmode = 1
-    grid_pat[i].random_pitch_range = 4
+    grid_pat[i].random_pitch_range = 5
   end
   
   quantized_grid_pat = {}
@@ -1059,6 +1060,10 @@ function init()
           if d.note >= params:get("bank_"..i.."_pad_midi_base") and d.note <= params:get("bank_"..i.."_pad_midi_base") + 15 then
             if d.type == "note_on" then
               midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
+              if midi_pat[i].rec == 1 and midi_pat[i].count == 0 then
+                print("happening")
+                clock.run(synced_pattern_record,midi_pat[i])
+              end
               midi_pattern_watch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
               if menu == 9 then
                 page.arp_page_sel = i
@@ -1079,7 +1084,26 @@ function init()
             bank[1][bank[1].id].start_point = util.clamp(util.linlin(0,127,1,9,d.val),1,bank[1][bank[1].id].end_point-0.1)
           elseif d.cc == 2 then
             bank[1][bank[1].id].end_point = util.clamp(util.linlin(0,127,1,9,d.val),bank[1][bank[1].id].start_point+0.1,9)
-          end
+          elseif d.cc == 4 then
+            local rate_to_int =
+            { [-4] = 1
+            , [-2] = 2
+            , [-1] = 3
+            , [-0.5] = 4
+            , [-0.25] = 5
+            , [-0.125] = 6
+            , [0.125] = 7
+            , [0.25] = 8
+            , [0.5] = 9
+            , [1] = 10
+            , [2] = 11
+            , [4] = 12
+            }
+            local cc_rate = rate_to_int[bank[1][bank[1].id].rate]
+            local cc_rate = util.round(util.linlin(0,127,1,12,d.val))
+            local int_to_rate = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
+            bank[1][bank[1].id].rate = int_to_rate[cc_rate]
+            end
         end
       end
       if d.ch == params:get("bank_"..i.."_zilchmo_midi_channel") then
@@ -1101,6 +1125,23 @@ function init()
     m:cc(2,end_to_cc,1)
     local tilt_to_cc = util.round(util.linlin(-1,1,0,127,bank[1][bank[1].id].tilt))
     m:cc(3,tilt_to_cc,1)
+    local rate_to_int =
+    { [-4] = 1
+    , [-2] = 2
+    , [-1] = 3
+    , [-0.5] = 4
+    , [-0.25] = 5
+    , [-0.125] = 6
+    , [0.125] = 7
+    , [0.25] = 8
+    , [0.5] = 9
+    , [1] = 10
+    , [2] = 11
+    , [4] = 12
+    }
+    local cc_rate = rate_to_int[bank[1][bank[1].id].rate]
+    local rate_to_cc = util.round(util.linlin(1,12,0,127,cc_rate))
+    m:cc(4,rate_to_cc,1)
   end
 
 
@@ -1112,8 +1153,9 @@ function init()
     midi_pat[i].auto_snap = 0
     midi_pat[i].quantize = 0
     midi_pat[i].playmode = 1
-    midi_pat[i].random_pitch_range = 4
+    midi_pat[i].random_pitch_range = 5
     midi_pat[i].clock_time = 4
+    midi_pat[i].rec_clock_time = 8
     midi_pat[i].first_touch = false
   end
 
@@ -1198,7 +1240,7 @@ function start_synced_loop(target)
 end
 
 function synced_loop(target)
-  clock.sync(4)
+  --clock.sync(4)
   while true do
     clock.sync(target.clock_time)
     local overdub_flag = target.overdub
@@ -1208,6 +1250,17 @@ function synced_loop(target)
     end
     target:start()
   end
+end
+
+function synced_pattern_record(target)
+  clock.sleep((60/bpm)*target.rec_clock_time)
+  target:rec_stop()
+  target:start()
+  start_synced_loop(target)
+end
+
+function sync_midi_loops()
+
 end
 
 function pattern_length_to_bars(target)
@@ -1245,26 +1298,26 @@ function random_midi_pat(target)
   if pattern.playmode == 2 then
     clock.sync(1/4)
   end
-  local count = auto_pat == 1 and math.random(2,24) or 16
+  local count = auto_pat == 1 and math.random(4,24) or 16
   if pattern.count > 0 or pattern.rec == 1 then
     pattern:rec_stop()
     pattern:stop()
-    pattern.tightened_start = 0
     pattern:clear()
   end
   for i = 1,count do
     pattern.event[i] = {}
     local constructed = pattern.event[i]
-    constructed.id = auto_pat == 1 and math.random(1,16) or snakes[auto_pat-1][i]
+    constructed.note = auto_pat == 1 and math.random(1,16) or snakes[auto_pat-1][i]
+    constructed.target = target
+    local assigning_pad = bank[target][constructed.note]
     local new_rates = 
     { [1] = math.pow(2,math.random(-3,-1))*((math.random(1,2)*2)-3)
     , [2] = math.pow(2,math.random(-1,1))*((math.random(1,2)*2)-3)
     , [3] = math.pow(2,math.random(1,2))*((math.random(1,2)*2)-3)
     , [4] = math.pow(2,math.random(-2,2))*((math.random(1,2)*2)-3)
+    , [5] = assigning_pad.rate
     }
-    constructed.rate = new_rates[pattern.random_pitch_range]
-    local assigning_pad = bank[which][constructed.id]
-    assigning_pad.rate = constructed.rate
+    assigning_pad.rate = new_rates[pattern.random_pitch_range]
     local new_levels = 
     { [0.125] = 1.75
     , [0.25]  = 1.5
@@ -1273,28 +1326,14 @@ function random_midi_pat(target)
     , [2.0]   = 0.75
     , [4.0]   = 0.5
     }
-    assigning_pad.level = new_levels[math.abs(constructed.rate)]
-    constructed.loop = assigning_pad.loop
-    constructed.mode = assigning_pad.mode
-    constructed.pause = assigning_pad.pause
-    constructed.start_point = (math.random(10,75)/10)+(8*(assigning_pad.clip-1))
-    constructed.clip = assigning_pad.clip
-    constructed.end_point = constructed.start_point + (math.random(1,15)/10)
-    constructed.rate_adjusted = false
-    assigning_pad.fifth = false
-    constructed.x = (5*(which-1)+1)+(math.ceil(constructed.id/4)-1)
-    if (constructed.id % 4) ~= 0 then
-      constructed.y = 9-(constructed.id % 4)
-    else
-      constructed.y = 5
-    end
-    constructed.action = "pads"
-    constructed.i = which
+    assigning_pad.level = new_levels[math.abs(assigning_pad.rate)]
     pattern.time[i] = auto_pat == 1 and ((60/bpm) / math.pow(2,math.random(-2,2))) or (60/bpm) / 4
   end
   pattern.count = count
   pattern.start_point = 1
   pattern.end_point = count
+  pattern_length_to_bars(pattern)
+  pattern:start()
 end
 
 ---
@@ -2137,7 +2176,7 @@ function key(n,z)
                 if midi_pat[time_nav].playmode == 1 then
                   midi_pat[time_nav]:start()
                 elseif midi_pat[time_nav].playmode == 2 then
-                  midi_pat[time_nav]:start()
+                  --midi_pat[time_nav]:start()
                   start_synced_loop(midi_pat[time_nav])
                 end
               end
@@ -2152,10 +2191,14 @@ function key(n,z)
           end
         elseif page.time_page_sel[time_nav] == 5 then
           if not key1_hold then
-            if grid_pat[id].playmode == 3 or grid_pat[id].playmode == 4 then
-              clock.run(random_grid_pat, id, 3)
+            if g.device ~= nil then
+              if grid_pat[id].playmode == 3 or grid_pat[id].playmode == 4 then
+                clock.run(random_grid_pat, id, 3)
+              else
+                random_grid_pat(id,3)
+              end
             else
-              random_grid_pat(id,3)
+              random_midi_pat(id)
             end
           end
         end
@@ -2169,7 +2212,6 @@ function key(n,z)
           end
           if midi_pat[id].count > 0 then
             midi_pat[id]:rec_stop()
-            midi_pat[id]:stop()
             midi_pat[id]:clear()
           end
         end
@@ -2310,13 +2352,18 @@ function key(n,z)
       local time_nav = page.time_sel
       local id = time_nav
       if midi_pat[id].play == 1 then
-        midi_pat[id]:stop()
         if midi_pat[id].clock ~= nil then
           clock.cancel(midi_pat[id].clock)
         end
+        midi_pat[id]:stop()
       else
-        midi_pat[id]:start()
-        midi_pat[id].clock = clock.run(synced_loop, midi_pat[id])
+        if midi_pat[id].count > 0 then
+          if midi_pat[id].playmode == 1 then
+            midi_pat[id]:start()
+          elseif midi_pat[id].playmode == 2 then
+            midi_pat[id].clock = clock.run(synced_loop, midi_pat[id])
+          end
+        end
       end
       if grid_pat[id].count > 0 then
         if grid_pat[id].quantize == 0 then
