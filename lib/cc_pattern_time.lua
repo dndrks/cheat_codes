@@ -23,7 +23,7 @@ function pattern.new()
   i.start_point = 0
   i.end_point = 0
   i.clock = nil
-  i.clock_time = 1
+  i.clock_time = 4
 
   i.metro = metro.init(function() i:next_event() end,1,1)
 
@@ -49,7 +49,7 @@ function pattern:clear()
   self.start_point = 0
   self.end_point = 0
   self.clock = nil
-  self.clock_time = 1
+  self.clock_time = 4
 end
 
 --- adjust the time factor of this pattern.
@@ -181,22 +181,5 @@ function pattern:set_overdub(s)
     self.overdub = 0
   end
 end
-
---[[
-
-function pattern:start_synced_loop()
-  self.clock = clock.run(self.synced_loop)
-end
-
-function pattern:synced_loop()
-  clock.sync(4)
-  while true do
-    clock.sync(8)
-    self.metro:stop()
-    self.metro:start()
-  end
-end
-
---]]
 
 return pattern

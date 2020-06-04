@@ -701,6 +701,7 @@ function init()
     grid_pat[i].quantize = 0
     grid_pat[i].playmode = 1
     grid_pat[i].random_pitch_range = 5
+    grid_pat[i].rec_clock_time = 8
   end
   
   quantized_grid_pat = {}
@@ -1061,8 +1062,9 @@ function init()
             if d.type == "note_on" then
               midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
               if midi_pat[i].rec == 1 and midi_pat[i].count == 0 then
-                print("happening")
-                clock.run(synced_pattern_record,midi_pat[i])
+                if midi_pat[i].playmode == 2 then
+                  clock.run(synced_pattern_record,midi_pat[i])
+                end
               end
               midi_pattern_watch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
               if menu == 9 then
@@ -1080,10 +1082,19 @@ function init()
           end
         end
         if d.type == "cc" then
+          local pad = bank[i][bank[i].id]
           if d.cc == 1 then
-            bank[1][bank[1].id].start_point = util.clamp(util.linlin(0,127,1,9,d.val),1,bank[1][bank[1].id].end_point-0.1)
+            local lo = 1+(8*(pad.clip-1))
+            local hi = pad.end_point-0.1
+            local max = 9+(8*(pad.clip-1))
+            pad.start_point = util.clamp(util.linlin(0,127,lo,max,d.val),lo,hi)
+            softcut.loop_start(i+1,pad.start_point)
           elseif d.cc == 2 then
-            bank[1][bank[1].id].end_point = util.clamp(util.linlin(0,127,1,9,d.val),bank[1][bank[1].id].start_point+0.1,9)
+            local lo = pad.start_point+0.1
+            local hi = 9+(8*(pad.clip-1))
+            local min = 1+(8*(pad.clip-1))
+            pad.end_point = util.clamp(util.linlin(0,127,min,hi,d.val),lo,hi)
+            softcut.loop_end(i+1,pad.end_point)
           elseif d.cc == 4 then
             local rate_to_int =
             { [-4] = 1
@@ -1099,10 +1110,11 @@ function init()
             , [2] = 11
             , [4] = 12
             }
-            local cc_rate = rate_to_int[bank[1][bank[1].id].rate]
+            local cc_rate = rate_to_int[pad.rate]
             local cc_rate = util.round(util.linlin(0,127,1,12,d.val))
             local int_to_rate = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
-            bank[1][bank[1].id].rate = int_to_rate[cc_rate]
+            pad.rate = int_to_rate[cc_rate]
+            softcut.rate(i+1,pad.rate)
             end
         end
       end
@@ -1118,13 +1130,14 @@ function init()
     end
   end
 
-  function midi_redraw()
-    local start_to_cc = util.round(util.linlin(1,9,0,127,bank[1][bank[1].id].start_point))
-    m:cc(1,start_to_cc,1)
-    local end_to_cc = util.round(util.linlin(1,9,0,127,bank[1][bank[1].id].end_point))
-    m:cc(2,end_to_cc,1)
-    local tilt_to_cc = util.round(util.linlin(-1,1,0,127,bank[1][bank[1].id].tilt))
-    m:cc(3,tilt_to_cc,1)
+  function midi_redraw(target)
+    local pad = bank[target][bank[target].id]
+    local start_to_cc = util.round(util.linlin(1,9,0,127,pad.start_point-(8*(pad.clip-1))))
+    m:cc(1,start_to_cc,params:get("bank_"..target.."_midi_channel"))
+    local end_to_cc = util.round(util.linlin(1,9,0,127,pad.end_point-(8*(pad.clip-1))))
+    m:cc(2,end_to_cc,params:get("bank_"..target.."_midi_channel"))
+    local tilt_to_cc = util.round(util.linlin(-1,1,0,127,pad.tilt))
+    m:cc(3,tilt_to_cc,params:get("bank_"..target.."_midi_channel"))
     local rate_to_int =
     { [-4] = 1
     , [-2] = 2
@@ -1139,9 +1152,9 @@ function init()
     , [2] = 11
     , [4] = 12
     }
-    local cc_rate = rate_to_int[bank[1][bank[1].id].rate]
+    local cc_rate = rate_to_int[pad.rate]
     local rate_to_cc = util.round(util.linlin(1,12,0,127,cc_rate))
-    m:cc(4,rate_to_cc,1)
+    m:cc(4,rate_to_cc,params:get("bank_"..target.."_midi_channel"))
   end
 
 
@@ -1234,14 +1247,18 @@ end
 
 function start_synced_loop(target)
   if target.count > 0 then
-    pattern_length_to_bars(target)
+    --pattern_length_to_bars(target)
     target.clock = clock.run(synced_loop, target)
   end
 end
 
 function synced_loop(target)
+  --clock.sleep((60/bpm)*target.rec_clock_time)
+  clock.sync(1)
+  target:start()
   --clock.sync(4)
   while true do
+    print("syncing to..."..target.clock_time, clock.get_beats())
     clock.sync(target.clock_time)
     local overdub_flag = target.overdub
     target:stop()
@@ -1255,8 +1272,21 @@ end
 function synced_pattern_record(target)
   clock.sleep((60/bpm)*target.rec_clock_time)
   target:rec_stop()
-  target:start()
-  start_synced_loop(target)
+  -- if target is a grid pat, should do all the grid pat thing:
+  --[[
+    midi_clock_linearize(i)
+    if grid_pat[i].auto_snap == 1 then
+      print("auto-snap")
+      snap_to_bars(i,how_many_bars(i))
+    end
+    grid_pat[i]:start()
+    grid_pat[i].loop = 1
+  --]]
+  pattern_length_to_bars(target)
+  --target:start()
+  print("started first run..."..clock.get_beats())
+  --start_synced_loop(target)
+  target.clock = clock.run(synced_loop, target)
 end
 
 function sync_midi_loops()
@@ -1962,7 +1992,7 @@ function cheat(b,i)
     osc_redraw(b)
   end
   if m ~= nil then
-    midi_redraw()
+    midi_redraw(b)
   end
 end
 
@@ -2177,6 +2207,7 @@ function key(n,z)
                   midi_pat[time_nav]:start()
                 elseif midi_pat[time_nav].playmode == 2 then
                   --midi_pat[time_nav]:start()
+                  print("line 2196")
                   start_synced_loop(midi_pat[time_nav])
                 end
               end
@@ -2212,6 +2243,10 @@ function key(n,z)
           end
           if midi_pat[id].count > 0 then
             midi_pat[id]:rec_stop()
+            if midi_pat[id].clock ~= nil then
+              print("clearing clock: "..midi_pat[id].clock)
+              clock.cancel(midi_pat[id].clock)
+            end
             midi_pat[id]:clear()
           end
         end
@@ -2361,6 +2396,7 @@ function key(n,z)
           if midi_pat[id].playmode == 1 then
             midi_pat[id]:start()
           elseif midi_pat[id].playmode == 2 then
+            print("line 2387")
             midi_pat[id].clock = clock.run(synced_loop, midi_pat[id])
           end
         end

@@ -52,6 +52,10 @@ function grid_actions.init(x,y,z)
                 grid_p[i].pause = bank[i][bank[i].id].pause
                 grid_p[i].mode = bank[i][bank[i].id].mode
                 grid_p[i].clip = bank[i][bank[i].id].clip
+                if grid_pat[i].rec == 1 and grid_pat[i].count == 0 then
+                  print("grid happening")
+                  clock.run(synced_pattern_record,grid_pat[i])
+                end
                 grid_pat[i]:watch(grid_p[i])
               end
             else
