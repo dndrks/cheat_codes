@@ -1063,7 +1063,7 @@ function init()
               midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
               if midi_pat[i].rec == 1 and midi_pat[i].count == 0 then
                 if midi_pat[i].playmode == 2 then
-                  clock.run(synced_pattern_record,midi_pat[i])
+                  --clock.run(synced_pattern_record,midi_pat[i]) -- i think we'll want this in a separate function...
                 end
               end
               midi_pattern_watch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
@@ -1191,15 +1191,21 @@ end
 ---
 
 function midi_pattern_watch(note,target)
-  midi_p[target] = {}
-  midi_p[target].note = note
-  midi_p[target].target = target
-  midi_pat[target]:watch(midi_p[target])
+  if note ~= "pause" then
+    midi_p[target] = {}
+    midi_p[target].note = note
+    midi_p[target].target = target
+    midi_pat[target]:watch(midi_p[target])
+  else
+    midi_pat[target]:watch("pause")
+  end
 end
 
 function midi_pattern_execute(entry)
   if entry ~= nil then
-    midi_cheat(entry.note, entry.target)
+    if entry ~= "pause" then
+      midi_cheat(entry.note, entry.target)
+    end
   end
 end
 
@@ -1267,6 +1273,13 @@ function synced_loop(target)
     end
     target:start()
   end
+end
+
+function synced_record_start(i)
+  clock.sync(4)
+  midi_pat[i]:rec_start()
+  midi_pattern_watch("pause", i)
+  clock.run(synced_pattern_record,midi_pat[i])
 end
 
 function synced_pattern_record(target)
