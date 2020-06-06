@@ -1260,11 +1260,13 @@ end
 
 function synced_loop(target)
   --clock.sleep((60/bpm)*target.rec_clock_time)
+
   clock.sync(1)
-  target:start()
+  --target:start()
+
   --clock.sync(4)
   while true do
-    print("syncing to..."..target.clock_time, clock.get_beats())
+    --print("syncing to..."..target.clock_time, clock.get_beats())
     clock.sync(target.clock_time)
     local overdub_flag = target.overdub
     target:stop()
@@ -1296,9 +1298,22 @@ function synced_pattern_record(target)
     grid_pat[i].loop = 1
   --]]
   pattern_length_to_bars(target)
-  --target:start()
+  if target.time[1] < (60/bpm)/4 and target.event[1] == "pause" then
+    print("we could lose the first event..."..target.count, target.end_point)
+    local butts = 0
+    for i = 1,target.count do
+      butts = butts + target.time[i]
+    end
+    print(butts)
+    target.time[2] = target.time[2] + target.time[1]
+    table.remove(target.event,1)
+    table.remove(target.time,1)
+    target.count = #target.event
+    target.end_point = target.count
+    print(target.count, target.end_point)
+  end
+  target:start()
   print("started first run..."..clock.get_beats())
-  --start_synced_loop(target)
   target.clock = clock.run(synced_loop, target)
 end
 
@@ -2210,7 +2225,11 @@ function key(n,z)
             if midi_pat[time_nav].playmode < 3 then
               if midi_pat[time_nav].rec == 0 then
                 if midi_pat[time_nav].count == 0 then
-                  midi_pat[time_nav]:rec_start()
+                  if midi_pat[time_nav].playmode == 1 then
+                    midi_pat[time_nav]:rec_start()
+                  else
+                    clock.run(synced_record_start,time_nav)
+                  end
                 else
                   midi_pat[time_nav].overdub = midi_pat[time_nav].overdub == 0 and 1 or 0
                 end
