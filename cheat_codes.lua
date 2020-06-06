@@ -1031,6 +1031,9 @@ function init()
   local bank_names = {"(a)","(b)","(c)"}
   for i = 1,3 do
     params:add_number("bank_"..i.."_midi_channel", "bank "..bank_names[i].." pad channel:",1,16,i)
+    params:set_action("bank_"..i.."_midi_channel", function()
+      params:set("bank_"..i.."_zilchmo_midi_channel", x)
+    end)
   end
   for i = 1,3 do
     params:add_number("bank_"..i.."_pad_midi_base", "bank "..bank_names[i].." pad midi base:",0,111,53)
@@ -1053,6 +1056,7 @@ function init()
   end
 
   m = midi.connect()
+  midi_alt = false
   m.event = function(data)
     local d = midi.to_msg(data)
     for i = 1,3 do
@@ -1078,6 +1082,12 @@ function init()
                   arps.momentary(i, targeted_pad, "off")
                 end
               end
+            end
+          elseif d.note == params:get("bank_"..i.."_pad_midi_base") + 23 then
+            if d.type == "note_on" then
+              midi_alt = true
+            else
+              midi_alt = false
             end
           end
         end
@@ -1344,9 +1354,11 @@ function shuffle_midi_pat(target)
   pattern = midi_pat[target]
   for i = #pattern.event,2,-1 do
     local j = math.random(i)
-    local original, shuffled = pattern.event[i], pattern.event[j]
-    original.note, shuffled.note = shuffled.note, original.note
-    original.target, shuffled.target = shuffled.target, original.target
+    if pattern.event[j] ~= "pause" then
+      local original, shuffled = pattern.event[i], pattern.event[j]
+      original.note, shuffled.note = shuffled.note, original.note
+      original.target, shuffled.target = shuffled.target, original.target
+    end
   end
 end
 
@@ -2421,6 +2433,7 @@ function key(n,z)
       if midi_pat[id].play == 1 then
         if midi_pat[id].clock ~= nil then
           clock.cancel(midi_pat[id].clock)
+          print("pausing clock")
         end
         midi_pat[id]:stop()
       else
