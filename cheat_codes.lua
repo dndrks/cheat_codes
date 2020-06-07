@@ -1027,13 +1027,13 @@ function init()
     osc_communication = false
   end}
 
-  params:add_group("MIDI setup",12)
+  params:add_group("MIDI setup",15)
+  params:add_option("midi_control_enabled", "enable MIDI control?", {"no","yes"},1)
+  params:add_option("midi_control_device", "MIDI control device",{"port 1", "port 2", "port 3", "port 4"},1)
+  params:add_option("midi_echo_enabled", "enable MIDI echo?", {"no","yes"},1)
   local bank_names = {"(a)","(b)","(c)"}
   for i = 1,3 do
     params:add_number("bank_"..i.."_midi_channel", "bank "..bank_names[i].." pad channel:",1,16,i)
-    params:set_action("bank_"..i.."_midi_channel", function()
-      params:set("bank_"..i.."_zilchmo_midi_channel", x)
-    end)
   end
   for i = 1,3 do
     params:add_number("bank_"..i.."_pad_midi_base", "bank "..bank_names[i].." pad midi base:",0,111,53)
@@ -1059,80 +1059,92 @@ function init()
   midi_alt = false
   m.event = function(data)
     local d = midi.to_msg(data)
-    for i = 1,3 do
-      if d.ch == params:get("bank_"..i.."_midi_channel") then
-        if d.note ~= nil then
-          if d.note >= params:get("bank_"..i.."_pad_midi_base") and d.note <= params:get("bank_"..i.."_pad_midi_base") + 15 then
-            if d.type == "note_on" then
-              midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
-              if midi_pat[i].rec == 1 and midi_pat[i].count == 0 then
-                if midi_pat[i].playmode == 2 then
-                  --clock.run(synced_pattern_record,midi_pat[i]) -- i think we'll want this in a separate function...
+    if params:get("midi_control_enabled") == 2 then
+      for i = 1,3 do
+        if d.ch == params:get("bank_"..i.."_midi_channel") then
+          tab.print(d)
+          if d.note ~= nil then
+            if d.note >= params:get("bank_"..i.."_pad_midi_base") and d.note <= params:get("bank_"..i.."_pad_midi_base") + 15 then
+              if d.type == "note_on" then
+                midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
+                if midi_pat[i].rec == 1 and midi_pat[i].count == 0 then
+                  if midi_pat[i].playmode == 2 then
+                    --clock.run(synced_pattern_record,midi_pat[i]) -- i think we'll want this in a separate function...
+                  end
+                end
+                midi_pattern_watch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
+                if menu == 9 then
+                  page.arp_page_sel = i
+                  arps.momentary(i, bank[i].id, "on")
+                end
+              elseif d.type == "note_off" then
+                if menu == 9 then
+                  if not arp[i].hold and page.arp_page_sel == i  then
+                    local targeted_pad = d.note-(params:get("bank_"..i.."_pad_midi_base")-1)
+                    arps.momentary(i, targeted_pad, "off")
+                  end
                 end
               end
-              midi_pattern_watch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
-              if menu == 9 then
-                page.arp_page_sel = i
-                arps.momentary(i, bank[i].id, "on")
+            elseif d.note == params:get("bank_"..i.."_pad_midi_base") + 23 then
+              if d.type == "note_on" then
+                midi_alt = true
+              else
+                midi_alt = false
               end
-            elseif d.type == "note_off" then
-              if menu == 9 then
-                if not arp[i].hold and page.arp_page_sel == i  then
-                  local targeted_pad = d.note-(params:get("bank_"..i.."_pad_midi_base")-1)
-                  arps.momentary(i, targeted_pad, "off")
-                end
-              end
-            end
-          elseif d.note == params:get("bank_"..i.."_pad_midi_base") + 23 then
-            if d.type == "note_on" then
-              midi_alt = true
-            else
-              midi_alt = false
             end
           end
+          if d.type == "cc" then
+            local pad = bank[i][bank[i].id]
+            if d.cc == 1 then
+              local lo = 1+(8*(pad.clip-1))
+              local hi = pad.end_point-0.1
+              local max = 9+(8*(pad.clip-1))
+              pad.start_point = util.clamp(util.linlin(0,127,lo,max,d.val),lo,hi)
+              softcut.loop_start(i+1,pad.start_point)
+            elseif d.cc == 2 then
+              local lo = pad.start_point+0.1
+              local hi = 9+(8*(pad.clip-1))
+              local min = 1+(8*(pad.clip-1))
+              pad.end_point = util.clamp(util.linlin(0,127,min,hi,d.val),lo,hi)
+              softcut.loop_end(i+1,pad.end_point)
+            elseif d.cc == 3 then
+              for j = 1,16 do
+                local target = bank[i][j]
+                if slew_counter[i] ~= nil then
+                  slew_counter[i].prev_tilt = target.tilt
+                end
+                target.tilt = util.linlin(0,127,-1,1,d.val)
+              end
+              slew_filter(i,slew_counter[i].prev_tilt,pad.tilt,pad.q,pad.q,15)
+            elseif d.cc == 4 then
+              local rate_to_int =
+              { [-4] = 1
+              , [-2] = 2
+              , [-1] = 3
+              , [-0.5] = 4
+              , [-0.25] = 5
+              , [-0.125] = 6
+              , [0.125] = 7
+              , [0.25] = 8
+              , [0.5] = 9
+              , [1] = 10
+              , [2] = 11
+              , [4] = 12
+              }
+              local cc_rate = rate_to_int[pad.rate]
+              local cc_rate = util.round(util.linlin(0,127,1,12,d.val))
+              local int_to_rate = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
+              pad.rate = int_to_rate[cc_rate]
+              softcut.rate(i+1,pad.rate)
+              end
+          end
         end
-        if d.type == "cc" then
-          local pad = bank[i][bank[i].id]
-          if d.cc == 1 then
-            local lo = 1+(8*(pad.clip-1))
-            local hi = pad.end_point-0.1
-            local max = 9+(8*(pad.clip-1))
-            pad.start_point = util.clamp(util.linlin(0,127,lo,max,d.val),lo,hi)
-            softcut.loop_start(i+1,pad.start_point)
-          elseif d.cc == 2 then
-            local lo = pad.start_point+0.1
-            local hi = 9+(8*(pad.clip-1))
-            local min = 1+(8*(pad.clip-1))
-            pad.end_point = util.clamp(util.linlin(0,127,min,hi,d.val),lo,hi)
-            softcut.loop_end(i+1,pad.end_point)
-          elseif d.cc == 4 then
-            local rate_to_int =
-            { [-4] = 1
-            , [-2] = 2
-            , [-1] = 3
-            , [-0.5] = 4
-            , [-0.25] = 5
-            , [-0.125] = 6
-            , [0.125] = 7
-            , [0.25] = 8
-            , [0.5] = 9
-            , [1] = 10
-            , [2] = 11
-            , [4] = 12
-            }
-            local cc_rate = rate_to_int[pad.rate]
-            local cc_rate = util.round(util.linlin(0,127,1,12,d.val))
-            local int_to_rate = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
-            pad.rate = int_to_rate[cc_rate]
-            softcut.rate(i+1,pad.rate)
-            end
-        end
-      end
-      if d.ch == params:get("bank_"..i.."_zilchmo_midi_channel") then
-        if d.note ~= nil then
-          if d.note >= params:get("bank_"..i.."_zilchmo_midi_base") and d.note <= params:get("bank_"..i.."_zilchmo_midi_base") + 15 then
-            if d.type == "note_on" then
-              midi_zilch(d.note-(params:get("bank_"..i.."_zilchmo_midi_base")-1), i)
+        if d.ch == params:get("bank_"..i.."_zilchmo_midi_channel") then
+          if d.note ~= nil then
+            if d.note >= params:get("bank_"..i.."_zilchmo_midi_base") and d.note <= params:get("bank_"..i.."_zilchmo_midi_base") + 15 then
+              if d.type == "note_on" then
+                midi_zilch(d.note-(params:get("bank_"..i.."_zilchmo_midi_base")-1), i)
+              end
             end
           end
         end
@@ -1268,11 +1280,14 @@ function start_synced_loop(target)
   end
 end
 
-function synced_loop(target)
+function synced_loop(target, state)
   --clock.sleep((60/bpm)*target.rec_clock_time)
 
   clock.sync(1)
-  --target:start()
+  if state == "restart" then
+    target:start()
+  end
+  --^ would this be problematic?
 
   --clock.sync(4)
   while true do
@@ -1307,7 +1322,7 @@ function synced_pattern_record(target)
     grid_pat[i]:start()
     grid_pat[i].loop = 1
   --]]
-  pattern_length_to_bars(target)
+  pattern_length_to_bars(target, "destructive")
   if target.time[1] < (60/bpm)/4 and target.event[1] == "pause" then
     print("we could lose the first event..."..target.count, target.end_point)
     local butts = 0
@@ -1331,16 +1346,18 @@ function sync_midi_loops()
 
 end
 
-function pattern_length_to_bars(target)
+function pattern_length_to_bars(target, style)
   if target.rec == 0 and target.count > 0 then 
     local total_time = 0
-    for i = 1,#target.event do
+    for i = target.start_point,target.end_point do
       total_time = total_time + target.time[i]
     end
-    local clean_bars_from_time = util.round(total_time/((60/bpm)*4),0.5)
+    local clean_bars_from_time = util.round(total_time/((60/bpm)*4),0.25)
     local add_time = (((60/bpm)*4) * clean_bars_from_time) - total_time
     print(add_time, clean_bars_from_time)
-    target.time[#target.event] = target.time[#target.event] + add_time
+    if style == "destructive" then
+      target.time[#target.event] = target.time[#target.event] + add_time
+    end
     target.clock_time = 4 * clean_bars_from_time
   end
 end
@@ -1402,7 +1419,7 @@ function random_midi_pat(target)
   pattern.count = count
   pattern.start_point = 1
   pattern.end_point = count
-  pattern_length_to_bars(pattern)
+  pattern_length_to_bars(pattern, "destructive")
   pattern:start()
 end
 
@@ -1781,6 +1798,9 @@ function update_tempo()
   local interval_pats = (60/t) / d_pat
   if pre_bpm ~= bpm then
     compare_rec_resolution(params:get("rec_loop_enc_resolution"))
+    if math.abs(pre_bpm - bpm) >= 1 then
+      print("a change in time!")
+    end
   end
   for i = 1,3 do
     --quantizer[i].time = interval
@@ -2031,7 +2051,7 @@ function cheat(b,i)
   if osc_communication == true then
     osc_redraw(b)
   end
-  if m ~= nil then
+  if m ~= nil and params:get("midi_echo_enabled") == 2 then
     midi_redraw(b)
   end
 end
@@ -2442,7 +2462,7 @@ function key(n,z)
             midi_pat[id]:start()
           elseif midi_pat[id].playmode == 2 then
             print("line 2387")
-            midi_pat[id].clock = clock.run(synced_loop, midi_pat[id])
+            midi_pat[id].clock = clock.run(synced_loop, midi_pat[id], "restart")
           end
         end
       end

@@ -23,7 +23,7 @@ function main_menu.init()
       , " filters"
       , " delays"
       , " timing"
-      , " trkr"
+      , " --"
       , " arp"
       , " rnd"
       , " ?"

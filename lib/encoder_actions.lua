@@ -83,6 +83,7 @@ function encoder_actions.init(n,d)
   if n == 2 then
     if menu == 1 then
       page.main_sel = util.clamp(page.main_sel+d,1,10)
+      if page.main_sel == 7 then page.main_sel = 7+d end
     elseif menu == 2 then
       local id = page.loops_sel + 1
       if id ~=4 then
@@ -272,12 +273,15 @@ function encoder_actions.init(n,d)
       elseif page.rnd_page_section == 3 then
         local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
         if page.rnd_page_edit[page.rnd_page] == 1 then
-          if current.playing then
+          if not current.playing then
+            --[[
             local pre_change = find_the_key(rnd.targets,current.param)
             rnd.restore_default(page.rnd_page,pre_change)
             print(page.rnd_page,pre_change, rnd[page.rnd_page][pre_change].param)
           end
-          current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
+          --]]
+            current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
+          end
         elseif page.rnd_page_edit[page.rnd_page] == 2 then
           if key1_hold then
             current.denom = util.clamp(current.denom+d,1,32)
@@ -409,6 +413,7 @@ function encoder_actions.init(n,d)
         elseif time_page[page_line] == 6 then
           if pattern.rec ~= 1 and pattern.count > 0 then
             pattern.start_point = util.clamp(pattern.start_point+d,1,pattern.end_point)
+            pattern_length_to_bars(pattern, "non-destructive")
             if quantized_grid_pat[page_line].current_step < pattern.start_point then
               quantized_grid_pat[page_line].current_step = pattern.start_point
               quantized_grid_pat[page_line].sub_step = 1
@@ -417,6 +422,7 @@ function encoder_actions.init(n,d)
         elseif time_page[page_line] == 7 then
           if pattern.rec ~= 1 and pattern.count > 0 then
             pattern.end_point = util.clamp(pattern.end_point+d,pattern.start_point,pattern.count)
+            pattern_length_to_bars(pattern, "non-destructive")
             if quantized_grid_pat[page_line].current_step > pattern.end_point then
               quantized_grid_pat[page_line].current_step = pattern.start_point
               quantized_grid_pat[page_line].sub_step = 1
@@ -466,7 +472,7 @@ function encoder_actions.init(n,d)
       local current = rnd[page.rnd_page][page.rnd_page_sel[page.rnd_page]]
       if page.rnd_page_section == 3 then
         if page.rnd_page_edit[page.rnd_page] == 1 then
-          current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
+          --current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
         elseif page.rnd_page_edit[page.rnd_page] == 2 then
           current.denom = util.clamp(current.denom+d,1,32)
           current.time = current.num / current.denom
