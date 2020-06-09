@@ -21,6 +21,7 @@ midicontrol = include 'lib/midicheat'
 arps = include 'lib/arp_actions'
 rnd = include 'lib/rnd_actions'
 trackers = include 'lib/tracker'
+rytm = include 'lib/euclid'
 math.randomseed(os.time())
 
 function screenshot()
@@ -1205,6 +1206,8 @@ function init()
   for i = 1,3 do
     trackers.init(i)
   end
+
+  rytm.init()
 
   if g then grid_redraw() end
 
@@ -2425,6 +2428,8 @@ function key(n,z)
     elseif menu == 7 then
       key1_hold = true
     elseif menu == 8 then
+      key1_hold = true
+      --[[
       if page.track_page_section[page.track_page] == 1 and page.track_page < 4 then
         trackers.transport(page.track_page)
       elseif page.track_page_section[page.track_page] == 3 and page.track_page < 4 then
@@ -2433,6 +2438,7 @@ function key(n,z)
       elseif page.track_page_section[page.track_page] == 4 then
         key1_hold = true
       end
+      -]]
     elseif menu == 9 then
       key1_hold = true
       page.arp_param_group[page.arp_page_sel] = (page.arp_param_group[page.arp_page_sel] % 2) + 1

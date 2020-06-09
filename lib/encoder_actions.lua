@@ -35,6 +35,14 @@ function encoder_actions.init(n,d)
     elseif menu == 7 then
       page.time_sel = util.clamp(page.time_sel+d,1,3)
     elseif menu == 8 then
+
+      if key1_hold then
+        rytm.track[rytm.track_edit].focus = util.clamp(rytm.track[rytm.track_edit].focus+d,1,rytm.track[rytm.track_edit].n)
+      else
+        rytm.track_edit = util.clamp(rytm.track_edit+d,1,3)
+      end
+
+      --[==[
       if page.track_page_section[page.track_page] == 1 then
         page.track_page = util.clamp(page.track_page+d,1,4)
         for i = 1,3 do
@@ -61,6 +69,8 @@ function encoder_actions.init(n,d)
           page.track_sel[page.track_page] = util.clamp(page.track_sel[page.track_page] + d,tracker[page.track_page].start_point,tracker[page.track_page].end_point)
         end
       end
+      -]==]
+
     elseif menu == 9 then
       if key1_hold then
         local working = arp[page.arp_page_sel].retrigger and 1 or 0
@@ -83,7 +93,6 @@ function encoder_actions.init(n,d)
   if n == 2 then
     if menu == 1 then
       page.main_sel = util.clamp(page.main_sel+d,1,10)
-      if page.main_sel == 7 then page.main_sel = 7+d end
     elseif menu == 2 then
       local id = page.loops_sel + 1
       if id ~=4 then
@@ -166,6 +175,15 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 8 then
+      if not key1_hold then
+        rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k+d,0,rytm.track[rytm.track_edit].n)
+      else
+        rytm.track[rytm.track_edit].rotation = util.clamp(rytm.track[rytm.track_edit].rotation + d, 0, 16)
+        rytm.track[rytm.track_edit].s = rytm.rotate_pattern(rytm.track[rytm.track_edit].s, rytm.track[rytm.track_edit].rotation)
+      end
+
+
+      --[==[
       if page.track_page_section[page.track_page] == 1 then
         --[[
         page.track_page = util.clamp(page.track_page+d,1,4)
@@ -241,6 +259,7 @@ function encoder_actions.init(n,d)
         end
         --trackers.map_similar(id,line)
       end
+      --]==]
     elseif menu == 9 then
       local focus_arp = arp[page.arp_page_sel]
       if page.arp_param_group[page.arp_page_sel] == 2 then
@@ -431,6 +450,11 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 8 then
+
+      rytm.track[rytm.track_edit].n = util.clamp(rytm.track[rytm.track_edit].n+d,1,16)
+      rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k,0,rytm.track[rytm.track_edit].n)
+
+      --[==[
       if page.track_page_section[page.track_page] == 3 then
         if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
         local numerator_to_sel =
@@ -451,6 +475,7 @@ function encoder_actions.init(n,d)
           tracker[page.track_page][page.track_sel[page.track_page]].time = int_to_numerator[working]
         end
       end
+      --]==]
     elseif menu == 9 then
       if page.arp_param_group[page.arp_page_sel] == 2 then
         if #arp[page.arp_page_sel].notes > 0 then
@@ -500,6 +525,11 @@ function encoder_actions.init(n,d)
       end
     end
   end
+
+  if menu == 8 then
+    rytm.reer(rytm.track_edit)
+  end
+
   if menu == 3 then
     local focused_pad = nil
     if bank[n].focus_hold == true then

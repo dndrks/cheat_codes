@@ -23,7 +23,7 @@ function main_menu.init()
       , " filters"
       , " delays"
       , " timing"
-      , " --"
+      , " rytm"
       , " arp"
       , " rnd"
       , " ?"
@@ -43,7 +43,7 @@ function main_menu.init()
         screen.text("(grid-ALT sets offset for all)")
       end
       for i = 1,3 do
-        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and not arp[i].playing and midi_pat[id].play == 0 then
+        if grid_pat[i].play == 0 and grid_pat[i].tightened_start == 0 and not arp[i].playing and midi_pat[i].play == 0 then
           focused_pad = bank[i].id
         else
           focused_pad = bank[i].focus_pad
@@ -54,7 +54,7 @@ function main_menu.init()
             screen.level(6)
             screen.text("(pad 16 overwrites bank!)")
           end
-          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing or midi_pat[id].play == 1 then
+          if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing or midi_pat[i].play == 1 then
             screen.move(0,10)
             screen.level(3)
             screen.text("loops: bank "..i.." is pad-locked")
@@ -412,6 +412,40 @@ function main_menu.init()
     screen.level(3)
     screen.move(0,64)
     screen.text("...")
+
+  elseif menu == 8 then
+    screen.move(0,10)
+    screen.level(3)
+    screen.text("rytm")
+    for i = 1,3 do
+      screen.level((i == rytm.track_edit and not key1_hold) and 15 or 4)
+      screen.move(5, i*15 + 10)
+      screen.text_center(rytm.track[i].k)
+      screen.move(20, i*15 + 10)
+      screen.text_center(rytm.track[i].n)
+      --screen.text_center(rytm.track[i].rotation)
+  
+      for x = 1,rytm.track[i].n do
+        screen.level((rytm.track[i].pos == x and not rytm.reset) and 15 or 2)
+        screen.move(x*4 + 30, i*15 + 10)
+        if rytm.track[i].s[x] then
+          screen.line_rel(0,-8)
+        else
+          screen.line_rel(0,-2)
+        end
+        screen.stroke()
+      end
+      
+      --[[
+      screen.level((i == rytm.track_edit and key1_hold) and 15 or 4)
+      screen.move((rytm.track[i].focus*4) + 28, i*15 + 18)
+      screen.text("^")
+      --]]
+
+    end
+  
+
+  --[==[
   elseif menu == 8 then
     screen.move(0,10)
     screen.level(3)
@@ -568,6 +602,7 @@ function main_menu.init()
       fill_to_screen()
       snake_to_screen()
     end
+  --]==]
 
   elseif menu == 9 then
     local focus_arp = arp[page.arp_page_sel]
