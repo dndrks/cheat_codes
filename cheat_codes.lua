@@ -2319,6 +2319,14 @@ function key(n,z)
         end
       end
     elseif menu == 8 then
+
+      if key1_hold then
+        rytm.reset_pattern()
+      else
+        rytm.track[rytm.track_edit].pos = 1
+      end
+
+      --[==[
       if key1_hold then
         if page.track_page < 4 then
           if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
@@ -2357,6 +2365,8 @@ function key(n,z)
           end
         end
       end
+      --]==]
+
     elseif menu == 9 then
       arp[page.arp_page_sel].hold = not arp[page.arp_page_sel].hold
       if not arp[page.arp_page_sel].hold then
@@ -2395,6 +2405,8 @@ function key(n,z)
         menu = 1
       end
     elseif menu == 8 then
+      menu = 1
+      --[[
       if page.track_page_section[page.track_page] == 3 then
         page.track_page_section[page.track_page] = 2
       elseif page.track_page_section[page.track_page] == 4 then
@@ -2404,6 +2416,7 @@ function key(n,z)
       else
         menu = 1
       end
+      --]]
     elseif menu == 10 then
       if page.rnd_page_section == 2 then
         page.rnd_page_section = 1
@@ -2429,6 +2442,7 @@ function key(n,z)
       key1_hold = true
     elseif menu == 8 then
       key1_hold = true
+      rytm.screen_focus = rytm.screen_focus == "left" and "right" or "left"
       --[[
       if page.track_page_section[page.track_page] == 1 and page.track_page < 4 then
         trackers.transport(page.track_page)

@@ -37,7 +37,7 @@ function encoder_actions.init(n,d)
     elseif menu == 8 then
 
       if key1_hold then
-        rytm.track[rytm.track_edit].focus = util.clamp(rytm.track[rytm.track_edit].focus+d,1,rytm.track[rytm.track_edit].n)
+        --rytm.track[rytm.track_edit].focus = util.clamp(rytm.track[rytm.track_edit].focus+d,1,rytm.track[rytm.track_edit].n)
       else
         rytm.track_edit = util.clamp(rytm.track_edit+d,1,3)
       end
@@ -175,11 +175,11 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 8 then
-      if not key1_hold then
-        rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k+d,0,rytm.track[rytm.track_edit].n)
-      else
+      if rytm.screen_focus == "right" then
         rytm.track[rytm.track_edit].rotation = util.clamp(rytm.track[rytm.track_edit].rotation + d, 0, 16)
         rytm.track[rytm.track_edit].s = rytm.rotate_pattern(rytm.track[rytm.track_edit].s, rytm.track[rytm.track_edit].rotation)
+      else
+        rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k+d,0,rytm.track[rytm.track_edit].n)
       end
 
 
@@ -451,8 +451,12 @@ function encoder_actions.init(n,d)
       end
     elseif menu == 8 then
 
-      rytm.track[rytm.track_edit].n = util.clamp(rytm.track[rytm.track_edit].n+d,1,16)
-      rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k,0,rytm.track[rytm.track_edit].n)
+      if rytm.screen_focus == "right" then
+        rytm.track[rytm.track_edit].pad_offset = util.clamp(rytm.track[rytm.track_edit].pad_offset+d,-15,15)
+      else
+        rytm.track[rytm.track_edit].n = util.clamp(rytm.track[rytm.track_edit].n+d,1,16)
+        rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k,0,rytm.track[rytm.track_edit].n)
+      end
 
       --[==[
       if page.track_page_section[page.track_page] == 3 then

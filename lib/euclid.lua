@@ -14,7 +14,7 @@ end
 function euclid.trig()
     for i=1,3 do
         if euclid.track[i].s[euclid.track[i].pos] then
-            cheat(i,euclid.track[i].pos + euclid.track[i].pad_offset)
+            cheat(i,euclid.rotate_pads(euclid.track[i].pos + euclid.track[i].pad_offset))
         end
     end
 end
@@ -28,6 +28,7 @@ function euclid.init()
     euclid.current_pattern = 0
     euclid.clock_div = 1/4
     euclid.clock = clock.run(euclid.step)
+    euclid.screen_focus = "left"
 
     euclid.track = {}
     for i = 1,3 do
@@ -90,6 +91,13 @@ function euclid.rotate_pattern(t, rot, n, r)
         r[i] = t[i - rot]
     end
     return r
+end
+
+function euclid.rotate_pads(i)
+    if i < 1 then
+        i = (16 - (1 - i) % (15))+1;
+    end
+    return 1 + (i - 1) % 16
 end
 
 return euclid

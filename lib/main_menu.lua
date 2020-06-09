@@ -417,17 +417,27 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("rytm")
+    local labels = {"(k","n)","o","+/-"}
+    local spaces = {5,20,105,120}
+    for i = 1,4 do
+      screen.move(spaces[i],20)
+      screen.text_center(labels[i])
+    end
+    screen.move(13,20)
+    screen.text_center(",")
     for i = 1,3 do
-      screen.level((i == rytm.track_edit and not key1_hold) and 15 or 4)
-      screen.move(5, i*15 + 10)
+      screen.level((i == rytm.track_edit and rytm.screen_focus == "left") and 15 or 4)
+      screen.move(5, i*12 + 20)
       screen.text_center(rytm.track[i].k)
-      screen.move(20, i*15 + 10)
+      screen.move(20, i*12 + 20)
       screen.text_center(rytm.track[i].n)
+      --screen.move(13, i*12 + 20)
+      --screen.text_center(",")
       --screen.text_center(rytm.track[i].rotation)
   
       for x = 1,rytm.track[i].n do
         screen.level((rytm.track[i].pos == x and not rytm.reset) and 15 or 2)
-        screen.move(x*4 + 30, i*15 + 10)
+        screen.move(x*4 + 30, i*12 + 20)
         if rytm.track[i].s[x] then
           screen.line_rel(0,-8)
         else
@@ -436,11 +446,12 @@ function main_menu.init()
         screen.stroke()
       end
       
-      --[[
-      screen.level((i == rytm.track_edit and key1_hold) and 15 or 4)
-      screen.move((rytm.track[i].focus*4) + 28, i*15 + 18)
-      screen.text("^")
-      --]]
+      screen.level((i == rytm.track_edit and rytm.screen_focus == "right") and 15 or 4)
+      screen.move(105, i*12 + 20)
+      screen.text_center(rytm.track[i].rotation)
+      screen.move(120, i*12 + 20)
+      screen.text_center(rytm.track[i].pad_offset)
+      --screen.move((rytm.track[i].focus*4) + 28, i*15 + 18)
 
     end
   
