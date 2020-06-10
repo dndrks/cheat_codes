@@ -23,12 +23,17 @@ function main_menu.init()
       , " filters"
       , " delays"
       , " timing"
-      , " rytm"
+      , " euclid"
       , " arp"
       , " rnd"
       , " ?"
       }
       screen.text(page.main_sel == i and (">"..options[i]) or options[i])
+    end
+    screen.move(128,10)
+    if m.device.port == params:get("midi_control_device") and params:get("midi_control_enabled") == 2 then
+      screen.level(3)
+      screen.text_right("("..m.device.name..")")
     end
   elseif menu == 2 then
     screen.move(0,10)
@@ -416,7 +421,7 @@ function main_menu.init()
   elseif menu == 8 then
     screen.move(0,10)
     screen.level(3)
-    screen.text("rytm")
+    screen.text("euclid")
     local labels = {"(k","n)","o","+/-"}
     local spaces = {5,20,105,120}
     for i = 1,4 do

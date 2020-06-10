@@ -34,7 +34,7 @@ function euclid.init()
     for i = 1,3 do
         euclid.track[i] = {
             k = 0,
-            n = 9 - i,
+            n = 8,
             pos = 1,
             s = {},
             rotation = 0,

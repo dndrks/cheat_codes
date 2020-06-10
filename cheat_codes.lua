@@ -1028,7 +1028,7 @@ function init()
     osc_communication = false
   end}
 
-  params:add_group("MIDI setup",15)
+  params:add_group("MIDI setup",9)
   params:add_option("midi_control_enabled", "enable MIDI control?", {"no","yes"},1)
   params:add_option("midi_control_device", "MIDI control device",{"port 1", "port 2", "port 3", "port 4"},1)
   params:add_option("midi_echo_enabled", "enable MIDI echo?", {"no","yes"},1)
@@ -1038,12 +1038,6 @@ function init()
   end
   for i = 1,3 do
     params:add_number("bank_"..i.."_pad_midi_base", "bank "..bank_names[i].." pad midi base:",0,111,53)
-  end
-  for i = 1,3 do
-    params:add_number("bank_"..i.."_zilchmo_midi_channel", "bank "..bank_names[i].." zilchmo channel:",1,16,i)
-  end
-  for i = 1,3 do
-    params:add_number("bank_"..i.."_zilchmo_midi_base", "bank "..bank_names[i].." zilchmo midi base:",0,111,77)
   end
 
   crow_init()
@@ -1060,92 +1054,90 @@ function init()
   midi_alt = false
   m.event = function(data)
     local d = midi.to_msg(data)
-    if params:get("midi_control_enabled") == 2 then
-      for i = 1,3 do
-        if d.ch == params:get("bank_"..i.."_midi_channel") then
-          tab.print(d)
-          if d.note ~= nil then
-            if d.note >= params:get("bank_"..i.."_pad_midi_base") and d.note <= params:get("bank_"..i.."_pad_midi_base") + 15 then
-              if d.type == "note_on" then
-                midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
-                if midi_pat[i].rec == 1 and midi_pat[i].count == 0 then
-                  if midi_pat[i].playmode == 2 then
-                    --clock.run(synced_pattern_record,midi_pat[i]) -- i think we'll want this in a separate function...
+    if m.device.port == params:get("midi_control_device") then
+      if params:get("midi_control_enabled") == 2 then
+        for i = 1,3 do
+          if d.ch == params:get("bank_"..i.."_midi_channel") then
+            if d.note ~= nil then
+              if d.note >= params:get("bank_"..i.."_pad_midi_base") and d.note <= params:get("bank_"..i.."_pad_midi_base") + (not midi_alt and 15 or 22) then
+                if not midi_alt then
+                  if d.type == "note_on" then
+                    midi_cheat(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
+                    if midi_pat[i].rec == 1 and midi_pat[i].count == 0 then
+                      if midi_pat[i].playmode == 2 then
+                        --clock.run(synced_pattern_record,midi_pat[i]) -- i think we'll want this in a separate function...
+                      end
+                    end
+                    midi_pattern_watch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
+                    if menu == 9 then
+                      page.arp_page_sel = i
+                      arps.momentary(i, bank[i].id, "on")
+                    end
+                  elseif d.type == "note_off" then
+                    if menu == 9 then
+                      if not arp[i].hold and page.arp_page_sel == i  then
+                        local targeted_pad = d.note-(params:get("bank_"..i.."_pad_midi_base")-1)
+                        arps.momentary(i, targeted_pad, "off")
+                      end
+                    end
+                  end
+                elseif midi_alt then
+                  if d.type == "note_on" then
+                    midi_zilch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
                   end
                 end
-                midi_pattern_watch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
-                if menu == 9 then
-                  page.arp_page_sel = i
-                  arps.momentary(i, bank[i].id, "on")
+              elseif d.note == params:get("bank_"..i.."_pad_midi_base") + 23 then
+                if d.type == "note_on" then
+                  midi_alt = true
+                else
+                  midi_alt = false
                 end
-              elseif d.type == "note_off" then
-                if menu == 9 then
-                  if not arp[i].hold and page.arp_page_sel == i  then
-                    local targeted_pad = d.note-(params:get("bank_"..i.."_pad_midi_base")-1)
-                    arps.momentary(i, targeted_pad, "off")
-                  end
-                end
-              end
-            elseif d.note == params:get("bank_"..i.."_pad_midi_base") + 23 then
-              if d.type == "note_on" then
-                midi_alt = true
-              else
-                midi_alt = false
               end
             end
-          end
-          if d.type == "cc" then
-            local pad = bank[i][bank[i].id]
-            if d.cc == 1 then
-              local lo = 1+(8*(pad.clip-1))
-              local hi = pad.end_point-0.1
-              local max = 9+(8*(pad.clip-1))
-              pad.start_point = util.clamp(util.linlin(0,127,lo,max,d.val),lo,hi)
-              softcut.loop_start(i+1,pad.start_point)
-            elseif d.cc == 2 then
-              local lo = pad.start_point+0.1
-              local hi = 9+(8*(pad.clip-1))
-              local min = 1+(8*(pad.clip-1))
-              pad.end_point = util.clamp(util.linlin(0,127,min,hi,d.val),lo,hi)
-              softcut.loop_end(i+1,pad.end_point)
-            elseif d.cc == 3 then
-              for j = 1,16 do
-                local target = bank[i][j]
-                if slew_counter[i] ~= nil then
-                  slew_counter[i].prev_tilt = target.tilt
+            if d.type == "cc" then
+              local pad = bank[i][bank[i].id]
+              if d.cc == 1 then
+                local lo = 1+(8*(pad.clip-1))
+                local hi = pad.end_point-0.1
+                local max = 9+(8*(pad.clip-1))
+                pad.start_point = util.clamp(util.linlin(0,127,lo,max,d.val),lo,hi)
+                softcut.loop_start(i+1,pad.start_point)
+              elseif d.cc == 2 then
+                local lo = pad.start_point+0.1
+                local hi = 9+(8*(pad.clip-1))
+                local min = 1+(8*(pad.clip-1))
+                pad.end_point = util.clamp(util.linlin(0,127,min,hi,d.val),lo,hi)
+                softcut.loop_end(i+1,pad.end_point)
+              elseif d.cc == 3 then
+                for j = 1,16 do
+                  local target = bank[i][j]
+                  if slew_counter[i] ~= nil then
+                    slew_counter[i].prev_tilt = target.tilt
+                  end
+                  target.tilt = util.linlin(0,127,-1,1,d.val)
                 end
-                target.tilt = util.linlin(0,127,-1,1,d.val)
-              end
-              slew_filter(i,slew_counter[i].prev_tilt,pad.tilt,pad.q,pad.q,15)
-            elseif d.cc == 4 then
-              local rate_to_int =
-              { [-4] = 1
-              , [-2] = 2
-              , [-1] = 3
-              , [-0.5] = 4
-              , [-0.25] = 5
-              , [-0.125] = 6
-              , [0.125] = 7
-              , [0.25] = 8
-              , [0.5] = 9
-              , [1] = 10
-              , [2] = 11
-              , [4] = 12
-              }
-              local cc_rate = rate_to_int[pad.rate]
-              local cc_rate = util.round(util.linlin(0,127,1,12,d.val))
-              local int_to_rate = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
-              pad.rate = int_to_rate[cc_rate]
-              softcut.rate(i+1,pad.rate)
-              end
-          end
-        end
-        if d.ch == params:get("bank_"..i.."_zilchmo_midi_channel") then
-          if d.note ~= nil then
-            if d.note >= params:get("bank_"..i.."_zilchmo_midi_base") and d.note <= params:get("bank_"..i.."_zilchmo_midi_base") + 15 then
-              if d.type == "note_on" then
-                midi_zilch(d.note-(params:get("bank_"..i.."_zilchmo_midi_base")-1), i)
-              end
+                slew_filter(i,slew_counter[i].prev_tilt,pad.tilt,pad.q,pad.q,15)
+              elseif d.cc == 4 then
+                local rate_to_int =
+                { [-4] = 1
+                , [-2] = 2
+                , [-1] = 3
+                , [-0.5] = 4
+                , [-0.25] = 5
+                , [-0.125] = 6
+                , [0.125] = 7
+                , [0.25] = 8
+                , [0.5] = 9
+                , [1] = 10
+                , [2] = 11
+                , [4] = 12
+                }
+                local cc_rate = rate_to_int[pad.rate]
+                local cc_rate = util.round(util.linlin(0,127,1,12,d.val))
+                local int_to_rate = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
+                pad.rate = int_to_rate[cc_rate]
+                softcut.rate(i+1,pad.rate)
+                end
             end
           end
         end
@@ -1249,31 +1241,50 @@ function midi_cheat(note,target)
 end
 
 function midi_zilch(note,target)
-  if note == 1 then
-    rightangleslice.actions[4]['134'][1](bank[target][bank[target].id])
-    rightangleslice.actions[4]['134'][2](bank[target][bank[target].id],target)
-  elseif note == 2 then
-    rightangleslice.actions[4]['14'][1](bank[target][bank[target].id])
-    rightangleslice.actions[4]['14'][2](bank[target][bank[target].id],target)
-  elseif note == 3 then
-    rightangleslice.actions[4]['124'][1](bank[target][bank[target].id])
-    rightangleslice.actions[4]['124'][2](bank[target][bank[target].id],target)
-  elseif note == 4 then
-    rightangleslice.actions[4]['1234'][1](bank[target][bank[target].id])
-    rightangleslice.actions[4]['1234'][2](bank[target][bank[target].id],target)
-  elseif note == 5 then
-    rightangleslice.actions[4]['12'][1](bank[target][bank[target].id])
-    rightangleslice.actions[4]['12'][2](bank[target][bank[target].id],target)
-  elseif note == 6 then
-    rightangleslice.actions[4]['34'][1](bank[target][bank[target].id])
-    rightangleslice.actions[4]['34'][2](bank[target][bank[target].id],target)
-  elseif note == 7 then
-    rightangleslice.actions[4]['23'][1](bank[target][bank[target].id])
-    rightangleslice.actions[4]['23'][2](bank[target][bank[target].id],target)
-  elseif note == 8 then
-    bank[target][bank[target].id].loop = not bank[target][bank[target].id].loop
+  if note == 1 or note == 2 then
+    for i = (note == 1 and bank[target].id or 1), (note == 1 and bank[target].id or 16) do
+      rightangleslice.actions[4]['134'][1](bank[target][i])
+      rightangleslice.actions[4]['134'][2](bank[target][i],target)
+    end
+  elseif note == 3 or note == 4 then
+    for i = (note == 3 and bank[target].id or 1), (note == 3 and bank[target].id or 16) do
+      rightangleslice.actions[4]['14'][1](bank[target][i])
+      rightangleslice.actions[4]['14'][2](bank[target][i],target)
+    end
+  elseif note == 5 or note == 6 then
+    for i = (note == 5 and bank[target].id or 1), (note == 5 and bank[target].id or 16) do
+      rightangleslice.actions[4]['124'][1](bank[target][i])
+      rightangleslice.actions[4]['124'][2](bank[target][i],target)
+    end
+  elseif note == 8 or note == 9 then
+    for i = (note == 8 and bank[target].id or 1), (note == 8 and bank[target].id or 16) do
+      bank[target][i].loop = not bank[target][i].loop
+    end
     softcut.loop(target+1,bank[target][bank[target].id].loop == true and 1 or 0)
+  elseif note == 11 then
+  elseif note == 13 or note == 14 then
+    for i = (note == 13 and bank[target].id or 1), (note == 13 and bank[target].id or 16) do
+      rightangleslice.actions[4]['12'][1](bank[target][i])
+      rightangleslice.actions[4]['12'][2](bank[target][i],target)
+    end
+  elseif note == 15 or note == 16 then
+    for i = (note == 15 and bank[target].id or 1), (note == 15 and bank[target].id or 16) do
+      rightangleslice.actions[4]['23'][1](bank[target][i])
+      rightangleslice.actions[4]['23'][2](bank[target][i],target)
+    end
+  elseif note == 17 or note == 18 then
+    for i = (note == 17 and bank[target].id or 1), (note == 17 and bank[target].id or 16) do
+      rightangleslice.actions[4]['34'][1](bank[target][i])
+      rightangleslice.actions[4]['34'][2](bank[target][i],target)
+    end
+  elseif note == 21 then
+    sixteen_slices(target)
   end
+
+  if params:get("midi_echo_enabled") == 2 then
+    midi_redraw(target)
+  end
+
 end
 
 function start_synced_loop(target)
