@@ -31,7 +31,7 @@ function main_menu.init()
       screen.text(page.main_sel == i and (">"..options[i]) or options[i])
     end
     screen.move(128,10)
-    if m.device.port == params:get("midi_control_device") and params:get("midi_control_enabled") == 2 then
+    if m.device ~= nil and m.device.port == params:get("midi_control_device") and params:get("midi_control_enabled") == 2 then
       screen.level(3)
       screen.text_right("("..m.device.name..")")
     end
@@ -356,6 +356,11 @@ function main_menu.init()
     screen.move(10,30)
     screen.line(123,30)
     screen.stroke()
+    if key1_hold and (page.time_page_sel[page.time_sel] == 1 or page.time_page_sel[page.time_sel] == 5) then
+      screen.level(15)
+      screen.move(5,40)
+      screen.text("*")
+    end
     local playing = {}
     local display_step = {}
     for i = 1,3 do
@@ -378,6 +383,10 @@ function main_menu.init()
       { [i] = { "P"..i  , "P"..i.."  > "..display_step[i],  "P"..i.."  x "..display_step[i]} }
       screen.move(10+(40*(i-1)),25)
       screen.text(playing_options[i][grid_pat[i].count == 0 and 1 or playing[i] == 1 and 2 or playing[i] == 0 and 3])
+      if midi_pat[i].sync_hold ~= nil and midi_pat[i].sync_hold then
+        screen.level(3)
+        screen.text(" -"..math.modf(4-show_me_beats).."."..math.modf(4-show_me_frac,1))
+      end
       if midi_pat[i].rec == 1 then
         screen.text(midi_pat[i].rec == 1 and (": rec") or "")
       elseif midi_pat[i].play == 1 then

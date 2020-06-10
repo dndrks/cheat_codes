@@ -1031,6 +1031,7 @@ function init()
   params:add_group("MIDI setup",9)
   params:add_option("midi_control_enabled", "enable MIDI control?", {"no","yes"},1)
   params:add_option("midi_control_device", "MIDI control device",{"port 1", "port 2", "port 3", "port 4"},1)
+  params:set_action("midi_control_device", function(x) m = midi.connect(x) end)
   params:add_option("midi_echo_enabled", "enable MIDI echo?", {"no","yes"},1)
   local bank_names = {"(a)","(b)","(c)"}
   for i = 1,3 do
@@ -1050,7 +1051,7 @@ function init()
     clock.internal.start(bpm)
   end
 
-  m = midi.connect()
+  m = midi.connect(params:get("midi_control_device"))
   midi_alt = false
   m.event = function(data)
     local d = midi.to_msg(data)
@@ -1262,6 +1263,7 @@ function midi_zilch(note,target)
     end
     softcut.loop(target+1,bank[target][bank[target].id].loop == true and 1 or 0)
   elseif note == 11 then
+
   elseif note == 13 or note == 14 then
     for i = (note == 13 and bank[target].id or 1), (note == 13 and bank[target].id or 16) do
       rightangleslice.actions[4]['12'][1](bank[target][i])
@@ -1317,8 +1319,10 @@ function synced_loop(target, state)
 end
 
 function synced_record_start(i)
+  midi_pat[i].sync_hold = true
   clock.sync(4)
   midi_pat[i]:rec_start()
+  midi_pat[i].sync_hold = false
   midi_pattern_watch("pause", i)
   clock.run(synced_pattern_record,midi_pat[i])
 end
@@ -1356,8 +1360,47 @@ function synced_pattern_record(target)
   target.clock = clock.run(synced_loop, target)
 end
 
-function sync_midi_loops()
+function quantize_pattern_times(target, resolution)
+  local goal = ((60/bpm)*4)*resolution
+  local adjusted = nil
+  for i = 1,target.count do
+    adjusted = util.round(target.time[i] / goal,0.5)
+    print(target.time[i], goal, adjusted)
+    --target.time[i] = goal * adjusted
+    target.duration[i] = (goal * adjusted)/(goal/2)
+    print("quantizes to "..target.duration[i].." sixteenth notes")
+    if target.duration[i] == 0 then
+      table.remove(target,i)
+    end
+  end
+end
 
+function try_this(target)
+  clock.sync(4)
+  target.quant_clock = clock.run(quantized_advance,target)
+end
+
+function quantized_advance(target)
+  while true do
+    if target.count > 0 then
+      --clock.sync(1/4) -- or here?
+      local step = target.step
+      print(target.step, target.runner, clock.get_beats())
+      if target.runner == 1 then
+        midi_pattern_execute(target.event[step])
+        --tracktions.cheat(target,step)
+      end
+      clock.sync(1/4)
+      if target.runner == target.duration[step] then
+        target.step = target.step + 1
+        target.runner = 0
+      end
+      if target.step > target.end_point then
+        target.step = target.start_point
+      end
+      target.runner = target.runner + 1
+    end
+  end
 end
 
 function pattern_length_to_bars(target, style)
@@ -2274,7 +2317,7 @@ function key(n,z)
                   if midi_pat[time_nav].playmode == 1 then
                     midi_pat[time_nav]:rec_start()
                   else
-                    clock.run(synced_record_start,time_nav)
+                    midi_pat[time_nav].rec_clock = clock.run(synced_record_start,time_nav)
                   end
                 else
                   midi_pat[time_nav].overdub = midi_pat[time_nav].overdub == 0 and 1 or 0
@@ -2485,6 +2528,7 @@ function key(n,z)
         if midi_pat[id].clock ~= nil then
           clock.cancel(midi_pat[id].clock)
           print("pausing clock")
+          midi_pat[id].step = 1
         end
         midi_pat[id]:stop()
       else

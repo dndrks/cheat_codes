@@ -12,18 +12,20 @@ function pattern.new()
   i.play = 0
   i.overdub = 0
   i.prev_time = 0
-  i.over_time = 0
   i.curr_time = {}
   i.event = {}
   i.time = {}
+  i.duration = {}
   i.count = 0
   i.step = 0
+  i.runner = 1
   i.time_factor = 1
   i.loop = 1
   i.start_point = 0
   i.end_point = 0
   i.clock = nil
   i.clock_time = 4
+  i.rec_clock = nil
 
   i.metro = metro.init(function() i:next_event() end,1,1)
 
@@ -39,17 +41,19 @@ function pattern:clear()
   self.play = 0
   self.overdub = 0
   self.prev_time = 0
-  self.over_time = 0
   self.curr_time = {}
   self.event = {}
   self.time = {}
+  self.duration = {}
   self.count = 0
   self.step = 0
+  self.runner = 1
   self.time_factor = 1
   self.start_point = 0
   self.end_point = 0
   self.clock = nil
   self.clock_time = 4
+  self.rec_clock = nil
 end
 
 --- adjust the time factor of this pattern.
