@@ -536,6 +536,24 @@ function copy_entire_pattern(bank)
   end
 end
 
+function copy_metatable(obj)
+  if type(obj) ~= 'table' then return obj end
+  local res = setmetatable({}, getmetatable(obj))
+  for k, v in pairs(obj) do res[copy_metatable(k)] = copy_metatable(v) end
+  return res
+end
+
+function commit_midi_to_disk(target)
+
+end
+
+function copy1(obj)
+  if type(obj) ~= 'table' then return obj end
+  local res = {}
+  for k, v in pairs(obj) do res[copy1(k)] = copy1(v) end
+  return res
+end
+
 function update_pattern_bpm(bank)
   grid_pat[bank].time_factor = 1*(synced_to_bpm/bpm)
 end
@@ -3342,6 +3360,7 @@ function savestate()
     if arc_pat[i].count > 0 then
       save_arc_pattern(i)
     end
+    save_midi_pattern(i)
   end
 end
 
@@ -3573,6 +3592,18 @@ function loadstate()
     local dirname = _path.data .. "cheat_codes/arc-patterns/collection-"..params:get("collection").."/encoder-"..i..".data"
     if os.rename(dirname, dirname) ~= nil then
       load_arc_pattern(i)
+    end
+  end
+  for i = 1,3 do
+    local dirname = _path.data .. "cheat_codes/arc-patterns/collection-"..params:get("collection").."/encoder-"..i..".data"
+    if os.rename(dirname, dirname) ~= nil then
+      load_arc_pattern(i)
+    end
+  end
+  for i = 1,3 do
+    local dirname = _path.data .. "cheat_codes/midi-patterns/collection-"..params:get("collection").."/"..i..".data"
+    if os.rename(dirname, dirname) ~= nil then
+      load_midi_pattern(i)
     end
   end
 end
@@ -4195,6 +4226,66 @@ function load_arc_pattern(which)
       else
         arc_pat[which].end_point = arc_pat[which].count
       end
+    end
+    io.close(file)
+  else
+    print("nofile")
+  end
+end
+
+function save_midi_pattern(which)
+  local dirname = _path.data.."cheat_codes/midi-patterns/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+  
+  local dirname = _path.data.."cheat_codes/midi-patterns/collection-"..selected_coll.."/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+  
+  local file = io.open(_path.data .. "cheat_codes/midi-patterns/collection-"..selected_coll.."/"..which..".data", "w+")
+  io.output(file)
+  if midi_pat[which].count > 0 then
+    io.write("stored midi pattern: collection "..selected_coll..", pattern "..which.."\n")
+    io.write("total: "..midi_pat[which].count .. "\n")
+    for i = 1,midi_pat[which].count do
+      io.write("unquant time: "..midi_pat[which].time[i] .. "\n")
+      --io.write("quant duration: "..midi_pat[which].quant_time[i] .. "\n")
+      io.write("quant duration: 0.8".."\n")
+      io.write("target: "..midi_pat[which].event[i].target .. "\n")
+      io.write("note: "..midi_pat[which].event[i].note .. "\n")
+    end
+    io.write("metro props time: "..midi_pat[which].metro.props.time .. "\n")
+    io.write("metro prev time: "..midi_pat[which].prev_time .. "\n")
+    io.write("pattern start point: " .. midi_pat[which].start_point .. "\n")
+    io.write("pattern end point: " .. midi_pat[which].end_point .. "\n")
+  else
+    io.write("no data present")
+  end
+  io.close(file)
+  print("saved midi pattern "..which)
+end
+
+function load_midi_pattern(which)
+  local file = io.open(_path.data .. "cheat_codes/midi-patterns/collection-"..selected_coll.."/"..which..".data", "r")
+  if file then
+    io.input(file)
+    if io.read() == "stored midi pattern: collection "..selected_coll..", pattern "..which then
+      midi_pat[which].event = {}
+      midi_pat[which].count = tonumber(string.match(io.read(), ': (.*)'))
+      for i = 1,midi_pat[which].count do
+        midi_pat[which].time[i] = tonumber(string.match(io.read(), ': (.*)'))
+        midi_pat[which].quant_time[i] = tonumber(string.match(io.read(), ': (.*)'))
+        midi_pat[which].event[i] = {}
+        midi_pat[which].event[i].target = tonumber(string.match(io.read(), ': (.*)'))
+        midi_pat[which].event[i].note = tonumber(string.match(io.read(), ': (.*)'))
+        --
+      end
+      midi_pat[which].metro.props.time = tonumber(string.match(io.read(), ': (.*)'))
+      midi_pat[which].prev_time = tonumber(string.match(io.read(), ': (.*)'))
+      midi_pat[which].start_point = tonumber(string.match(io.read(), ': (.*)'))
+      midi_pat[which].end_point = tonumber(string.match(io.read(), ': (.*)'))
     end
     io.close(file)
   else
