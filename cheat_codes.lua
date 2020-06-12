@@ -1361,79 +1361,44 @@ function synced_pattern_record(target)
 end
 
 function quantize_pattern_times(target, resolution)
-  local goal = ((60/bpm)*4)*resolution
+  local goal = clock.get_beat_sec()/4
   local adjusted = nil
   for i = 1,target.count do
-    adjusted = util.round(target.time[i] / goal,0.5)
-    print(target.time[i], goal, adjusted)
-    --target.time[i] = goal * adjusted
-    target.duration[i] = (goal * adjusted)/(goal/2)
-    print("quantizes to "..target.duration[i].." sixteenth notes")
-    if target.duration[i] == 0 then
-      table.remove(target,i)
+    target.quantum[i]= util.round(target.time[i] / goal)
+    print("quantizes to "..target.quantum[i].." sixteenth notes")
+    --[[
+    if target.quantum[i] == 0 then
+      table.remove(target.event,i)
+      table.remove(target.time,i)
+      table.remove(target.quantum,i)
     end
+    --]]
   end
 end
 
 function try_this(target)
   clock.sync(4)
-  target.quant_clock = clock.run(clocked_quantize,target)
+  target.quant_clock = clock.run(quantized_advance,target)
+  target.runner = 1
 end
-
-
-function clocked_quantize(target)
-  while true do
-    if target.count > 0 then
-      local step = target.step
-      midi_pattern_execute(target.event[step])
-      if target.quant_time[step] == nil then
-        target.quant_time[step] = target.time[step] / clock.get_beat_sec()
-      end
-      clock.sync(util.round(target.quant_time[step],0.25))
-      --clock.sleep(util.round(target.quant_time[step],0.25)*clock.get_beat_sec())
-      target.step = target.step + 1
-      if target.step > target.end_point then
-        target.step = target.start_point
-      end
-    end
-  end
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function quantized_advance(target)
   while true do
     if target.count > 0 then
-      --clock.sync(1/4) -- or here?
       local step = target.step
       if target.runner == 1 then
         midi_pattern_execute(target.event[step])
-        print(target.step, target.runner, clock.get_beats())
-        --tracktions.cheat(target,step)
       end
       clock.sync(1/4)
-      if target.quant_time[step] == nil then
-        target.quant_time[step] = target.time[step] / clock.get_beat_sec()
-      end
-      if target.runner == target.quant_time[step] then
+      target.runner = target.runner + 1
+      if target.runner > target.quantum[step] then
         target.step = target.step + 1
-        target.runner = 0
+        target.runner = 1
       end
       if target.step > target.end_point then
         target.step = target.start_point
+        target.runner = 1
       end
-      target.runner = target.runner + 1
     end
   end
 end
@@ -1899,7 +1864,7 @@ function update_tempo()
   if pre_bpm ~= bpm then
     compare_rec_resolution(params:get("rec_loop_enc_resolution"))
     if math.abs(pre_bpm - bpm) >= 1 then
-      print("a change in time!")
+      --print("a change in time!")
     end
   end
   for i = 1,3 do

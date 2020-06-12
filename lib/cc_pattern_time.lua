@@ -16,7 +16,7 @@ function pattern.new()
   i.event = {}
   i.time = {}
   i.quant_time = {}
-  i.duration = {}
+  i.quantum = {}
   i.count = 0
   i.step = 0
   i.runner = 1
@@ -47,7 +47,7 @@ function pattern:clear()
   self.event = {}
   self.time = {}
   self.quant_time = {}
-  self.duration = {}
+  self.quantum = {}
   self.count = 0
   self.step = 0
   self.runner = 1
