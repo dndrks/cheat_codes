@@ -37,7 +37,11 @@ function encoder_actions.init(n,d)
     elseif menu == 8 then
 
       if key1_hold then
-        --rytm.track[rytm.track_edit].focus = util.clamp(rytm.track[rytm.track_edit].focus+d,1,rytm.track[rytm.track_edit].n)
+        if d > 0 then
+          rytm.screen_focus = "right"
+        elseif d < 0 then
+          rytm.screen_focus = "left"
+        end
       else
         rytm.track_edit = util.clamp(rytm.track_edit+d,1,3)
       end
@@ -175,11 +179,19 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 8 then
-      if rytm.screen_focus == "right" then
-        rytm.track[rytm.track_edit].rotation = util.clamp(rytm.track[rytm.track_edit].rotation + d, 0, 16)
-        rytm.track[rytm.track_edit].s = rytm.rotate_pattern(rytm.track[rytm.track_edit].s, rytm.track[rytm.track_edit].rotation)
-      else
-        rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k+d,0,rytm.track[rytm.track_edit].n)
+      if not key1_hold then
+        if rytm.screen_focus == "right" then
+          rytm.track[rytm.track_edit].rotation = util.clamp(rytm.track[rytm.track_edit].rotation + d, 0, 16)
+          rytm.track[rytm.track_edit].s = rytm.rotate_pattern(rytm.track[rytm.track_edit].s, rytm.track[rytm.track_edit].rotation)
+        else
+          rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k+d,0,rytm.track[rytm.track_edit].n)
+        end
+      elseif key1_hold then
+        if d > 0 then
+          rytm.track[rytm.track_edit].mode = "span"
+        elseif d < 0 then
+          rytm.track[rytm.track_edit].mode = "single"
+        end
       end
 
 

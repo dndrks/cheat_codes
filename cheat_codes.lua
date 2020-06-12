@@ -20,7 +20,7 @@ easingFunctions = include 'lib/easing'
 midicontrol = include 'lib/midicheat'
 arps = include 'lib/arp_actions'
 rnd = include 'lib/rnd_actions'
-trackers = include 'lib/tracker'
+--trackers = include 'lib/tracker'
 rytm = include 'lib/euclid'
 math.randomseed(os.time())
 
@@ -1030,15 +1030,19 @@ function init()
 
   params:add_group("MIDI setup",9)
   params:add_option("midi_control_enabled", "enable MIDI control?", {"no","yes"},1)
+  params:set_action("midi_control_enabled", function() midi_state_save() end)
   params:add_option("midi_control_device", "MIDI control device",{"port 1", "port 2", "port 3", "port 4"},1)
-  params:set_action("midi_control_device", function(x) m = midi.connect(x) end)
+  params:set_action("midi_control_device", function(x) m = midi.connect(x) midi_state_save() end)
   params:add_option("midi_echo_enabled", "enable MIDI echo?", {"no","yes"},1)
+  params:set_action("midi_echo_enabled", function() midi_state_save() end)
   local bank_names = {"(a)","(b)","(c)"}
   for i = 1,3 do
     params:add_number("bank_"..i.."_midi_channel", "bank "..bank_names[i].." pad channel:",1,16,i)
+    params:set_action("bank_"..i.."_midi_channel", function() midi_state_save() end)
   end
   for i = 1,3 do
     params:add_number("bank_"..i.."_pad_midi_base", "bank "..bank_names[i].." pad midi base:",0,111,53)
+    params:set_action("bank_"..i.."_pad_midi_base", function() midi_state_save() end)
   end
 
   crow_init()
@@ -1055,7 +1059,7 @@ function init()
   midi_alt = false
   m.event = function(data)
     local d = midi.to_msg(data)
-    if m.device.port == params:get("midi_control_device") then
+    if m.device ~= nil and m.device.port == params:get("midi_control_device") then
       if params:get("midi_control_enabled") == 2 then
         for i = 1,3 do
           if d.ch == params:get("bank_"..i.."_midi_channel") then
@@ -1119,26 +1123,10 @@ function init()
                 end
                 slew_filter(i,slew_counter[i].prev_tilt,pad.tilt,pad.q,pad.q,15)
               elseif d.cc == 4 then
-                local rate_to_int =
-                { [-4] = 1
-                , [-2] = 2
-                , [-1] = 3
-                , [-0.5] = 4
-                , [-0.25] = 5
-                , [-0.125] = 6
-                , [0.125] = 7
-                , [0.25] = 8
-                , [0.5] = 9
-                , [1] = 10
-                , [2] = 11
-                , [4] = 12
-                }
-                local cc_rate = rate_to_int[pad.rate]
-                local cc_rate = util.round(util.linlin(0,127,1,12,d.val))
-                local int_to_rate = {-4,-2,-1,-0.5,-0.25,-0.125,0.125,0.25,0.5,1,2,4}
-                pad.rate = int_to_rate[cc_rate]
-                softcut.rate(i+1,pad.rate)
-                end
+
+                pad.level = util.linlin(0,127,0,2,d.val)
+                softcut.level(i+1,pad.level)
+              end
             end
           end
         end
@@ -1154,23 +1142,8 @@ function init()
     m:cc(2,end_to_cc,params:get("bank_"..target.."_midi_channel"))
     local tilt_to_cc = util.round(util.linlin(-1,1,0,127,pad.tilt))
     m:cc(3,tilt_to_cc,params:get("bank_"..target.."_midi_channel"))
-    local rate_to_int =
-    { [-4] = 1
-    , [-2] = 2
-    , [-1] = 3
-    , [-0.5] = 4
-    , [-0.25] = 5
-    , [-0.125] = 6
-    , [0.125] = 7
-    , [0.25] = 8
-    , [0.5] = 9
-    , [1] = 10
-    , [2] = 11
-    , [4] = 12
-    }
-    local cc_rate = rate_to_int[pad.rate]
-    local rate_to_cc = util.round(util.linlin(1,12,0,127,cc_rate))
-    m:cc(4,rate_to_cc,params:get("bank_"..target.."_midi_channel"))
+    local level_to_cc = util.round(util.linlin(0,2,0,127,pad.level))
+    m:cc(4,level_to_cc,params:get("bank_"..target.."_midi_channel"))
   end
 
 
@@ -1196,13 +1169,18 @@ function init()
     rnd.init(i)
   end
   
+  --[[
   for i = 1,3 do
     trackers.init(i)
   end
+  --]]
 
   rytm.init()
 
   if g then grid_redraw() end
+  
+  metro_midi_state_restore = metro.init(midi_state_restore, 0.1, 1)
+  metro_midi_state_restore:start()
 
 end
 
@@ -1263,7 +1241,7 @@ function midi_zilch(note,target)
     end
     softcut.loop(target+1,bank[target][bank[target].id].loop == true and 1 or 0)
   elseif note == 11 then
-
+    toggle_buffer(rec.clip)
   elseif note == 13 or note == 14 then
     for i = (note == 13 and bank[target].id or 1), (note == 13 and bank[target].id or 16) do
       rightangleslice.actions[4]['12'][1](bank[target][i])
@@ -1281,6 +1259,8 @@ function midi_zilch(note,target)
     end
   elseif note == 21 then
     sixteen_slices(target)
+  elseif note == 23 then
+    buff_flush()
   end
 
   if params:get("midi_echo_enabled") == 2 then
@@ -1349,8 +1329,10 @@ function synced_pattern_record(target)
     end
     print(butts)
     target.time[2] = target.time[2] + target.time[1]
+    target.quant_time[2] = target.quant_time[2] + target.quant_time[1]
     table.remove(target.event,1)
     table.remove(target.time,1)
+    table.remove(target.quant_time,1)
     target.count = #target.event
     target.end_point = target.count
     print(target.count, target.end_point)
@@ -1377,21 +1359,56 @@ end
 
 function try_this(target)
   clock.sync(4)
-  target.quant_clock = clock.run(quantized_advance,target)
+  target.quant_clock = clock.run(clocked_quantize,target)
 end
+
+
+function clocked_quantize(target)
+  while true do
+    if target.count > 0 then
+      local step = target.step
+      midi_pattern_execute(target.event[step])
+      if target.quant_time[step] == nil then
+        target.quant_time[step] = target.time[step] / clock.get_beat_sec()
+      end
+      clock.sync(util.round(target.quant_time[step],0.25))
+      --clock.sleep(util.round(target.quant_time[step],0.25)*clock.get_beat_sec())
+      target.step = target.step + 1
+      if target.step > target.end_point then
+        target.step = target.start_point
+      end
+    end
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 function quantized_advance(target)
   while true do
     if target.count > 0 then
       --clock.sync(1/4) -- or here?
       local step = target.step
-      print(target.step, target.runner, clock.get_beats())
       if target.runner == 1 then
         midi_pattern_execute(target.event[step])
+        print(target.step, target.runner, clock.get_beats())
         --tracktions.cheat(target,step)
       end
       clock.sync(1/4)
-      if target.runner == target.duration[step] then
+      if target.quant_time[step] == nil then
+        target.quant_time[step] = target.time[step] / clock.get_beat_sec()
+      end
+      if target.runner == target.quant_time[step] then
         target.step = target.step + 1
         target.runner = 0
       end
@@ -1736,6 +1753,10 @@ osc_in = function(path, args, from)
       softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
       osc_redraw(i)
     elseif path == "/rec_clip_"..i then
+
+      toggle_buffer(i)
+      
+      --[[
       softcut.level_slew_time(1,0.5)
       softcut.fade_time(1,0.01)
       local old_clip = rec.clip
@@ -1752,6 +1773,7 @@ osc_in = function(path, args, from)
         rec.start_point = (((rec.start_point - old_min) * new_range) / old_range) + new_min
         rec.end_point = rec.start_point + current_difference
       end
+      --]]
       
       for j = 1,3 do
         if j ~= i then
@@ -1761,9 +1783,11 @@ osc_in = function(path, args, from)
       
       osc.send(dest, "/buffer_LED_"..i, {1})
         
+      --[[
       if rec.loop == 0 and grid.alt == 0 then
         clock.run(one_shot_clock)
       end
+      
         
       softcut.loop_start(1,rec.start_point)
       softcut.loop_end(1,rec.end_point-0.01)
@@ -1774,6 +1798,7 @@ osc_in = function(path, args, from)
           rec.clear = 0
         end
       end
+      --]]
       
       local rec_state_to_osc = nil
       if rec.state == 0 then
@@ -2230,6 +2255,42 @@ function buff_flush()
   softcut.rec_level(1,0)
 end
 
+function toggle_buffer(i)
+  softcut.level_slew_time(1,0.5)
+  softcut.fade_time(1,0.01)
+  
+  local old_clip = rec.clip
+  
+  for go = 1,2 do
+    local old_min = (1+(8*(rec.clip-1)))
+    local old_max = (9+(8*(rec.clip-1)))
+    local old_range = old_min - old_max
+    rec.clip = i
+    local new_min = (1+(8*(rec.clip-1)))
+    local new_max = (9+(8*(rec.clip-1)))
+    local new_range = new_max - new_min
+    local current_difference = (rec.end_point - rec.start_point)
+    rec.start_point = (((rec.start_point - old_min) * new_range) / old_range) + new_min
+    rec.end_point = rec.start_point + current_difference
+  end
+  
+  if rec.loop == 0 and grid.alt == 0 then
+    clock.run(one_shot_clock)
+  elseif rec.loop == 0 and grid.alt == 1 then
+    buff_flush()
+  end
+  
+  softcut.loop_start(1,rec.start_point)
+  softcut.loop_end(1,rec.end_point-0.01)
+  if rec.loop == 1 then
+    if old_clip ~= rec.clip then rec.state = 0 end
+    buff_freeze()
+    if rec.clear == 1 then
+      rec.clear = 0
+    end
+  end
+end
+
 function update_delays()
   for i = 1,2 do
     local delay_rate_to_time = (60/bpm) * delay[i].rate
@@ -2496,7 +2557,6 @@ function key(n,z)
       key1_hold = true
     elseif menu == 8 then
       key1_hold = true
-      rytm.screen_focus = rytm.screen_focus == "left" and "right" or "left"
       --[[
       if page.track_page_section[page.track_page] == 1 and page.track_page < 4 then
         trackers.transport(page.track_page)
@@ -3087,6 +3147,41 @@ arc_redraw = function()
 end
 
 --file loading
+
+function midi_state_save()
+  local file = io.open(_path.data.. "cheat_codes/midi_state.data", "w+")
+  io.output(file)
+  io.write("midi_control_enabled: "..params:get("midi_control_enabled").."\n")
+  io.write("midi_control_device: "..params:get("midi_control_device").."\n")
+  io.write("midi_echo_enabled: "..params:get("midi_echo_enabled").."\n")
+  for i = 1,3 do
+    io.write("bank_"..i.."_midi_channel: "..params:get("bank_"..i.."_midi_channel").."\n")
+    io.write("bank_"..i.."_pad_midi_base: "..params:get("bank_"..i.."_pad_midi_base").."\n")
+  end
+  io.close(file)
+end
+
+function count_lines_in(file)
+  lines = {}
+  for line in io.lines(file) do 
+    lines[#lines + 1] = line
+  end
+  return #lines
+end
+
+function midi_state_restore()
+  local file = io.open(_path.data .. "cheat_codes/midi_state.data", "r")
+  if file then
+    io.input(file)
+    for i = 1,count_lines_in(_path.data.. "cheat_codes/midi_state.data") do
+      local s = io.read()
+      local param,val = s:match("(.+): (.+)")
+      params:set(param,tonumber(val))
+      --string.match(io.read(), ": (.*)")
+    end
+    io.close(file)
+  end
+end
 
 function savestate()
   local file = io.open(_path.data .. "cheat_codes/collections"..tonumber(string.format("%.0f",params:get("collection")))..".data", "w+")

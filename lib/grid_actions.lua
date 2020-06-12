@@ -231,7 +231,7 @@ function grid_actions.init(x,y,z)
           else
             for j = 1,16 do
               bank[i][j].loop = true
-              trackers.inherit(i,j)
+              --trackers.inherit(i,j)
             end
           end
           if bank[i].focus_hold == false then
@@ -241,7 +241,7 @@ function grid_actions.init(x,y,z)
         if menu == 11 then
           help_menu = "loop"
         end
-        trackers.inherit(i,which_pad)
+        --trackers.inherit(i,which_pad)
       end
       redraw()
     end
@@ -276,10 +276,10 @@ function grid_actions.init(x,y,z)
         else
           for j = 1,16 do
             clip_jump(current, j, y, z)
-            trackers.inherit(current,j)
+            --trackers.inherit(current,j)
           end
         end
-        trackers.inherit(current,bank[current].focus_hold == true and bank[current].focus_pad or bank[current].id)
+        --trackers.inherit(current,bank[current].focus_hold == true and bank[current].focus_pad or bank[current].id)
         if z == 0 then
           redraw()
           if bank[current].focus_hold == false then
@@ -305,7 +305,7 @@ function grid_actions.init(x,y,z)
             for k = 1,16 do
               local current = math.sqrt(math.abs(x-3))
               bank[current][k].mode = math.abs(i-5)
-              trackers.inherit(current,k)
+              --trackers.inherit(current,k)
             end
           end
           local current = math.sqrt(math.abs(x-3))
@@ -327,46 +327,14 @@ function grid_actions.init(x,y,z)
             which_bank = current
             help_menu = "mode"
           end
-          trackers.inherit(current,bank[current].focus_hold == true and bank[current].focus_pad or bank[current].id)
+          --trackers.inherit(current,bank[current].focus_hold == true and bank[current].focus_pad or bank[current].id)
         end
       end
     end
     
     for i = 7,5,-1 do
       if x == 16 and z == 1 and y == i then
-        softcut.level_slew_time(1,0.5)
-        softcut.fade_time(1,0.01)
-        
-        local old_clip = rec.clip
-        
-        for go = 1,2 do
-        local old_min = (1+(8*(rec.clip-1)))
-        local old_max = (9+(8*(rec.clip-1)))
-        local old_range = old_min - old_max
-        rec.clip = 8-y
-        local new_min = (1+(8*(rec.clip-1)))
-        local new_max = (9+(8*(rec.clip-1)))
-        local new_range = new_max - new_min
-        local current_difference = (rec.end_point - rec.start_point)
-        rec.start_point = (((rec.start_point - old_min) * new_range) / old_range) + new_min
-        rec.end_point = rec.start_point + current_difference
-        end
-        
-        if rec.loop == 0 and grid.alt == 0 then
-          clock.run(one_shot_clock)
-        elseif rec.loop == 0 and grid.alt == 1 then
-          buff_flush()
-        end
-        
-        softcut.loop_start(1,rec.start_point)
-        softcut.loop_end(1,rec.end_point-0.01)
-        if rec.loop == 1 then
-          if old_clip ~= rec.clip then rec.state = 0 end
-          buff_freeze()
-          if rec.clear == 1 then
-            rec.clear = 0
-          end
-        end
+        toggle_buffer(8-y)
         if grid.alt == 1 then
           buff_flush()
         end

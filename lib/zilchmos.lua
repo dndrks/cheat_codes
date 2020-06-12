@@ -33,7 +33,7 @@ function zilchmos.init(k,i)
   --if grid.alt == 0 then
   if not b.alt_lock then
     p_action( b[p] )
-    trackers.inherit(which_bank,p)
+    --trackers.inherit(which_bank,p)
   else
     z.map( p_action, b ) -- or map it over the whole bank
   end
@@ -46,7 +46,7 @@ end
 function zilchmos.map( fn, bank ) -- this is a local bank, represents bank[i]
   for i=1,16 do -- will execute for each of the 16 elements in bank
     fn( bank[i] ) -- pass each pad to the supplied function
-    trackers.inherit(which_bank,i)
+    --trackers.inherit(which_bank,i)
   end
 end
 
@@ -65,8 +65,6 @@ function z.rate_halve( pad )   z.rate_mul( pad, 0.5 ) end
 function z.rate_reverse( pad ) z.rate_mul( pad, -1 ) end
 function z.loop_sync_left( pad )  z.loop_sync( pad, -1 ) end
 function z.loop_sync_right( pad ) z.loop_sync( pad, 1 ) end
-
-
 
 -- core pad modifiers
 

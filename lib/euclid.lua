@@ -14,7 +14,11 @@ end
 function euclid.trig()
     for i=1,3 do
         if euclid.track[i].s[euclid.track[i].pos] then
-            cheat(i,euclid.rotate_pads(euclid.track[i].pos + euclid.track[i].pad_offset))
+            if euclid.track[i].mode == "single" then
+                cheat(i,euclid.rotate_pads(bank[i].id + euclid.track[i].pad_offset))
+            elseif euclid.track[i].mode == "span" then
+                cheat(i,euclid.rotate_pads(euclid.track[i].pos + euclid.track[i].pad_offset))
+            end
         end
     end
 end
@@ -39,7 +43,8 @@ function euclid.init()
             s = {},
             rotation = 0,
             focus = 1,
-            pad_offset = 0
+            pad_offset = 0,
+            mode = "single"
         }
     end
 
@@ -76,7 +81,6 @@ function euclid.step()
         end
         euclid.trig()
         redraw()
-        --er.redraw()
     end
 end
 

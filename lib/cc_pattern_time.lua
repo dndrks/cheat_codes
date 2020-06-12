@@ -15,6 +15,7 @@ function pattern.new()
   i.curr_time = {}
   i.event = {}
   i.time = {}
+  i.quant_time = {}
   i.duration = {}
   i.count = 0
   i.step = 0
@@ -26,6 +27,7 @@ function pattern.new()
   i.clock = nil
   i.clock_time = 4
   i.rec_clock = nil
+  i.mode = "raw"
 
   i.metro = metro.init(function() i:next_event() end,1,1)
 
@@ -44,6 +46,7 @@ function pattern:clear()
   self.curr_time = {}
   self.event = {}
   self.time = {}
+  self.quant_time = {}
   self.duration = {}
   self.count = 0
   self.step = 0
@@ -54,6 +57,7 @@ function pattern:clear()
   self.clock = nil
   self.clock_time = 4
   self.rec_clock = nil
+  self.mode = "raw"
 end
 
 --- adjust the time factor of this pattern.
@@ -106,6 +110,7 @@ function pattern:rec_event(e)
     local t = self.prev_time
     self.prev_time = util.time()
     self.time[c-1] = self.prev_time - t
+    self.quant_time[c-1] = self.time[c-1] / clock.get_beat_sec()
     --print(self.time[c-1])
   end
   self.count = c
@@ -117,9 +122,12 @@ function pattern:overdub_event(e)
   local t = self.prev_time
   self.prev_time = util.time()
   local a = self.time[c-1]
+  local q_a = self.quant_time[c-1]
   self.time[c-1] = self.prev_time - t
+  self.quant_time[c-1] = self.time[c-1] / clock.get_beat_sec()
   table.insert(self.time, c, a - self.time[c-1])
   table.insert(self.event, c, e)
+  table.insert(self.quant_time, c, q_a - self.quant_time[c-1])
   --midi_clock_linearize_overdub(1)
   self.step = self.step + 1
   self.count = self.count + 1

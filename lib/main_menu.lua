@@ -31,9 +31,11 @@ function main_menu.init()
       screen.text(page.main_sel == i and (">"..options[i]) or options[i])
     end
     screen.move(128,10)
+    screen.level(3)
     if m.device ~= nil and m.device.port == params:get("midi_control_device") and params:get("midi_control_enabled") == 2 then
-      screen.level(3)
       screen.text_right("("..m.device.name..")")
+    elseif m.device == nil and params:get("midi_control_enabled") == 2 then
+      screen.text_right("no midi device!")
     end
   elseif menu == 2 then
     screen.move(0,10)
@@ -431,18 +433,30 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("euclid")
+    if key1_hold then
+      screen.level(15)
+      screen.move(128,10)
+      screen.text_right("chain "..rytm.track_edit.." mode: "..rytm.track[rytm.track_edit].mode)
+    end
     local labels = {"(k","n)","o","+/-"}
     local spaces = {5,20,105,120}
-    for i = 1,4 do
+    for i = 1,2 do
+      screen.level((key1_hold and rytm.screen_focus == "left") and 15 or 3)
+      screen.move(spaces[i],20)
+      screen.text_center(labels[i])
+      screen.move(13,20)
+      screen.text_center(",")
+    end
+    for i = 3,4 do
+      screen.level((key1_hold and rytm.screen_focus == "right") and 15 or 3)
       screen.move(spaces[i],20)
       screen.text_center(labels[i])
     end
-    screen.move(13,20)
-    screen.text_center(",")
     for i = 1,3 do
-      screen.level((i == rytm.track_edit and rytm.screen_focus == "left") and 15 or 4)
+      screen.level((i == rytm.track_edit and rytm.screen_focus == "left" and not key1_hold) and 15 or 4)
       screen.move(5, i*12 + 20)
       screen.text_center(rytm.track[i].k)
+      screen.level((i == rytm.track_edit and rytm.screen_focus == "left") and 15 or 4)
       screen.move(20, i*12 + 20)
       screen.text_center(rytm.track[i].n)
       --screen.move(13, i*12 + 20)
@@ -460,9 +474,10 @@ function main_menu.init()
         screen.stroke()
       end
       
-      screen.level((i == rytm.track_edit and rytm.screen_focus == "right") and 15 or 4)
+      screen.level((i == rytm.track_edit and rytm.screen_focus == "right" and not key1_hold) and 15 or 4)
       screen.move(105, i*12 + 20)
       screen.text_center(rytm.track[i].rotation)
+      screen.level((i == rytm.track_edit and rytm.screen_focus == "right") and 15 or 4)
       screen.move(120, i*12 + 20)
       screen.text_center(rytm.track[i].pad_offset)
       --screen.move((rytm.track[i].focus*4) + 28, i*15 + 18)
