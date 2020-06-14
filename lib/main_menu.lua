@@ -32,9 +32,10 @@ function main_menu.init()
     end
     screen.move(128,10)
     screen.level(3)
-    if m.device ~= nil and m.device.port == params:get("midi_control_device") and params:get("midi_control_enabled") == 2 then
-      screen.text_right("("..m.device.name..")")
-    elseif m.device == nil and params:get("midi_control_enabled") == 2 then
+    local target = midi_dev[params:get("midi_control_device")]
+    if target.device ~= nil and target.device.port == params:get("midi_control_device") and params:get("midi_control_enabled") == 2 then
+      screen.text_right("("..target.device.name..")")
+    elseif target.device == nil and params:get("midi_control_enabled") == 2 then
       screen.text_right("no midi device!")
     end
   elseif menu == 2 then

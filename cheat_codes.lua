@@ -1073,12 +1073,12 @@ function init()
     clock.internal.start(bpm)
   end
 
-  m = midi.connect(params:get("midi_control_device"))
-  midi_alt = false
-  m.event = function(data)
-    local d = midi.to_msg(data)
-    if m.device ~= nil and m.device.port == params:get("midi_control_device") then
-      if params:get("midi_control_enabled") == 2 then
+  midi_dev = {}
+  for j = 1,4 do
+    midi_dev[j] = midi.connect(j)
+    midi_dev[j].event = function(data)
+      local d = midi.to_msg(data)
+      if params:get("midi_control_enabled") == 2 and j == params:get("midi_control_device") then
         for i = 1,3 do
           if d.ch == params:get("bank_"..i.."_midi_channel") then
             if d.note ~= nil then
@@ -1141,7 +1141,6 @@ function init()
                 end
                 slew_filter(i,slew_counter[i].prev_tilt,pad.tilt,pad.q,pad.q,15)
               elseif d.cc == 4 then
-
                 pad.level = util.linlin(0,127,0,2,d.val)
                 softcut.level(i+1,pad.level)
               end
@@ -1152,16 +1151,18 @@ function init()
     end
   end
 
+  midi_alt = false
+
   function midi_redraw(target)
     local pad = bank[target][bank[target].id]
     local start_to_cc = util.round(util.linlin(1,9,0,127,pad.start_point-(8*(pad.clip-1))))
-    m:cc(1,start_to_cc,params:get("bank_"..target.."_midi_channel"))
+    midi_dev[params:get("midi_control_device")]:cc(1,start_to_cc,params:get("bank_"..target.."_midi_channel"))
     local end_to_cc = util.round(util.linlin(1,9,0,127,pad.end_point-(8*(pad.clip-1))))
-    m:cc(2,end_to_cc,params:get("bank_"..target.."_midi_channel"))
+    midi_dev[params:get("midi_control_device")]:cc(2,end_to_cc,params:get("bank_"..target.."_midi_channel"))
     local tilt_to_cc = util.round(util.linlin(-1,1,0,127,pad.tilt))
-    m:cc(3,tilt_to_cc,params:get("bank_"..target.."_midi_channel"))
+    midi_dev[params:get("midi_control_device")]:cc(3,tilt_to_cc,params:get("bank_"..target.."_midi_channel"))
     local level_to_cc = util.round(util.linlin(0,2,0,127,pad.level))
-    m:cc(4,level_to_cc,params:get("bank_"..target.."_midi_channel"))
+    midi_dev[params:get("midi_control_device")]:cc(4,level_to_cc,params:get("bank_"..target.."_midi_channel"))
   end
 
 
@@ -1186,12 +1187,6 @@ function init()
   for i = 1,3 do
     rnd.init(i)
   end
-  
-  --[[
-  for i = 1,3 do
-    trackers.init(i)
-  end
-  --]]
 
   rytm.init()
 
