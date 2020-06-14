@@ -1339,7 +1339,7 @@ function synced_pattern_record(target)
     grid_pat[i].loop = 1
   --]]
   pattern_length_to_bars(target, "destructive")
-  if target.time[1] < (60/bpm)/4 and target.event[1] == "pause" then
+  if target.time[1] ~= nil and target.time[1] < (60/bpm)/4 and target.event[1] == "pause" then
     print("we could lose the first event..."..target.count, target.end_point)
     local butts = 0
     for i = 1,target.count do
@@ -1355,9 +1355,11 @@ function synced_pattern_record(target)
     target.end_point = target.count
     print(target.count, target.end_point)
   end
-  target:start()
-  print("started first run..."..clock.get_beats())
-  target.clock = clock.run(synced_loop, target)
+  if target.count > 0 then -- just in case the recording was canceled...
+    target:start()
+    print("started first run..."..clock.get_beats())
+    target.clock = clock.run(synced_loop, target)
+  end
 end
 
 function quantize_pattern_times(target, resolution)
@@ -2373,7 +2375,14 @@ function key(n,z)
                 elseif midi_pat[time_nav].playmode == 2 then
                   --midi_pat[time_nav]:start()
                   print("line 2196")
-                  start_synced_loop(midi_pat[time_nav])
+                  --start_synced_loop(midi_pat[time_nav])
+                  midi_pat[time_nav]:rec_stop()
+                  clock.cancel(midi_pat[time_nav].rec_clock)
+                  if midi_pat[time_nav].clock ~= nil then
+                    print("clearing clock: "..midi_pat[time_nav].clock)
+                    clock.cancel(midi_pat[time_nav].clock)
+                  end
+                  midi_pat[id]:clear()
                 end
               end
             end
