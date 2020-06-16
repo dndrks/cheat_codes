@@ -93,7 +93,8 @@ function zilchmos.pan_random( pad )
 end
 
 function zilchmos.start_zero( pad )
-  pad.start_point = (8*(pad.clip-1)) + 1
+  local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
+  pad.start_point = (duration*(pad.clip-1)) + 1
 end
 
 function zilchmos.start_end_default( pad )
@@ -102,26 +103,30 @@ function zilchmos.start_end_default( pad )
 end
 
 function zilchmos.start_end_sixteenths( pad )
+  local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
   -- FIXME bpm is global
-  pad.start_point = (1+((8/16)*(pad.pad_id-1)))+(8*(pad.clip-1))
+  pad.start_point = (1+((duration/16)*(pad.pad_id-1)))+(duration*(pad.clip-1))
   pad.end_point   = pad.start_point + (60/bpm)/4
 end
 
 function zilchmos.end_at_eight( pad )
-  pad.end_point = (8*pad.clip)+1
+  local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
+  pad.end_point = (duration*pad.clip)+1
 end
 
 function zilchmos.start_random( pad )
+  local duration = pad.mode == 1 and 8 or math.modf(clip[pad.clip].sample_length)
   local current_end = math.floor(pad.end_point * 100)
-  local min_start = math.floor(((8*(pad.clip-1))+1) * 100)
+  local min_start = math.floor(((duration*(pad.clip-1))+1) * 100)
   pad.start_point = math.random(min_start,current_end)/100
 end
 
 function zilchmos.end_random( pad )
+  local duration = pad.mode == 1 and 8 or util.round(clip[pad.clip].sample_length)
   local current_start = math.floor(pad.start_point * 100)
   local max_end = nil
   --if params:get("zilchmo_bind_rand") == 1 then
-    max_end = math.floor(((8*pad.clip)+1) * 100)
+  max_end = math.floor(((duration*pad.clip)+1) * 100)
   --else
     --max_end = math.floor(rec.end_point * 100)
   --end
@@ -130,10 +135,11 @@ end
 
 
 function zilchmos.start_end_random( pad )
-  local jump = math.random(100,900)/100+(8*(pad.clip-1))
+  local duration = pad.mode == 1 and 8 or math.modf(clip[pad.clip].sample_length)
+  local jump = math.random(100, ((duration+1)*100) ) / 100+(duration*(pad.clip-1))
   local current_difference = (pad.end_point - pad.start_point)
-  if jump+current_difference >= 9+(8*(pad.clip-1)) then
-    pad.end_point = 9+(8*(pad.clip-1))
+  if jump+current_difference >= (duration+1)+(duration*(pad.clip-1)) then
+    pad.end_point = (duration+1)+(duration*(pad.clip-1))
     pad.start_point = pad.end_point - current_difference
   else
     pad.start_point = jump
@@ -142,9 +148,10 @@ function zilchmos.start_end_random( pad )
 end
 
 function zilchmos.loop_double( pad )
+  local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
   local double = (pad.end_point - pad.start_point)*2
-  local maximum_val = 9+(8*(pad.clip-1))
-  local minimum_val = 1+(8*(pad.clip-1))
+  local maximum_val = (duration+1)+(duration*(pad.clip-1))
+  local minimum_val = 1+(duration*(pad.clip-1))
   if pad.start_point - double >= minimum_val then
     pad.start_point = pad.end_point - double
   elseif pad.start_point - double < minimum_val then

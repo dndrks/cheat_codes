@@ -51,7 +51,7 @@ clip = {}
 for i = 1,3 do
   clip[i] = {}
   clip[i].length = 90
-  clip[i].sample_length = nil
+  clip[i].sample_length = 8
   clip[i].start_point = nil
   clip[i].end_point = nil
   clip[i].mode = 1
@@ -2291,16 +2291,12 @@ end
 function load_sample(file,sample)
   if file ~= "-" then
     local ch, len = audio.file_info(file)
-    if len/48000 <=90 then
-      if len/48000 > 8 then
-        clip[sample].sample_length = 8
-      else
-        clip[sample].sample_length = len/48000
-      end
+    if len/48000 < 30 then
+      clip[sample].sample_length = len/48000
     else
-      clip[sample].sample_length = 8
+      clip[sample].sample_length = 30
     end
-    softcut.buffer_read_mono(file, 0, 1+(8 * (sample-1)), 8.05, 1, 2)
+    softcut.buffer_read_mono(file, 0, 1+(clip[sample].sample_length * (sample-1)), clip[sample].sample_length + 0.05, 1, 2)
   end
 end
 
@@ -2635,13 +2631,14 @@ g.key = function(x,y,z)
 end
 
 function clip_jump(i,s,y,z)
+  local duration = bank[i][s].mode == 1 and 8 or clip[math.abs(y-5)].sample_length
   for go = 1,2 do
-    local old_min = (1+(8*(bank[i][s].clip-1)))
-    local old_max = (9+(8*(bank[i][s].clip-1)))
+    local old_min = (1+(duration*(bank[i][s].clip-1)))
+    local old_max = ((duration+1)+(duration*(bank[i][s].clip-1)))
     local old_range = old_min - old_max
     bank[i][s].clip = math.abs(y-5)
-    local new_min = (1+(8*(bank[i][s].clip-1)))
-    local new_max = (9+(8*(bank[i][s].clip-1)))
+    local new_min = (1+(duration*(bank[i][s].clip-1)))
+    local new_max = ((duration+1)+(duration*(bank[i][s].clip-1)))
     local new_range = new_max - new_min
     local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
     bank[i][s].start_point = (((bank[i][s].start_point - old_min) * new_range) / old_range) + new_min
@@ -3058,30 +3055,31 @@ arc_redraw = function()
     else
       which_pad = bank[arc_control[i]].focus_pad
     end
+    local duration = bank[i][which_pad].mode == 1 and 8 or clip[bank[i][which_pad].clip].sample_length
     if arc_param[i] == 1 then
-      local start_to_led = (bank[arc_control[i]][which_pad].start_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
-      local end_to_led = (bank[arc_control[i]][which_pad].end_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
+      local start_to_led = (bank[arc_control[i]][which_pad].start_point-1)-(duration*(bank[arc_control[i]][which_pad].clip-1))
+      local end_to_led = (bank[arc_control[i]][which_pad].end_point-1)-(duration*(bank[arc_control[i]][which_pad].clip-1))
       if start_to_led <= end_to_led then
-        a:segment(i, util.linlin(0, 8, tau*(1/4), tau*1.23, start_to_led), util.linlin(0, 8, (tau*(1/4))+0.1, tau*1.249999, end_to_led), 15)
+        a:segment(i, util.linlin(0, duration, tau*(1/4), tau*1.23, start_to_led), util.linlin(0, duration, (tau*(1/4))+0.1, tau*1.249999, end_to_led), 15)
       else
-        a:segment(i, util.linlin(0, 8, (tau*(1/4))+0.1, tau*1.23, end_to_led), util.linlin(0, 8, tau*(1/4), tau*1.249999, start_to_led), 15)
+        a:segment(i, util.linlin(0, duration, (tau*(1/4))+0.1, tau*1.23, end_to_led), util.linlin(0, duration, tau*(1/4), tau*1.249999, start_to_led), 15)
       end
     end
     if arc_param[i] == 2 then
-      local start_to_led = (bank[arc_control[i]][which_pad].start_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
-      local end_to_led = (bank[arc_control[i]][which_pad].end_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
-      local playhead_to_led = util.linlin(1,9,1,64,(poll_position_new[i+1] - (8*(bank[i][which_pad].clip-1))))
+      local start_to_led = (bank[arc_control[i]][which_pad].start_point-1)-(duration*(bank[arc_control[i]][which_pad].clip-1))
+      local end_to_led = (bank[arc_control[i]][which_pad].end_point-1)-(duration*(bank[arc_control[i]][which_pad].clip-1))
+      local playhead_to_led = util.linlin(1,(duration+1),1,64,(poll_position_new[i+1] - (duration*(bank[i][which_pad].clip-1))))
       a:led(i,(math.floor(playhead_to_led))+16,5)
-      a:led(i,(math.floor(util.linlin(0,8,1,64,start_to_led)))+16,15)
-      a:led(i,(math.floor(util.linlin(0,8,1,64,end_to_led)))+17,8)
+      a:led(i,(math.floor(util.linlin(0,duration,1,64,start_to_led)))+16,15)
+      a:led(i,(math.floor(util.linlin(0,duration,1,64,end_to_led)))+17,8)
     end
     if arc_param[i] == 3 then
-      local start_to_led = (bank[arc_control[i]][which_pad].start_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
-      local end_to_led = (bank[arc_control[i]][which_pad].end_point-1)-(8*(bank[arc_control[i]][which_pad].clip-1))
-      local playhead_to_led = util.linlin(1,9,1,64,(poll_position_new[i+1] - (8*(bank[i][which_pad].clip-1))))
+      local start_to_led = (bank[arc_control[i]][which_pad].start_point-1)-(duration*(bank[arc_control[i]][which_pad].clip-1))
+      local end_to_led = (bank[arc_control[i]][which_pad].end_point-1)-(duration*(bank[arc_control[i]][which_pad].clip-1))
+      local playhead_to_led = util.linlin(1,(duration+1),1,64,(poll_position_new[i+1] - (duration*(bank[i][which_pad].clip-1))))
       a:led(i,(math.floor(playhead_to_led))+16,5)
-      a:led(i,(math.floor(util.linlin(0,8,1,64,end_to_led)))+17,15)
-      a:led(i,(math.floor(util.linlin(0,8,1,64,start_to_led)))+16,8)
+      a:led(i,(math.floor(util.linlin(0,duration,1,64,end_to_led)))+17,15)
+      a:led(i,(math.floor(util.linlin(0,duration,1,64,start_to_led)))+16,8)
     end
     if arc_param[i] == 4 then
       local tilt_to_led = slew_counter[i].slewedVal

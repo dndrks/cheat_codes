@@ -87,25 +87,28 @@ function aa.record_delay(side)
 end
 
 function aa.move_window(target, delta)
+  local duration = target.mode == 1 and 8 or clip[target.clip].sample_length
   local current_difference = (target.end_point - target.start_point)
-  local current_clip = 8*(target.clip-1)
-  if target.start_point + current_difference <= 9+current_clip then
-    target.start_point = util.clamp(target.start_point + delta/300, 1+current_clip, 9+current_clip)
+  local current_clip = duration*(target.clip-1)
+  if target.start_point + current_difference <= (duration+1)+current_clip then
+    target.start_point = util.clamp(target.start_point + delta/300, 1+current_clip, (duration+1)+current_clip)
     target.end_point = target.start_point + current_difference
   else
-    target.end_point = (9+current_clip)
+    target.end_point = ((duration+1)+current_clip)
     target.start_point = target.end_point - current_difference
   end
 end
 
 function aa.move_start(target, delta)
-  local current_clip = 8*(target.clip-1)
+  local duration = target.mode == 1 and 8 or clip[target.clip].sample_length
+  local current_clip = duration*(target.clip-1)
   target.start_point = util.clamp(target.start_point + delta/300, (1+current_clip), target.end_point-0.01)
 end
 
 function aa.move_end(target, delta)
-  local current_clip = 8*(target.clip-1)
-  target.end_point = util.clamp(target.end_point + delta/300, target.start_point+0.01, (9+current_clip))
+  local duration = target.mode == 1 and 8 or clip[target.clip].sample_length
+  local current_clip = duration*(target.clip-1)
+  target.end_point = util.clamp(target.end_point + delta/300, target.start_point+0.01, ((duration+1)+current_clip))
 end
 
 function aa.change_tilt(target, delta, enc)

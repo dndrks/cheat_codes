@@ -704,13 +704,14 @@ function encoder_actions.init(n,d)
 end
 
 function ea.move_play_window(target,delta)
+  local duration = target.mode == 1 and 8 or clip[target.clip].sample_length
   local current_difference = (target.end_point - target.start_point)
-  local current_clip = 8*(target.clip-1)
-  if target.start_point + current_difference <= 9+current_clip then
-    target.start_point = util.clamp(target.start_point + delta, 1+current_clip, 9+current_clip)
+  local current_clip = duration*(target.clip-1)
+  if target.start_point + current_difference <= (duration+1)+current_clip then
+    target.start_point = util.clamp(target.start_point + delta, 1+current_clip, (duration+1)+current_clip)
     target.end_point = target.start_point + current_difference
   else
-    target.end_point = (9+current_clip)
+    target.end_point = ((duration+1)+current_clip)
     target.start_point = target.end_point - current_difference
   end
 end
@@ -788,18 +789,20 @@ function ea.change_pad_clip(target,delta)
 end
 
 function ea.move_start(target,delta)
+  local duration = target.mode == 1 and 8 or clip[target.clip].sample_length
   if delta >= 0 and target.start_point < (target.end_point - delta) then
-    target.start_point = util.clamp(target.start_point+delta,(1+(8*(target.clip-1))),(8.9+(8*(target.clip-1))))
+    target.start_point = util.clamp(target.start_point+delta,(1+(duration*(target.clip-1))),((duration+0.9)+(duration*(target.clip-1))))
   elseif delta < 0 then
-    target.start_point = util.clamp(target.start_point+delta,(1+(8*(target.clip-1))),(8.9+(8*(target.clip-1))))
+    target.start_point = util.clamp(target.start_point+delta,(1+(duration*(target.clip-1))),((duration+0.9)+(duration*(target.clip-1))))
   end
 end
 
 function ea.move_end(target,delta)
+  local duration = target.mode == 1 and 8 or clip[target.clip].sample_length
   if delta <= 0 and target.start_point < target.end_point + delta then
-    target.end_point = util.clamp(target.end_point+delta,(1+(8*(target.clip-1))),(9+(8*(target.clip-1))))
+    target.end_point = util.clamp(target.end_point+delta,(1+(duration*(target.clip-1))),((duration+1)+(8*(target.clip-1))))
   elseif delta > 0 then
-    target.end_point = util.clamp(target.end_point+delta,(1+(8*(target.clip-1))),(9+(8*(target.clip-1))))
+    target.end_point = util.clamp(target.end_point+delta,(1+(duration*(target.clip-1))),((duration+1)+(duration*(target.clip-1))))
   end
 end
 
