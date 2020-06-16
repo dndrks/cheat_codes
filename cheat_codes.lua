@@ -2291,12 +2291,13 @@ end
 function load_sample(file,sample)
   if file ~= "-" then
     local ch, len = audio.file_info(file)
-    if len/48000 < 30 then
+    if len/48000 < 32 then
       clip[sample].sample_length = len/48000
     else
-      clip[sample].sample_length = 30
+      clip[sample].sample_length = 32
     end
     softcut.buffer_read_mono(file, 0, 1+(clip[sample].sample_length * (sample-1)), clip[sample].sample_length + 0.05, 1, 2)
+    clip_table()
   end
 end
 
@@ -2631,7 +2632,26 @@ g.key = function(x,y,z)
 end
 
 function clip_jump(i,s,y,z)
-  local duration = bank[i][s].mode == 1 and 8 or clip[math.abs(y-5)].sample_length
+  local old_duration = bank[i][s].mode == 1 and 8 or clip[bank[i][s].clip].sample_length
+  local old_clip = bank[i][s].clip
+  local old_min = (1+(old_duration*(old_clip-1)))
+  local old_max = ((old_duration+1)+(old_duration*(old_clip-1)))
+  local old_range = old_min - old_max
+  bank[i][s].clip = math.abs(y-5)
+  local new_duration = bank[i][s].mode == 1 and 8 or clip[bank[i][s].clip].sample_length
+  local new_clip = bank[i][s].clip
+  --local new_min = (1+(new_duration*(bank[i][s].clip-1)))
+  if bank[i][s].mode == 1 then
+    local new_min = (1+(new_duration*(bank[i][s].clip-1)))
+    local new_max = ((new_duration+1)+(new_duration*(bank[i][s].clip-1)))
+    local new_range = new_max - new_min
+    local current_difference = (bank[i][s].end_point - bank[i][s].start_point) -- is this where it gets weird?
+    bank[i][s].start_point = (((bank[i][s].start_point - old_min) * new_range) / old_range) + new_min
+    bank[i][s].end_point = bank[i][s].start_point + current_difference
+  end
+
+
+--[[
   for go = 1,2 do
     local old_min = (1+(duration*(bank[i][s].clip-1)))
     local old_max = ((duration+1)+(duration*(bank[i][s].clip-1)))
@@ -2648,6 +2668,29 @@ function clip_jump(i,s,y,z)
       help_menu = "buffer jump"
     end
   end
+  --]]
+
+  if menu == 11 then
+    which_bank = i
+    help_menu = "buffer jump"
+  end
+end
+
+function clip_table()
+  clip[1].min = 1
+  clip[1].max = 1 + clip[1].sample_length
+  clip[2].min = clip[1].max
+  clip[2].max = clip[2].min + clip[2].sample_length
+  clip[3].min = clip[2].max
+  clip[3].max = clip[3].min + clip[3].sample_length
+end
+
+function jump_samples(i,s,y,z)
+  local old_clip = bank[i][s].clip
+  bank[i][s].clip = math.abs(y-5)
+  local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
+  bank[i][s].start_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[bank[i][s].clip].min,clip[bank[i][s].clip].max,bank[i][s].start_point)
+  bank[i][s].end_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[bank[i][s].clip].min,clip[bank[i][s].clip].max,bank[i][s].end_point)
 end
 
 function grid_entry(e)
