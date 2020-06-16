@@ -332,6 +332,7 @@ function random_grid_pat(which,mode)
       , [5] = assigning_pad.rate
       }
       constructed.rate = new_rates[pattern.random_pitch_range]
+      local pre_rate = assigning_pad.rate
       assigning_pad.rate = constructed.rate
       local new_levels = 
       { [0.125] = 1.75
@@ -341,7 +342,11 @@ function random_grid_pat(which,mode)
       , [2.0]   = 0.75
       , [4.0]   = 0.5
       }
-      assigning_pad.level = new_levels[math.abs(constructed.rate)]
+      if pre_rate == assigning_pad.rate then
+        assigning_pad.level = assigning_pad.level
+      else
+        assigning_pad.level = assigning_pad.level == 0 and 0 or new_levels[math.abs(constructed.rate)]
+      end
       constructed.loop = assigning_pad.loop
       constructed.mode = assigning_pad.mode
       constructed.pause = assigning_pad.pause
@@ -547,13 +552,6 @@ function commit_midi_to_disk(target)
 
 end
 
-function copy1(obj)
-  if type(obj) ~= 'table' then return obj end
-  local res = {}
-  for k, v in pairs(obj) do res[copy1(k)] = copy1(v) end
-  return res
-end
-
 function update_pattern_bpm(bank)
   grid_pat[bank].time_factor = 1*(synced_to_bpm/bpm)
 end
@@ -581,31 +579,6 @@ function midi_clock_linearize(bank)
   end
   quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
   quantized_grid_pat[bank].sub_step = 1
-end
-
-function q1(bank)
-  c = quantized_grid_pat[bank].current_step + 1
-  ac = quantized_grid_pat[bank].sub_step
-  removed = #quantized_grid_pat[bank].event[quantized_grid_pat[bank].current_step] - quantized_grid_pat[bank].sub_step
-  print(c, ac, removed)
-end
-
-function q2(bank)
-  for i = quantized_grid_pat[bank].sub_step,#quantized_grid_pat[bank].event[quantized_grid_pat[bank].current_step] do
-    table.remove(quantized_grid_pat[bank].event[c-1],ac)
-  end
-end
-
-function q3(bank)
-  table.insert(quantized_grid_pat[bank].event,c,{"something"})
-end
-
-function q4(bank)
-  if removed ~= 0 then
-    for i = 1,removed do
-      table.insert(quantized_grid_pat[bank].event[c],"nothing")
-    end
-  end
 end
 
 function midi_clock_linearize_overdub(bank)
@@ -1091,7 +1064,7 @@ function init()
                         --clock.run(synced_pattern_record,midi_pat[i]) -- i think we'll want this in a separate function...
                       end
                     end
-                    midi_pattern_watch(d.note-(params:get("bank_"..i.."_pad_midi_base")-1), i)
+                    midi_pattern_watch(i, d.note-(params:get("bank_"..i.."_pad_midi_base")-1))
                     if menu == 9 then
                       page.arp_page_sel = i
                       arps.momentary(i, bank[i].id, "on")
@@ -1199,7 +1172,7 @@ end
 
 ---
 
-function midi_pattern_watch(note,target)
+function midi_pattern_watch(target,note)
   if note ~= "pause" then
     midi_p[target] = {}
     midi_p[target].note = note
@@ -1207,6 +1180,34 @@ function midi_pattern_watch(note,target)
     midi_pat[target]:watch(midi_p[target])
   else
     midi_pat[target]:watch("pause")
+  end
+end
+
+function grid_pattern_watch(target,pad)
+  if pad ~= "pause" then
+    grid_p[target] = {}
+    grid_p[target].action = "pads"
+    grid_p[target].i = target
+    grid_p[target].id = selected[target].id
+    grid_p[target].x = selected[target].x
+    grid_p[target].y = selected[target].y
+    grid_p[target].rate = bank[target][bank[target].id].rate
+    grid_p[target].start_point = bank[target][bank[target].id].start_point
+    grid_p[target].end_point = bank[target][bank[target].id].end_point
+    grid_p[target].rate_adjusted = false
+    grid_p[target].loop = bank[target][bank[target].id].loop
+    grid_p[target].pause = bank[target][bank[target].id].pause
+    grid_p[target].mode = bank[target][bank[target].id].mode
+    grid_p[target].clip = bank[target][bank[target].id].clip
+    --[[
+    if grid_pat[target].rec == 1 and grid_pat[target].count == 0 then
+      print("grid happening")
+      clock.run(synced_pattern_record,grid_pat[target])
+    end
+    --]]
+    grid_pat[target]:watch(grid_p[target])
+  else
+    grid_pat[target]:watch("pause")
   end
 end
 
@@ -1311,13 +1312,20 @@ function synced_loop(target, state)
   end
 end
 
-function synced_record_start(i)
-  midi_pat[i].sync_hold = true
+function synced_record_start(target,i)
+  --midi_pat[i].sync_hold = true
+  target.sync_hold = true
   clock.sync(4)
-  midi_pat[i]:rec_start()
-  midi_pat[i].sync_hold = false
-  midi_pattern_watch("pause", i)
-  clock.run(synced_pattern_record,midi_pat[i])
+  --midi_pat[i]:rec_start()
+  target:rec_start()
+  --midi_pat[i].sync_hold = false
+  target.sync_hold = false
+  if target == midi_pat[i] then
+    midi_pattern_watch(i, "pause")
+  elseif target == grid_pat[i] then
+    grid_pattern_watch(i, "pause")
+  end
+  clock.run(synced_pattern_record,target)
 end
 
 function synced_pattern_record(target)
@@ -2358,7 +2366,7 @@ function key(n,z)
                   if midi_pat[time_nav].playmode == 1 then
                     midi_pat[time_nav]:rec_start()
                   else
-                    midi_pat[time_nav].rec_clock = clock.run(synced_record_start,time_nav)
+                    midi_pat[time_nav].rec_clock = clock.run(synced_record_start,midi_pat[time_nav],time_nav)
                   end
                 else
                   midi_pat[time_nav].overdub = midi_pat[time_nav].overdub == 0 and 1 or 0
@@ -2682,26 +2690,19 @@ function grid_redraw()
       end
       
       for i = 1,3 do
-        if grid_pat[i].quantize == 0 then
-          if grid_pat[i].rec == 1 then
-            g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
-          elseif grid_pat[i].play == 1 then
+        local target = grid_pat[i]
+        if target.rec == 1 then
+          g:led(2+(5*(i-1)),1,(9*target.led))
+        elseif (target.quantize == 0 and target.play == 1) or (target.quantize == 1 and target.tightened_start == 1) then
+          if target.overdub == 0 then
             g:led(2+(5*(i-1)),1,9)
-          elseif grid_pat[i].count > 0 then
-            g:led(2+(5*(i-1)),1,5)
           else
-            g:led(2+(5*(i-1)),1,3)
+            g:led(2+(5*(i-1)),1,15)
           end
-        elseif grid_pat[i].quantize == 1 then
-          if grid_pat[i].rec == 1 then
-            g:led(2+(5*(i-1)),1,(9*grid_pat[i].led))
-          elseif grid_pat[i].tightened_start == 1 then
-            g:led(2+(5*(i-1)),1,9)
-          elseif grid_pat[i].count > 0 then
-            g:led(2+(5*(i-1)),1,5)
-          else
-            g:led(2+(5*(i-1)),1,3)
-          end
+        elseif target.count > 0 then
+          g:led(2+(5*(i-1)),1,5)
+        else
+          g:led(2+(5*(i-1)),1,3)
         end
       end
       
@@ -2907,51 +2908,55 @@ end
 --/GRID
 
 function grid_pattern_execute(entry)
-  local i = entry.i
-  if entry.action == "pads" then
-    if params:get("zilchmo_patterning") == 2 then
-      bank[i][entry.id].rate = entry.rate
-    end
-    selected[i].id = entry.id
-    selected[i].x = entry.x
-    selected[i].y = entry.y
-    bank[i].id = selected[i].id
-    if params:get("zilchmo_patterning") == 2 then
-      bank[i][bank[i].id].mode = entry.mode
-      bank[i][bank[i].id].clip = entry.clip
-    end
-    if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
-      if params:get("zilchmo_patterning") == 2 then
-        bank[i][bank[i].id].start_point = entry.start_point
-        bank[i][bank[i].id].end_point = entry.end_point
-      end
-    end
-    cheat(i,bank[i].id)
-  elseif string.match(entry.action, "zilchmo") then
-    if params:get("zilchmo_patterning") == 2 then
-      bank[i][entry.id].rate = entry.rate
-      if fingers[entry.row][entry.bank] == nil then
-        fingers[entry.row][entry.bank] = {}
-      end
-      fingers[entry.row][entry.bank].con = entry.con
-      zilchmo(entry.row,entry.bank)
-      if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
-        bank[i][bank[i].id].start_point = entry.start_point
-        bank[i][bank[i].id].end_point = entry.end_point
-        softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
-        softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
-      end
-      local length = math.floor(math.log10(entry.con)+1)
-      for i = 1,length do
-        if grid_page == 0 then
-          g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)
-          g:refresh()
+  if entry ~= nil then
+    if entry ~= "pause" then
+      local i = entry.i
+      if entry.action == "pads" then
+        if params:get("zilchmo_patterning") == 2 then
+          bank[i][entry.id].rate = entry.rate
+        end
+        selected[i].id = entry.id
+        selected[i].x = entry.x
+        selected[i].y = entry.y
+        bank[i].id = selected[i].id
+        if params:get("zilchmo_patterning") == 2 then
+          bank[i][bank[i].id].mode = entry.mode
+          bank[i][bank[i].id].clip = entry.clip
+        end
+        if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
+          if params:get("zilchmo_patterning") == 2 then
+            bank[i][bank[i].id].start_point = entry.start_point
+            bank[i][bank[i].id].end_point = entry.end_point
+          end
+        end
+        cheat(i,bank[i].id)
+      elseif string.match(entry.action, "zilchmo") then
+        if params:get("zilchmo_patterning") == 2 then
+          bank[i][entry.id].rate = entry.rate
+          if fingers[entry.row][entry.bank] == nil then
+            fingers[entry.row][entry.bank] = {}
+          end
+          fingers[entry.row][entry.bank].con = entry.con
+          zilchmo(entry.row,entry.bank)
+          if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
+            bank[i][bank[i].id].start_point = entry.start_point
+            bank[i][bank[i].id].end_point = entry.end_point
+            softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
+            softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
+          end
+          local length = math.floor(math.log10(entry.con)+1)
+          for i = 1,length do
+            if grid_page == 0 then
+              g:led((entry.row+1)*entry.bank,5-(math.floor(entry.con/(10^(i-1))) % 10),15)
+              g:refresh()
+            end
+          end
         end
       end
+      grid_redraw()
+      redraw()
     end
   end
-  grid_redraw()
-  redraw()
 end
 
 function arc_pattern_execute(entry)

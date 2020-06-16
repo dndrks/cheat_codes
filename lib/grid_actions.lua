@@ -38,6 +38,10 @@ function grid_actions.init(x,y,z)
                 arps.momentary(i, bank[i].id, "on")
               else
                 cheat(i, bank[i].id)
+
+                grid_pattern_watch(i)
+                
+                --[==[
                 grid_p[i] = {}
                 grid_p[i].action = "pads"
                 grid_p[i].i = i
@@ -52,11 +56,15 @@ function grid_actions.init(x,y,z)
                 grid_p[i].pause = bank[i][bank[i].id].pause
                 grid_p[i].mode = bank[i][bank[i].id].mode
                 grid_p[i].clip = bank[i][bank[i].id].clip
+                --[[
                 if grid_pat[i].rec == 1 and grid_pat[i].count == 0 then
                   print("grid happening")
                   clock.run(synced_pattern_record,grid_pat[i])
                 end
+                --]]
                 grid_pat[i]:watch(grid_p[i])
+                --]==]
+
               end
             else
               table.insert(quantize_events[i],selected[i].id)
@@ -68,9 +76,11 @@ function grid_actions.init(x,y,z)
         else
           if grid.alt == 0 then
             bank[i].focus_pad = (math.abs(y-9)+((x-1)*4))-(20*(i-1))
+            --[[
             if tracker[i].recording then
               add_to_tracker(i,{bank[i].focus_pad,0.25,"next"})
             end
+            --]]
           elseif grid.alt == 1 then
             if not pad_clipboard then
               pad_clipboard = {}
@@ -141,28 +151,38 @@ function grid_actions.init(x,y,z)
       for i = 1,3 do
         if z == 0 and x == (k+1)+(5*(i-1)) and y<=k then
           if grid_pat[i].quantize == 0 then -- still relevant
-            if grid.alt == 1 then -- still relevant
-              grid_pat[i]:rec_stop()
-              grid_pat[i]:stop()
-              --grid_pat[i].external_start = 0
-              grid_pat[i].tightened_start = 0
-              grid_pat[i]:clear()
-              pattern_saver[i].load_slot = 0
-            elseif grid_pat[i].rec == 1 then -- still relevant
-              grid_pat[i]:rec_stop()
-              midi_clock_linearize(i)
-              if grid_pat[i].auto_snap == 1 then
-                print("auto-snap")
-                snap_to_bars(i,how_many_bars(i))
-              end
-              grid_pat[i]:start()
-              grid_pat[i].loop = 1
-            elseif grid_pat[i].count == 0 then
-              grid_pat[i]:rec_start()
-            elseif grid_pat[i].play == 1 then
-              grid_pat[i]:stop()
+            if bank[i].alt_lock then
+              grid_pat[i].overdub = grid_pat[i].overdub == 0 and 1 or 0
             else
-              grid_pat[i]:start()
+              if grid.alt == 1 then -- still relevant
+                grid_pat[i]:rec_stop()
+                grid_pat[i]:stop()
+                --grid_pat[i].external_start = 0
+                grid_pat[i].tightened_start = 0
+                grid_pat[i]:clear()
+                pattern_saver[i].load_slot = 0
+              elseif grid_pat[i].rec == 1 then -- still relevant
+                grid_pat[i]:rec_stop()
+                midi_clock_linearize(i)
+                if grid_pat[i].auto_snap == 1 then
+                  print("auto-snap")
+                  snap_to_bars(i,how_many_bars(i))
+                end
+                grid_pat[i]:start()
+                grid_pat[i].loop = 1
+              elseif grid_pat[i].count == 0 then
+                if grid_pat[i].playmode ~= 2 then
+                  grid_pat[i]:rec_start()
+                --new!
+                else
+                  grid_pat[i].rec_clock = clock.run(synced_record_start,grid_pat[i],i)
+                end
+                --/new!
+              elseif grid_pat[i].play == 1 then
+                grid_pat[i]:stop()
+              else
+                grid_pat[i]:start()
+              end
             end
           else
             if grid.alt == 1 then
@@ -212,31 +232,14 @@ function grid_actions.init(x,y,z)
       if x == (3)+(5*(i-1)) and y == 4 and z == 1 then
         which_bank = i
         local which_pad = bank[i].focus_hold == true and bank[i].focus_pad or bank[i].id
-        if bank[i][which_pad].loop == true then
-          --if grid.alt == 0 then
-          if not bank[i].alt_lock then
-            bank[i][which_pad].loop = false
-          else
-            for j = 1,16 do
-              bank[i][j].loop = false
-            end
+        bank[i][which_pad].loop = not bank[i][which_pad].loop
+        if bank[i].alt_lock or grid.alt == 1 then
+          for j = 1,16 do
+            bank[i][j].loop = bank[i][which_pad].loop
           end
-          if bank[i].focus_hold == false then
-            softcut.loop(i+1,0)
-          end
-        else
-          --if grid.alt == 0 then
-          if not bank[i].alt_lock then
-            bank[i][which_pad].loop = true
-          else
-            for j = 1,16 do
-              bank[i][j].loop = true
-              --trackers.inherit(i,j)
-            end
-          end
-          if bank[i].focus_hold == false then
-            softcut.loop(i+1,1)
-          end
+        end
+        if bank[i].focus_hold == false then
+          softcut.loop(i+1,bank[i][which_pad].loop == true and 1 or 0)
         end
         if menu == 11 then
           help_menu = "loop"
@@ -267,13 +270,13 @@ function grid_actions.init(x,y,z)
         local which_pad = nil
         local current = util.round(math.sqrt(math.abs(x-2)))
         --if grid.alt == 0 then
-        if not bank[current].alt_lock then
+        if not bank[current].alt_lock and grid.alt == 0 then
           if bank[current].focus_hold == false then
             clip_jump(current, bank[current].id, y, z)
           else
             clip_jump(current, bank[current].focus_pad, y, z)
           end
-        else
+        elseif bank[current].alt_lock or grid.alt == 1 then
           for j = 1,16 do
             clip_jump(current, j, y, z)
             --trackers.inherit(current,j)
@@ -294,14 +297,14 @@ function grid_actions.init(x,y,z)
         if x == j and y == i and z == 1 then
           local which_pad = nil
           --if grid.alt == 0 then
-          if not bank[math.sqrt(math.abs(x-3))].alt_lock then
+          if not bank[math.sqrt(math.abs(x-3))].alt_lock and grid.alt == 0 then
             local current = math.sqrt(math.abs(x-3))
             if bank[current].focus_hold == false then
               bank[current][bank[current].id].mode = math.abs(i-5)
             else
               bank[current][bank[current].focus_pad].mode = math.abs(i-5)
             end
-          else
+          elseif bank[math.sqrt(math.abs(x-3))].alt_lock or grid.alt == 1 then
             for k = 1,16 do
               local current = math.sqrt(math.abs(x-3))
               bank[current][k].mode = math.abs(i-5)
@@ -404,12 +407,6 @@ function grid_actions.init(x,y,z)
                 end
               end
             end
-          else
-            --[[
-            if x == i*5 then
-              bank[i].alt_lock = not bank[i].alt_lock
-            end
-            --]]
           end
         end
       end
@@ -431,7 +428,7 @@ function grid_actions.init(x,y,z)
           
           ---
           --if grid.alt == 0 then
-          if not bank[i].alt_lock then
+          if not bank[i].alt_lock and grid.alt == 0 then
             if y == 3 then
               --menu = 9
               page.arp_page_sel = i
@@ -440,16 +437,14 @@ function grid_actions.init(x,y,z)
                 arps.clear(i)
               end
             else
-              menu = 6-y
               if key1_hold == true then key1_hold = false end
-              if menu == 2 then
+              if y == 4 then
+                menu = 2
                 page.loops_sel = math.floor((x/4)-1)
-              elseif menu == 5 then
-                page.filtering_sel = math.floor((x/4))
               end
               redraw()
             end
-          else
+          elseif bank[i].alt_lock or grid.alt == 1 then
             if y == 2 then
               if grid_pat[math.ceil(x/4)].playmode == 3 or grid_pat[math.ceil(x/4)].playmode == 4 then
                 clock.run(random_grid_pat, math.ceil(x/4), 3)

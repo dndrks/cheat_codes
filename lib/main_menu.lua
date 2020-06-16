@@ -372,6 +372,7 @@ function main_menu.init()
       --local pattern = grid_pat[page_line]
       local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
       screen.level(page_line == i and 15 or 3)
+      
       if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing then
         playing[i] = 1
       else
@@ -382,21 +383,31 @@ function main_menu.init()
       else
         display_step[i] = grid_pat[i].step
       end
+      
+
+      local pattern = g.device ~= nil and grid_pat[i] or midi_pat[i]
       local playing_options =
+      screen.move(10+(40*(i-1)),25)
+      screen.text("P"..i)
+      --[[
       { [i] = { "P"..i  , "P"..i.."  > "..display_step[i],  "P"..i.."  x "..display_step[i]} }
       screen.move(10+(40*(i-1)),25)
-      screen.text(playing_options[i][grid_pat[i].count == 0 and 1 or playing[i] == 1 and 2 or playing[i] == 0 and 3])
-      if midi_pat[i].sync_hold ~= nil and midi_pat[i].sync_hold then
+      screen.text(playing_options[i][pattern.count == 0 and 1 or playing[i] == 1 and 2 or playing[i] == 0 and 3])
+      --]]
+
+      if pattern.sync_hold ~= nil and pattern.sync_hold then
         screen.level(3)
         screen.text(" -"..math.modf(4-show_me_beats).."."..math.modf(4-show_me_frac,1))
       end
-      if midi_pat[i].rec == 1 then
-        screen.text(midi_pat[i].rec == 1 and (": rec") or "")
-      elseif midi_pat[i].play == 1 then
-        screen.text(midi_pat[i].overdub == 0 and (" > "..midi_pat[i].step) or ": over")
-      elseif midi_pat[i].play == 0 and midi_pat[i].count > 0 then
+      if pattern.rec == 1 then
+        screen.text(pattern.rec == 1 and (": rec") or "")
+      elseif pattern.play == 1 then
+        screen.text(pattern.overdub == 0 and (" > "..pattern.step) or ": over")
+      elseif pattern.play == 0 and pattern.count > 0 then
         screen.text(" x ")
       end
+
+      local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
       local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
       local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
       local p_options_rand = {"low rates", "mid rates", "hi rates", "full range", "keep rates"}

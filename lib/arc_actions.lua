@@ -33,7 +33,9 @@ function aa.init(n,d)
     if this_bank.focus_hold == false or this_bank.focus_pad == this_bank.id then
       sc_action(n, this_pad)
     end
-    aa.record(n)
+    if n < 4 then
+      aa.record(n)
+    end
   else
     local side = grid.alt == 0 and "L" or "R"
     aa.delay_rate(d,side)

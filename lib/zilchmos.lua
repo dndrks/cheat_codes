@@ -31,10 +31,10 @@ function zilchmos.init(k,i)
 
   -- here's where we call the action
   --if grid.alt == 0 then
-  if not b.alt_lock then
+  if not b.alt_lock and grid.alt == 0 then
     p_action( b[p] )
     --trackers.inherit(which_bank,p)
-  else
+  elseif b.alt_lock or grid.alt == 1 then
     z.map( p_action, b ) -- or map it over the whole bank
   end
   if not b.focus_hold then
