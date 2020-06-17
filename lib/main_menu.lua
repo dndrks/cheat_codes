@@ -121,14 +121,20 @@ function main_menu.init()
         end
         screen.level(page.loops_sel == i-1 and 15 or 3)
         local duration = bank[i][which_pad].mode == 1 and 8 or clip[bank[i][which_pad].clip].sample_length
-        local start_to_screen = util.linlin(1,(duration+1),15,120,(bank[i][which_pad].start_point - (duration*(bank[i][which_pad].clip-1))))
+        local s_p = bank[i][which_pad].mode == 1 and live[bank[i][which_pad].clip].min or clip[bank[i][which_pad].clip].min
+        local e_p = bank[i][which_pad].mode == 1 and live[bank[i][which_pad].clip].max or clip[bank[i][which_pad].clip].max
+        
+        --local start_to_screen = util.linlin(1,(duration+1),15,120,(bank[i][which_pad].start_point - (duration*(bank[i][which_pad].clip-1))))
+        local start_to_screen = util.linlin(s_p,e_p,15,120,bank[i][which_pad].start_point)
         screen.move(start_to_screen,24+(15*(i-1)))
         screen.text("|")
-        local end_to_screen = util.linlin(1,(duration+1),15,120,bank[i][which_pad].end_point - (duration*(bank[i][which_pad].clip-1)))
+        --local end_to_screen = util.linlin(1,(duration+1),15,120,bank[i][which_pad].end_point - (duration*(bank[i][which_pad].clip-1)))
+        local end_to_screen = util.linlin(s_p,e_p,15,120,bank[i][which_pad].end_point)
         screen.move(end_to_screen,30+(15*(i-1)))
         screen.text("|")
         if bank[i].focus_hold == false or bank[i].id == bank[i].focus_pad then
-          local current_to_screen = util.linlin(1,(duration+1),15,120,(poll_position_new[i+1] - (duration*(bank[i][bank[i].id].clip-1))))
+          --local current_to_screen = util.linlin(1,(duration+1),15,120,(poll_position_new[i+1] - (duration*(bank[i][bank[i].id].clip-1))))
+          local current_to_screen = util.linlin(s_p,e_p,15,120,poll_position_new[i+1])
           screen.move(current_to_screen,27+(15*(i-1)))
           screen.text("|")
         end

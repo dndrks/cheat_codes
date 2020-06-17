@@ -104,9 +104,11 @@ end
 
 function zilchmos.start_end_sixteenths( pad )
   local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
+  local s_p = pad.mode == 1 and live[pad.clip].min or clip[pad.clip].min
   -- FIXME bpm is global
-  pad.start_point = (1+((duration/16)*(pad.pad_id-1)))+(duration*(pad.clip-1))
-  pad.end_point   = pad.start_point + (60/bpm)/4
+  --pad.start_point = (1+((duration/16)*(pad.pad_id-1)))+(duration*(pad.clip-1))
+  pad.start_point = (s_p+((duration/16)*(pad.pad_id-1)))
+  pad.end_point   = pad.start_point + (clock.get_beat_sec()/4)
 end
 
 function zilchmos.end_at_eight( pad )

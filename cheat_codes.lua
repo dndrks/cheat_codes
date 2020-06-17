@@ -57,6 +57,24 @@ for i = 1,3 do
   clip[i].mode = 1
 end
 
+clip[1].min = 1
+clip[1].max = 1 + clip[1].sample_length
+clip[2].min = clip[1].max
+clip[2].max = clip[2].min + clip[2].sample_length
+clip[3].min = clip[2].max
+clip[3].max = clip[3].min + clip[3].sample_length
+
+live = {}
+for i = 1,3 do
+  live[i] = {}
+end
+live[1].min = 1
+live[1].max = 9
+live[2].min = 9
+live[2].max = 17
+live[3].min = 17
+live[3].max = 25
+
 help_menu = "welcome"
 
 function f1()
@@ -2296,7 +2314,13 @@ function load_sample(file,sample)
     else
       clip[sample].sample_length = 32
     end
-    softcut.buffer_read_mono(file, 0, 1+(clip[sample].sample_length * (sample-1)), clip[sample].sample_length + 0.05, 1, 2)
+    --softcut.buffer_read_mono(file, 0, 1+(clip[sample].sample_length * (sample-1)), clip[sample].sample_length + 0.05, 1, 2)
+
+    --need this to calculate at 32 second intervals...1,33,65
+    --buffer_read_mono (file, start_src, start_dst, dur, ch_src, ch_dst)	
+    softcut.buffer_read_mono(file, 0, 1+(32*(sample-1)),clip[sample].sample_length + 0.05, 1, 2)
+    print("start point: "..1+(32*(sample-1)))
+    print("duration: "..clip[sample].sample_length + 0.05)
     clip_table()
   end
 end
@@ -2631,7 +2655,8 @@ g.key = function(x,y,z)
   grid_actions.init(x,y,z)
 end
 
-function clip_jump(i,s,y,z)
+function jump_live(i,s,y,z)
+
   local old_duration = bank[i][s].mode == 1 and 8 or clip[bank[i][s].clip].sample_length
   local old_clip = bank[i][s].clip
   local old_min = (1+(old_duration*(old_clip-1)))
@@ -2678,19 +2703,29 @@ end
 
 function clip_table()
   clip[1].min = 1
-  clip[1].max = 1 + clip[1].sample_length
-  clip[2].min = clip[1].max
+  clip[1].max = clip[1].min + clip[1].sample_length
+  --clip[2].min = clip[1].max
+  clip[2].min = 33
   clip[2].max = clip[2].min + clip[2].sample_length
-  clip[3].min = clip[2].max
+  --clip[3].min = clip[2].max
+  clip[3].min = 65
   clip[3].max = clip[3].min + clip[3].sample_length
 end
 
-function jump_samples(i,s,y,z)
-  local old_clip = bank[i][s].clip
-  bank[i][s].clip = math.abs(y-5)
-  local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
-  bank[i][s].start_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[bank[i][s].clip].min,clip[bank[i][s].clip].max,bank[i][s].start_point)
-  bank[i][s].end_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[bank[i][s].clip].min,clip[bank[i][s].clip].max,bank[i][s].end_point)
+function jump_clip(i,s,y,z)
+  if bank[i][s].mode == 2 then
+    local old_clip = bank[i][s].clip
+    bank[i][s].clip = math.abs(y-5)
+    local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
+    bank[i][s].start_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[bank[i][s].clip].min,clip[bank[i][s].clip].max,bank[i][s].start_point)
+    bank[i][s].end_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[bank[i][s].clip].min,clip[bank[i][s].clip].max,bank[i][s].end_point)
+  else
+    local old_clip = bank[i][s].clip
+    bank[i][s].clip = math.abs(y-5)
+    local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
+    bank[i][s].start_point = util.linlin(live[old_clip].min,live[old_clip].max,live[bank[i][s].clip].min,live[bank[i][s].clip].max,bank[i][s].start_point)
+    bank[i][s].end_point = util.linlin(live[old_clip].min,live[old_clip].max,live[bank[i][s].clip].min,live[bank[i][s].clip].max,bank[i][s].end_point)
+  end
 end
 
 function grid_entry(e)

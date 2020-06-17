@@ -272,13 +272,17 @@ function grid_actions.init(x,y,z)
         --if grid.alt == 0 then
         if not bank[current].alt_lock and grid.alt == 0 then
           if bank[current].focus_hold == false then
-            clip_jump(current, bank[current].id, y, z)
+            --jump_live(current, bank[current].id, y, z)
+            jump_clip(current, bank[current].id, y, z)
           else
-            clip_jump(current, bank[current].focus_pad, y, z)
+            --jump_live(current, bank[current].focus_pad, y, z)
+            jump_clip(current, bank[current].focus_pad, y, z)
           end
         elseif bank[current].alt_lock or grid.alt == 1 then
           for j = 1,16 do
-            clip_jump(current, j, y, z)
+            --jump_live(current, j, y, z)
+            jump_clip(current, j, y, z)
+            
             --trackers.inherit(current,j)
           end
         end
