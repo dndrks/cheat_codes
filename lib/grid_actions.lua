@@ -304,14 +304,26 @@ function grid_actions.init(x,y,z)
           if not bank[math.sqrt(math.abs(x-3))].alt_lock and grid.alt == 0 then
             local current = math.sqrt(math.abs(x-3))
             if bank[current].focus_hold == false then
+              local old_mode = bank[current][bank[current].id].mode
               bank[current][bank[current].id].mode = math.abs(i-5)
+              if old_mode ~= bank[current][bank[current].id].mode then
+                change_mode(bank[current][bank[current].id], old_mode)
+              end
             else
+              local old_mode = bank[current][bank[current].focus_pad].mode
               bank[current][bank[current].focus_pad].mode = math.abs(i-5)
+              if old_mode ~= bank[current][bank[current].focus_pad].mode then
+                change_mode(bank[current][bank[current].focus_pad], old_mode)
+              end
             end
           elseif bank[math.sqrt(math.abs(x-3))].alt_lock or grid.alt == 1 then
             for k = 1,16 do
               local current = math.sqrt(math.abs(x-3))
+              local old_mode = bank[current][k].mode
               bank[current][k].mode = math.abs(i-5)
+              if old_mode ~= bank[current][k].mode then
+                change_mode(bank[current][k], old_mode)
+              end
               --trackers.inherit(current,k)
             end
           end
@@ -321,11 +333,16 @@ function grid_actions.init(x,y,z)
           else
             which_pad = bank[current].focus_pad
           end
+
+          --i don't think this is necessary:
+          --[[
           if bank[current][which_pad].mode == 1 then
             bank[current][which_pad].sample_end = 8
           else
             bank[current][which_pad].sample_end = clip[bank[current][which_pad].clip].sample_length
           end
+          --]]
+
           if bank[current].focus_hold == false then
             local current = math.sqrt(math.abs(x-3))
             cheat(current,bank[current].id)

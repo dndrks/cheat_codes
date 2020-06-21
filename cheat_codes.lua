@@ -59,9 +59,9 @@ end
 
 clip[1].min = 1
 clip[1].max = 1 + clip[1].sample_length
-clip[2].min = clip[1].max
+clip[2].min = 33
 clip[2].max = clip[2].min + clip[2].sample_length
-clip[3].min = clip[2].max
+clip[3].min = 65
 clip[3].max = clip[3].min + clip[3].sample_length
 
 live = {}
@@ -1111,15 +1111,19 @@ function init()
             if d.type == "cc" then
               local pad = bank[i][bank[i].id]
               if d.cc == 1 then
-                local lo = 1+(8*(pad.clip-1))
+                --local lo = 1+(8*(pad.clip-1))
+                local lo = pad.mode == 1 and live[pad.clip].min or clip[pad.clip].min
                 local hi = pad.end_point-0.1
-                local max = 9+(8*(pad.clip-1))
+                --local max = 9+(8*(pad.clip-1))
+                local max = pad.mode == 1 and live[pad.clip].max or clip[pad.clip].max
                 pad.start_point = util.clamp(util.linlin(0,127,lo,max,d.val),lo,hi)
                 softcut.loop_start(i+1,pad.start_point)
               elseif d.cc == 2 then
                 local lo = pad.start_point+0.1
-                local hi = 9+(8*(pad.clip-1))
-                local min = 1+(8*(pad.clip-1))
+                --local hi = 9+(8*(pad.clip-1))
+                local hi = pad.mode == 1 and live[pad.clip].max or clip[pad.clip].max
+                --local min = 1+(8*(pad.clip-1))
+                local min = pad.mode == 1 and live[pad.clip].min or clip[pad.clip].min
                 pad.end_point = util.clamp(util.linlin(0,127,min,hi,d.val),lo,hi)
                 softcut.loop_end(i+1,pad.end_point)
               elseif d.cc == 3 then
@@ -1146,9 +1150,12 @@ function init()
 
   function midi_redraw(target)
     local pad = bank[target][bank[target].id]
-    local start_to_cc = util.round(util.linlin(1,9,0,127,pad.start_point-(8*(pad.clip-1))))
+    local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
+    local min = pad.mode == 1 and live[pad.clip].min or clip[pad.clip].min
+    local max = pad.mode == 1 and live[pad.clip].max or clip[pad.clip].max
+    local start_to_cc = util.round(util.linlin(min,max,0,127,pad.start_point))
     midi_dev[params:get("midi_control_device")]:cc(1,start_to_cc,params:get("bank_"..target.."_midi_channel"))
-    local end_to_cc = util.round(util.linlin(1,9,0,127,pad.end_point-(8*(pad.clip-1))))
+    local end_to_cc = util.round(util.linlin(min,max,0,127,pad.end_point))
     midi_dev[params:get("midi_control_device")]:cc(2,end_to_cc,params:get("bank_"..target.."_midi_channel"))
     local tilt_to_cc = util.round(util.linlin(-1,1,0,127,pad.tilt))
     midi_dev[params:get("midi_control_device")]:cc(3,tilt_to_cc,params:get("bank_"..target.."_midi_channel"))
@@ -1248,6 +1255,9 @@ function midi_cheat(note,target)
       selected[target].y = 5
     end
     cheat(target,bank[target].id)
+    if params:get("midi_echo_enabled") == 2 then
+      midi_redraw(target)
+    end
   end
 end
 
@@ -1368,13 +1378,16 @@ function synced_pattern_record(target)
     end
     print(butts)
     target.time[2] = target.time[2] + target.time[1]
-    target.quant_time[2] = target.quant_time[2] + target.quant_time[1]
+    target.time_beats[2] = target.time_beats[2] + target.time_beats[1]
     table.remove(target.event,1)
     table.remove(target.time,1)
-    table.remove(target.quant_time,1)
+    table.remove(target.time_beats,1)
     target.count = #target.event
     target.end_point = target.count
     print(target.count, target.end_point)
+    for i = 1,target.count do
+      target:calculate_quantum(i)
+    end
   end
   if target.count > 0 then -- just in case the recording was canceled...
     target:start()
@@ -1399,6 +1412,7 @@ function quantize_pattern_times(target, resolution)
   end
 end
 
+--[[
 function try_this(target)
   clock.sync(4)
   target.quant_clock = clock.run(quantized_advance,target)
@@ -1414,7 +1428,7 @@ function quantized_advance(target)
       end
       clock.sync(1/4)
       target.runner = target.runner + 1
-      if target.runner > target.quantum[step] then
+      if target.runner > target.quantum[step]*4 then
         target.step = target.step + 1
         target.runner = 1
       end
@@ -1425,6 +1439,7 @@ function quantized_advance(target)
     end
   end
 end
+--]]
 
 function pattern_length_to_bars(target, style)
   if target.rec == 0 and target.count > 0 then 
@@ -2139,9 +2154,6 @@ function cheat(b,i)
   if osc_communication == true then
     osc_redraw(b)
   end
-  if m ~= nil and params:get("midi_echo_enabled") == 2 then
-    midi_redraw(b)
-  end
 end
 
 function envelope(i)
@@ -2307,6 +2319,8 @@ function update_delays()
 end
 
 function load_sample(file,sample)
+  local old_min = clip[sample].min
+  local old_max = clip[sample].max
   if file ~= "-" then
     local ch, len = audio.file_info(file)
     if len/48000 < 32 then
@@ -2314,14 +2328,22 @@ function load_sample(file,sample)
     else
       clip[sample].sample_length = 32
     end
-    --softcut.buffer_read_mono(file, 0, 1+(clip[sample].sample_length * (sample-1)), clip[sample].sample_length + 0.05, 1, 2)
 
     --need this to calculate at 32 second intervals...1,33,65
     --buffer_read_mono (file, start_src, start_dst, dur, ch_src, ch_dst)	
+    --softcut.buffer_read_mono(file, 0, 1+(32*(sample-1)),clip[sample].sample_length + 0.05, 1, 2)
+    softcut.buffer_clear_region_channel(2,1+(32*(sample-1)),32)
     softcut.buffer_read_mono(file, 0, 1+(32*(sample-1)),clip[sample].sample_length + 0.05, 1, 2)
-    print("start point: "..1+(32*(sample-1)))
-    print("duration: "..clip[sample].sample_length + 0.05)
+    --print("start point: "..1+(32*(sample-1)))
+    --print("duration: "..clip[sample].sample_length + 0.05)
     clip_table()
+    for p = 1,16 do
+      for b = 1,3 do
+        if bank[b][p].mode == 2 and bank[b][p].clip == sample then
+          scale_loop_points(bank[b][p], old_min, old_max, clip[sample].min, clip[sample].max)
+        end
+      end
+    end
   end
 end
 
@@ -2657,22 +2679,24 @@ end
 
 function jump_live(i,s,y,z)
 
-  local old_duration = bank[i][s].mode == 1 and 8 or clip[bank[i][s].clip].sample_length
-  local old_clip = bank[i][s].clip
+  local pad = bank[i][s]
+
+  local old_duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
+  local old_clip = pad.clip
   local old_min = (1+(old_duration*(old_clip-1)))
   local old_max = ((old_duration+1)+(old_duration*(old_clip-1)))
   local old_range = old_min - old_max
-  bank[i][s].clip = math.abs(y-5)
-  local new_duration = bank[i][s].mode == 1 and 8 or clip[bank[i][s].clip].sample_length
-  local new_clip = bank[i][s].clip
-  --local new_min = (1+(new_duration*(bank[i][s].clip-1)))
-  if bank[i][s].mode == 1 then
-    local new_min = (1+(new_duration*(bank[i][s].clip-1)))
-    local new_max = ((new_duration+1)+(new_duration*(bank[i][s].clip-1)))
+  pad.clip = math.abs(y-5)
+  local new_duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
+  local new_clip = pad.clip
+  --local new_min = (1+(new_duration*(pad.clip-1)))
+  if pad.mode == 1 then
+    local new_min = (1+(new_duration*(pad.clip-1)))
+    local new_max = ((new_duration+1)+(new_duration*(pad.clip-1)))
     local new_range = new_max - new_min
-    local current_difference = (bank[i][s].end_point - bank[i][s].start_point) -- is this where it gets weird?
-    bank[i][s].start_point = (((bank[i][s].start_point - old_min) * new_range) / old_range) + new_min
-    bank[i][s].end_point = bank[i][s].start_point + current_difference
+    local current_difference = (pad.end_point - pad.start_point) -- is this where it gets weird?
+    pad.start_point = (((pad.start_point - old_min) * new_range) / old_range) + new_min
+    pad.end_point = pad.start_point + current_difference
   end
 
 
@@ -2712,19 +2736,58 @@ function clip_table()
   clip[3].max = clip[3].min + clip[3].sample_length
 end
 
+function scale_loop_points(pad,old_min,old_max,new_min,new_max)
+  --local pad = bank[b][p]
+  pad.start_point = util.linlin(old_min,old_max,new_min,new_max,pad.start_point)
+  pad.end_point = util.linlin(old_min,old_max,new_min,new_max,pad.end_point)
+end
+
+function change_mode(target,old_mode)
+  local live_min = live[target.clip].min
+  local live_max = live[target.clip].max
+  local clip_min = clip[target.clip].min
+  local clip_max = clip[target.clip].max
+  if old_mode == 1 then
+    target.start_point = util.linlin(live_min,live_max,clip_min,clip_max,target.start_point)
+    target.end_point = util.linlin(live_min,live_max,clip_min,clip_max,target.end_point)
+  elseif old_mode == 2 then
+    target.start_point = util.linlin(clip_min,clip_max,live_min,live_max,target.start_point)
+    target.end_point = util.linlin(clip_min,clip_max,live_min,live_max,target.end_point)
+  end
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function jump_clip(i,s,y,z)
-  if bank[i][s].mode == 2 then
-    local old_clip = bank[i][s].clip
-    bank[i][s].clip = math.abs(y-5)
-    local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
-    bank[i][s].start_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[bank[i][s].clip].min,clip[bank[i][s].clip].max,bank[i][s].start_point)
-    bank[i][s].end_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[bank[i][s].clip].min,clip[bank[i][s].clip].max,bank[i][s].end_point)
+  local pad = bank[i][s]
+  if pad.mode == 2 then
+    local old_clip = pad.clip
+    pad.clip = math.abs(y-5)
+    local current_difference = (pad.end_point - pad.start_point)
+    pad.start_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[pad.clip].min,clip[pad.clip].max,pad.start_point)
+    pad.end_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[pad.clip].min,clip[pad.clip].max,pad.end_point)
   else
-    local old_clip = bank[i][s].clip
-    bank[i][s].clip = math.abs(y-5)
-    local current_difference = (bank[i][s].end_point - bank[i][s].start_point)
-    bank[i][s].start_point = util.linlin(live[old_clip].min,live[old_clip].max,live[bank[i][s].clip].min,live[bank[i][s].clip].max,bank[i][s].start_point)
-    bank[i][s].end_point = util.linlin(live[old_clip].min,live[old_clip].max,live[bank[i][s].clip].min,live[bank[i][s].clip].max,bank[i][s].end_point)
+    local old_clip = pad.clip
+    pad.clip = math.abs(y-5)
+    local current_difference = (pad.end_point - pad.start_point)
+    pad.start_point = util.linlin(live[old_clip].min,live[old_clip].max,live[pad.clip].min,live[pad.clip].max,pad.start_point)
+    pad.end_point = util.linlin(live[old_clip].min,live[old_clip].max,live[pad.clip].min,live[pad.clip].max,pad.end_point)
   end
 end
 
@@ -4301,7 +4364,7 @@ function save_midi_pattern(which)
     io.write("total: "..midi_pat[which].count .. "\n")
     for i = 1,midi_pat[which].count do
       io.write("unquant time: "..midi_pat[which].time[i] .. "\n")
-      --io.write("quant duration: "..midi_pat[which].quant_time[i] .. "\n")
+      --io.write("quant duration: "..midi_pat[which].time_beats[i] .. "\n")
       io.write("quant duration: 0.8".."\n")
       io.write("target: "..midi_pat[which].event[i].target .. "\n")
       io.write("note: "..midi_pat[which].event[i].note .. "\n")
@@ -4326,7 +4389,7 @@ function load_midi_pattern(which)
       midi_pat[which].count = tonumber(string.match(io.read(), ': (.*)'))
       for i = 1,midi_pat[which].count do
         midi_pat[which].time[i] = tonumber(string.match(io.read(), ': (.*)'))
-        midi_pat[which].quant_time[i] = tonumber(string.match(io.read(), ': (.*)'))
+        midi_pat[which].time_beats[i] = tonumber(string.match(io.read(), ': (.*)'))
         midi_pat[which].event[i] = {}
         midi_pat[which].event[i].target = tonumber(string.match(io.read(), ': (.*)'))
         midi_pat[which].event[i].note = tonumber(string.match(io.read(), ': (.*)'))

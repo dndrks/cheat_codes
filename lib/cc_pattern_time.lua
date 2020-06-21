@@ -15,7 +15,7 @@ function pattern.new()
   i.curr_time = {}
   i.event = {}
   i.time = {}
-  i.quant_time = {}
+  i.time_beats = {}
   i.quantum = {}
   i.count = 0
   i.step = 0
@@ -27,7 +27,7 @@ function pattern.new()
   i.clock = nil
   i.clock_time = 4
   i.rec_clock = nil
-  i.mode = "raw"
+  i.mode = "unquantized"
 
   i.metro = metro.init(function() i:next_event() end,1,1)
 
@@ -46,7 +46,7 @@ function pattern:clear()
   self.curr_time = {}
   self.event = {}
   self.time = {}
-  self.quant_time = {}
+  self.time_beats = {}
   self.quantum = {}
   self.count = 0
   self.step = 0
@@ -57,7 +57,7 @@ function pattern:clear()
   self.clock = nil
   self.clock_time = 4
   self.rec_clock = nil
-  self.mode = "raw"
+  self.mode = "unquantized"
 end
 
 --- adjust the time factor of this pattern.
@@ -81,12 +81,16 @@ function pattern:rec_stop()
       local t = self.prev_time
       self.prev_time = util.time()
       self.time[self.count] = self.prev_time - t
+      self.time_beats[self.count] = self.time[self.count] / clock.get_beat_sec()
       self.start_point = 1
       self.end_point = self.count
+      for i = 1,self.count do
+        self:calculate_quantum(i)
+      end
       --tab.print(self.time)
     else
       print("no events recorded")
-    end 
+    end
   else print("not recording")
   end
 end
@@ -110,11 +114,18 @@ function pattern:rec_event(e)
     local t = self.prev_time
     self.prev_time = util.time()
     self.time[c-1] = self.prev_time - t
-    self.quant_time[c-1] = self.time[c-1] / clock.get_beat_sec()
+    self.time_beats[c-1] = self.time[c-1] / clock.get_beat_sec()
     --print(self.time[c-1])
   end
   self.count = c
   self.event[c] = e
+end
+
+function pattern:calculate_quantum(target)
+  self.quantum[target] = util.round(self.time_beats[target],0.25)
+  if target ~= self.count then
+    self.time_beats[target+1] = self.time_beats[target+1] + (self.time_beats[target] - self.quantum[target])
+  end
 end
 
 function pattern:overdub_event(e)
@@ -122,16 +133,19 @@ function pattern:overdub_event(e)
   local t = self.prev_time
   self.prev_time = util.time()
   local a = self.time[c-1]
-  local q_a = self.quant_time[c-1]
+  local q_a = self.time_beats[c-1]
   self.time[c-1] = self.prev_time - t
-  self.quant_time[c-1] = self.time[c-1] / clock.get_beat_sec()
+  self.time_beats[c-1] = self.time[c-1] / clock.get_beat_sec()
   table.insert(self.time, c, a - self.time[c-1])
   table.insert(self.event, c, e)
-  table.insert(self.quant_time, c, q_a - self.quant_time[c-1])
+  table.insert(self.time_beats, c, q_a - self.time_beats[c-1])
   --midi_clock_linearize_overdub(1)
   self.step = self.step + 1
   self.count = self.count + 1
   self.end_point = self.count
+  for i = 1,self.count do
+    self:calculate_quantum(i)
+  end
 end
 
 --- start this pattern
@@ -144,7 +158,38 @@ function pattern:start()
     self.play = 1
     self.step = self.start_point
     self.metro.time = self.time[self.start_point] * self.time_factor
-    self.metro:start()
+    if self.mode == "unquantized" then
+      self.metro:start()
+    else
+      clock.run(quantize_start, self)
+    end
+  end
+end
+
+function quantize_start(target)
+  clock.sync(4)
+  target.quant_clock = clock.run(quantized_advance,target)
+  target.runner = 1
+end
+
+function quantized_advance(target)
+  while true do
+    if target.count > 0 then
+      local step = target.step
+      if target.runner == 1 then
+        midi_pattern_execute(target.event[step])
+      end
+      clock.sync(1/4)
+      target.runner = target.runner + 1
+      if target.runner > target.quantum[step]*4 then
+        target.step = target.step + 1
+        target.runner = 1
+      end
+      if target.step > target.end_point then
+        target.step = target.start_point
+        target.runner = 1
+      end
+    end
   end
 end
 

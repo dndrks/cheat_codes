@@ -400,7 +400,7 @@ function encoder_actions.init(n,d)
           local lbr = {1,2,4}
           if d <= 0 and util.round(rec.start_point,0.01) < util.round(rec.end_point + ((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),0.01) then
             rec.end_point = util.clamp(rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
-          elseif d > 0 and rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) < 9+(8*(rec.clip-1)) then
+          elseif d > 0 and rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]) <= 9+(8*(rec.clip-1)) then
             rec.end_point = util.clamp(rec.end_point+((d/rec_loop_enc_resolution)/lbr[params:get("live_buff_rate")]),(1+(8*(rec.clip-1))),(9+(8*(rec.clip-1))))
           end
           softcut.loop_end(1, rec.end_point-0.01)
@@ -721,7 +721,9 @@ function ea.move_rec_window(target,delta)
   local current_difference = (target.end_point - target.start_point)
   local current_clip = 8*(target.clip-1)
   if delta >=0 then
-    if util.round(target.end_point + current_difference,0.01) < (9+current_clip) then
+    --if util.round(target.end_point + current_difference,0.01) < (9+current_clip) then
+    -- MBUTZ
+    if util.round(target.end_point + current_difference,0.01) <= (9+current_clip) then
       target.start_point = util.clamp(target.start_point + (current_difference * (delta > 0 and 1 or -1)), (1+current_clip),(9+current_clip))
       target.end_point = target.start_point + current_difference
     end
