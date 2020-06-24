@@ -1340,6 +1340,34 @@ function synced_loop(target, state)
   end
 end
 
+function alt_synced_loop(target,state)
+  if state == "restart" then
+    clock.sync(1)
+  end
+  target:start()
+  target.synced_loop_runner = 1
+  print("alt_synced")
+  while true do
+    clock.sync(1/4)
+    if target.synced_loop_runner == target.rec_clock_time * 4 then
+      print(clock.get_beats(), target.synced_loop_runner)
+      local overdub_flag = target.overdub
+      target:stop()
+      if overdub_flag == 1 then
+        target.overdub = 1
+      end
+      target:start()
+      target.synced_loop_runner = 1
+    else
+      target.synced_loop_runner =  target.synced_loop_runner + 1
+    end
+  end
+end
+
+
+
+
+
 function synced_record_start(target,i)
   --midi_pat[i].sync_hold = true
   target.sync_hold = true
@@ -1390,9 +1418,10 @@ function synced_pattern_record(target)
     end
   end
   if target.count > 0 then -- just in case the recording was canceled...
-    target:start()
+    --target:start()
     print("started first run..."..clock.get_beats())
-    target.clock = clock.run(synced_loop, target)
+    --target.clock = clock.run(synced_loop, target)
+    target.clock = clock.run(alt_synced_loop, target)
   end
 end
 
@@ -2635,7 +2664,8 @@ function key(n,z)
             midi_pat[id]:start()
           elseif midi_pat[id].playmode == 2 then
             print("line 2387")
-            midi_pat[id].clock = clock.run(synced_loop, midi_pat[id], "restart")
+            --midi_pat[id].clock = clock.run(synced_loop, midi_pat[id], "restart")
+            midi_pat[id].clock = clock.run(alt_synced_loop, midi_pat[id], "restart")
           end
         end
       end
