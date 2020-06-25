@@ -152,7 +152,9 @@ function grid_actions.init(x,y,z)
         if z == 0 and x == (k+1)+(5*(i-1)) and y<=k then
           if grid_pat[i].quantize == 0 then -- still relevant
             if bank[i].alt_lock then
-              grid_pat[i].overdub = grid_pat[i].overdub == 0 and 1 or 0
+              if grid_pat[i].play == 1 then
+                grid_pat[i].overdub = grid_pat[i].overdub == 0 and 1 or 0
+              end
             else
               if grid.alt == 1 then -- still relevant
                 grid_pat[i]:rec_stop()
@@ -179,9 +181,10 @@ function grid_actions.init(x,y,z)
                 end
                 --/new!
               elseif grid_pat[i].play == 1 then
-                grid_pat[i]:stop()
+                --grid_pat[i]:stop()
+                stop_pattern(grid_pat[i])
               else
-                grid_pat[i]:start()
+                start_pattern(grid_pat[i])
               end
             end
           else

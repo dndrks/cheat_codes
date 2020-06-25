@@ -27,7 +27,7 @@ function pattern.new()
   i.clock = nil
   i.clock_time = 4
   i.rec_clock = nil
-  i.mode = "quantized"
+  i.mode = "unquantized"
 
   i.metro = metro.init(function() i:next_event() end,1,1)
 
@@ -44,6 +44,9 @@ function pattern:clear()
     if self.quant_clock ~= nil then
       clock.cancel(self.quant_clock)
     end
+  end
+  if self.clock ~= nil then
+    clock.cancel(self.clock)
   end
   self.rec = 0
   self.play = 0
@@ -273,12 +276,15 @@ function pattern:stop()
       self.metro:stop()
     else
       clock.cancel(self.quant_clock)
+      self.quant_clock = nil
     end
+    
     --[[
     if self.playmode == 2 then
       clock.cancel(self.clock)
     end
     --]]
+    
   else
     --print("not playing")
   end

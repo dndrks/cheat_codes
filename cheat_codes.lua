@@ -1364,7 +1364,22 @@ function alt_synced_loop(target,state)
   end
 end
 
+function stop_pattern(target)
+  if target.clock ~= nil then
+    clock.cancel(target.clock)
+  end
+  target.clock = nil
+  target:stop()
+end
 
+function start_pattern(target)
+  print("new start")
+  if target.playmode == 2 then
+    target.clock = clock.run(alt_synced_loop, target, "restart")
+  else
+    target:start()
+  end
+end
 
 
 
@@ -1484,11 +1499,6 @@ function pattern_length_to_bars(target, style)
     end
     target.clock_time = 4 * clean_bars_from_time
   end
-end
-
-function midi_rec_clear(target)
-  clock.cancel(midi_pat[target].clock)
-  midi_pat[target]:stop()
 end
 
 function shuffle_midi_pat(target)
