@@ -541,8 +541,13 @@ function copy_entire_pattern(bank)
   original_pattern[bank].event = {}
   for i = 1,#grid_pat[bank].event do
     original_pattern[bank].event[i] = {}
-    for k,v in pairs(grid_pat[bank].event[i]) do
-      original_pattern[bank].event[i][k] = v
+    -- new stuff!
+    if grid_pat[bank].event[i] ~= "pause" then
+      for k,v in pairs(grid_pat[bank].event[i]) do
+        original_pattern[bank].event[i][k] = v
+      end
+    else
+      original_pattern[bank].event[i] = "pause"
     end
   end
   original_pattern[bank].metro = {}
@@ -3812,50 +3817,55 @@ function save_pattern(source,slot)
   io.write(original_pattern[source].count .. "\n")
   for i = 1,original_pattern[source].count do
     io.write(original_pattern[source].time[i] .. "\n")
-    io.write(original_pattern[source].event[i].id .. "\n")
-    io.write(original_pattern[source].event[i].rate .. "\n")
-    io.write(tostring(original_pattern[source].event[i].loop) .. "\n")
-    if original_pattern[source].event[i].mode ~= nil then
-      io.write(original_pattern[source].event[i].mode .. "\n")
+    -- new stuff
+    if original_pattern[source].event[i] ~= "pause" then
+      io.write(original_pattern[source].event[i].id .. "\n")
+      io.write(original_pattern[source].event[i].rate .. "\n")
+      io.write(tostring(original_pattern[source].event[i].loop) .. "\n")
+      if original_pattern[source].event[i].mode ~= nil then
+        io.write(original_pattern[source].event[i].mode .. "\n")
+      else
+        io.write("nil" .. "\n")
+      end
+      io.write(tostring(original_pattern[source].event[i].pause) .. "\n")
+      io.write(original_pattern[source].event[i].start_point .. "\n")
+      if original_pattern[source].event[i].clip ~= nil then
+        io.write(original_pattern[source].event[i].clip .. "\n")
+      else
+        io.write("nil" .. "\n")
+      end
+      io.write(original_pattern[source].event[i].end_point .. "\n")
+      if original_pattern[source].event[i].rate_adjusted ~= nil then
+        io.write(tostring(original_pattern[source].event[i].rate_adjusted) .. "\n")
+      else
+        io.write("nil" .. "\n")
+      end
+      io.write(original_pattern[source].event[i].y .. "\n")
+      io.write(original_pattern[source].event[i].x .. "\n")
+      io.write(tostring(original_pattern[source].event[i].action) .. "\n")
+      io.write(original_pattern[source].event[i].i .. "\n")
+      if original_pattern[source].event[i].previous_rate ~= nil then
+        io.write(original_pattern[source].event[i].previous_rate .. "\n")
+      else
+        io.write("nil" .. "\n")
+      end
+      if original_pattern[source].event[i].row ~=nil then
+        io.write(original_pattern[source].event[i].row .. "\n")
+      else
+        io.write("nil" .. "\n")
+      end
+      if original_pattern[source].event[i].con ~= nil then
+        io.write(original_pattern[source].event[i].con .. "\n")
+      else
+        io.write("nil" .. "\n")
+      end
+      if original_pattern[source].event[i].bank ~= nil and #original_pattern[source].event > 0 then
+        io.write(original_pattern[source].event[i].bank .. "\n")
+      else
+        io.write("nil" .. "\n")
+      end
     else
-      io.write("nil" .. "\n")
-    end
-    io.write(tostring(original_pattern[source].event[i].pause) .. "\n")
-    io.write(original_pattern[source].event[i].start_point .. "\n")
-    if original_pattern[source].event[i].clip ~= nil then
-      io.write(original_pattern[source].event[i].clip .. "\n")
-    else
-      io.write("nil" .. "\n")
-    end
-    io.write(original_pattern[source].event[i].end_point .. "\n")
-    if original_pattern[source].event[i].rate_adjusted ~= nil then
-      io.write(tostring(original_pattern[source].event[i].rate_adjusted) .. "\n")
-    else
-      io.write("nil" .. "\n")
-    end
-    io.write(original_pattern[source].event[i].y .. "\n")
-    io.write(original_pattern[source].event[i].x .. "\n")
-    io.write(tostring(original_pattern[source].event[i].action) .. "\n")
-    io.write(original_pattern[source].event[i].i .. "\n")
-    if original_pattern[source].event[i].previous_rate ~= nil then
-      io.write(original_pattern[source].event[i].previous_rate .. "\n")
-    else
-      io.write("nil" .. "\n")
-    end
-    if original_pattern[source].event[i].row ~=nil then
-      io.write(original_pattern[source].event[i].row .. "\n")
-    else
-      io.write("nil" .. "\n")
-    end
-    if original_pattern[source].event[i].con ~= nil then
-      io.write(original_pattern[source].event[i].con .. "\n")
-    else
-      io.write("nil" .. "\n")
-    end
-    if original_pattern[source].event[i].bank ~= nil and #original_pattern[source].event > 0 then
-      io.write(original_pattern[source].event[i].bank .. "\n")
-    else
-      io.write("nil" .. "\n")
+      io.write("pause" .. "\n")
     end
   end
   io.write(original_pattern[source].metro.props.time .. "\n")
@@ -4159,72 +4169,81 @@ function load_pattern(slot,destination)
       grid_pat[destination].count = tonumber(io.read())
       for i = 1,grid_pat[destination].count do
         grid_pat[destination].time[i] = tonumber(io.read())
+        -- new stuff
+        local pause_or_id = io.read()
+        print(pause_or_id)
         grid_pat[destination].event[i] = {}
-        grid_pat[destination].event[i].id = {}
-        grid_pat[destination].event[i].rate = {}
-        grid_pat[destination].event[i].loop = {}
-        grid_pat[destination].event[i].mode = {}
-        grid_pat[destination].event[i].pause = {}
-        grid_pat[destination].event[i].start_point = {}
-        grid_pat[destination].event[i].clip = {}
-        grid_pat[destination].event[i].end_point = {}
-        grid_pat[destination].event[i].rate_adjusted = {}
-        grid_pat[destination].event[i].y = {}
-        grid_pat[destination].event[i].x = {}
-        grid_pat[destination].event[i].action = {}
-        grid_pat[destination].event[i].i = {}
-        grid_pat[destination].event[i].previous_rate = {}
-        grid_pat[destination].event[i].row = {}
-        grid_pat[destination].event[i].con = {}
-        grid_pat[destination].event[i].bank = nil
-        grid_pat[destination].event[i].id = tonumber(io.read())
-        grid_pat[destination].event[i].rate = tonumber(io.read())
-        local loop_to_boolean = io.read()
-        if loop_to_boolean == "true" then
-          grid_pat[destination].event[i].loop = true
-        else
-          grid_pat[destination].event[i].loop = false
-        end
-        grid_pat[destination].event[i].mode = tonumber(io.read())
-        local pause_to_boolean = io.read()
-        if pause_to_boolean == "true" then
-          grid_pat[destination].event[i].pause = true
-        else
-          grid_pat[destination].event[i].pause = false
-        end
-        grid_pat[destination].event[i].start_point = tonumber(io.read())
-        grid_pat[destination].event[i].clip = tonumber(io.read())
-        grid_pat[destination].event[i].end_point = tonumber(io.read())
-        local rate_adjusted_to_boolean = io.read()
-        if rate_adjusted_to_boolean == "true" then
-          grid_pat[destination].event[i].rate_adjusted = true
-        else
-          grid_pat[destination].event[i].rate_adjusted = false
-        end
-        grid_pat[destination].event[i].y = tonumber(io.read())
-        local loaded_x = tonumber(io.read())
-        grid_pat[destination].event[i].action = io.read()
-        grid_pat[destination].event[i].i = destination
-        local source = tonumber(io.read())
-        if destination < source then
-          grid_pat[destination].event[i].x = loaded_x - (5*(source-destination))
-        elseif destination > source then
-          grid_pat[destination].event[i].x = loaded_x + (5*(destination-source))
-        elseif destination == source then
-          grid_pat[destination].event[i].x = loaded_x
-        end
-        grid_pat[destination].event[i].previous_rate = tonumber(io.read())
-        grid_pat[destination].event[i].row = tonumber(io.read())
-        grid_pat[destination].event[i].con = io.read()
-        local loaded_bank = tonumber(io.read())
-        if loaded_bank ~= nil then
-          if destination < source then
-            grid_pat[destination].event[i].bank = loaded_bank - (5*(source-destination))
-          elseif destination > source then
-            grid_pat[destination].event[i].bank = loaded_bank + (5*(source-destination))
-          elseif destination == source then
-            grid_pat[destination].event[i].bank = loaded_bank
+        if pause_or_id ~= "pause" then
+          grid_pat[destination].event[i].id = {}
+          grid_pat[destination].event[i].rate = {}
+          grid_pat[destination].event[i].loop = {}
+          grid_pat[destination].event[i].mode = {}
+          grid_pat[destination].event[i].pause = {}
+          grid_pat[destination].event[i].start_point = {}
+          grid_pat[destination].event[i].clip = {}
+          grid_pat[destination].event[i].end_point = {}
+          grid_pat[destination].event[i].rate_adjusted = {}
+          grid_pat[destination].event[i].y = {}
+          grid_pat[destination].event[i].x = {}
+          grid_pat[destination].event[i].action = {}
+          grid_pat[destination].event[i].i = {}
+          grid_pat[destination].event[i].previous_rate = {}
+          grid_pat[destination].event[i].row = {}
+          grid_pat[destination].event[i].con = {}
+          grid_pat[destination].event[i].bank = nil
+          --grid_pat[destination].event[i].id = tonumber(io.read())
+          -- new stuff
+          grid_pat[destination].event[i].id = tonumber(pause_or_id)
+          grid_pat[destination].event[i].rate = tonumber(io.read())
+          local loop_to_boolean = io.read()
+          if loop_to_boolean == "true" then
+            grid_pat[destination].event[i].loop = true
+          else
+            grid_pat[destination].event[i].loop = false
           end
+          grid_pat[destination].event[i].mode = tonumber(io.read())
+          local pause_to_boolean = io.read()
+          if pause_to_boolean == "true" then
+            grid_pat[destination].event[i].pause = true
+          else
+            grid_pat[destination].event[i].pause = false
+          end
+          grid_pat[destination].event[i].start_point = tonumber(io.read())
+          grid_pat[destination].event[i].clip = tonumber(io.read())
+          grid_pat[destination].event[i].end_point = tonumber(io.read())
+          local rate_adjusted_to_boolean = io.read()
+          if rate_adjusted_to_boolean == "true" then
+            grid_pat[destination].event[i].rate_adjusted = true
+          else
+            grid_pat[destination].event[i].rate_adjusted = false
+          end
+          grid_pat[destination].event[i].y = tonumber(io.read())
+          local loaded_x = tonumber(io.read())
+          grid_pat[destination].event[i].action = io.read()
+          grid_pat[destination].event[i].i = destination
+          local source = tonumber(io.read())
+          if destination < source then
+            grid_pat[destination].event[i].x = loaded_x - (5*(source-destination))
+          elseif destination > source then
+            grid_pat[destination].event[i].x = loaded_x + (5*(destination-source))
+          elseif destination == source then
+            grid_pat[destination].event[i].x = loaded_x
+          end
+          grid_pat[destination].event[i].previous_rate = tonumber(io.read())
+          grid_pat[destination].event[i].row = tonumber(io.read())
+          grid_pat[destination].event[i].con = io.read()
+          local loaded_bank = tonumber(io.read())
+          if loaded_bank ~= nil then
+            if destination < source then
+              grid_pat[destination].event[i].bank = loaded_bank - (5*(source-destination))
+            elseif destination > source then
+              grid_pat[destination].event[i].bank = loaded_bank + (5*(source-destination))
+            elseif destination == source then
+              grid_pat[destination].event[i].bank = loaded_bank
+            end
+          end
+        else
+          grid_pat[destination].event[i] = "pause"
         end
       end
       grid_pat[destination].metro.props.time = tonumber(io.read())
