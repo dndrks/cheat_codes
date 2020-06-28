@@ -210,6 +210,27 @@ function pattern:start()
   end
 end
 
+function pattern:quant(state)
+
+  if state == 0 then
+    if self.quant_clock ~= nil then
+      clock.cancel(self.quant_clock)
+    end
+    self.mode = "unquantized"
+    if self.play == 1 then
+      self.metro:start()
+    end
+  elseif state == 1 then
+    self.mode = "quantized"
+    self.runner = 1
+    if self.play == 1 then
+      self.metro:stop()
+      self.quant_clock = clock.run(quantized_advance,self)
+    end
+  end
+    
+end
+
 function quantize_start(target)
   --clock.sync(4)
   target.play = 1

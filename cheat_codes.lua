@@ -332,7 +332,8 @@ function random_grid_pat(which,mode)
     local count = auto_pat == 1 and math.random(2,24) or 16
     if pattern.count > 0 or pattern.rec == 1 then
       pattern:rec_stop()
-      pattern:stop()
+      --pattern:stop()
+      stop_pattern(pattern)
       pattern.tightened_start = 0
       pattern:clear()
       pattern_saver[which].load_slot = 0
@@ -382,6 +383,10 @@ function random_grid_pat(which,mode)
       constructed.action = "pads"
       constructed.i = which
       pattern.time[i] = auto_pat == 1 and ((60/bpm) / math.pow(2,math.random(-2,2))) or (60/bpm) / 4
+      --new stuff!
+      pattern.time_beats[i] = pattern.time[i] / clock.get_beat_sec()
+      pattern:calculate_quantum(i)
+      --/new stuff!
     end
     pattern.count = count
     pattern.start_point = 1
@@ -393,7 +398,8 @@ function random_grid_pat(which,mode)
       print("auto-snap")
       snap_to_bars(which,how_many_bars(which))
     end
-    pattern:start()
+    --pattern:start()
+    start_pattern(pattern)
     pattern.loop = 1
   else
     pattern.loop = 1
@@ -550,6 +556,15 @@ function copy_entire_pattern(bank)
       original_pattern[bank].event[i] = "pause"
     end
   end
+  original_pattern[bank].quantum = {}
+  for k,v in pairs(grid_pat[bank].quantum) do
+    original_pattern[bank].quantum[k] = v
+  end
+  original_pattern[bank].time_beats = {}
+  for k,v in pairs(grid_pat[bank].time_beats) do
+    original_pattern[bank].time_beats[k] = v
+  end
+  -- /new stuff!
   original_pattern[bank].metro = {}
   original_pattern[bank].metro.props = {}
   original_pattern[bank].metro.props.time = grid_pat[bank].metro.props.time
@@ -557,6 +572,7 @@ function copy_entire_pattern(bank)
   original_pattern[bank].count = grid_pat[bank].count
   original_pattern[bank].start_point = grid_pat[bank].start_point
   original_pattern[bank].end_point = grid_pat[bank].end_point
+  original_pattern[bank].mode = grid_pat[bank].mode
   if grid_pat[bank].playmode ~= nil then
     original_pattern[bank].playmode = grid_pat[bank].playmode
   else
@@ -581,6 +597,13 @@ end
 
 function table.clone(org)
   return {table.unpack(org)}
+end
+
+function unpack_quantized_table(target)
+  for i = 1,#quantized_grid_pat[target].event do
+    grid_pat[target].quantum[i] = #quantized_grid_pat[target].event[i] * 0.25
+    grid_pat[target].time_beats[i] = grid_pat[target].time[i] / clock.get_beat_sec()
+  end
 end
 
 function midi_clock_linearize(bank)
@@ -1347,7 +1370,8 @@ end
 
 function alt_synced_loop(target,state)
   if state == "restart" then
-    clock.sync(1)
+    clock.sync(params:get("launch_quantization") == 1 and 1 or 4)
+    print("restarting")
   end
   target:start()
   target.synced_loop_runner = 1
@@ -3794,7 +3818,8 @@ end
 function test_load(slot,destination)
   if pattern_saver[destination].saved[slot-((destination-1)*8)] == 1 then
     if grid_pat[destination].play == 1 then
-      grid_pat[destination]:stop()
+      --grid_pat[destination]:stop()
+      stop_pattern(grid_pat[destination])
     elseif grid_pat[destination].tightened_start == 1 then
       grid_pat[destination].tightened_start = 0
       grid_pat[destination].step = grid_pat[destination].start_point
@@ -3802,11 +3827,14 @@ function test_load(slot,destination)
       quantized_grid_pat[destination].sub_step = 1
     end
     load_pattern(slot,destination)
+    start_pattern(grid_pat[destination])
+    --[[
     if grid_pat[destination].quantize == 0 then
       grid_pat[destination]:start()
     elseif grid_pat[destination].quantize == 1 then
       grid_pat[destination].tightened_start = 1
     end
+    --]]
   end
 end
 
@@ -3817,6 +3845,7 @@ function save_pattern(source,slot)
   io.write(original_pattern[source].count .. "\n")
   for i = 1,original_pattern[source].count do
     io.write(original_pattern[source].time[i] .. "\n")
+
     -- new stuff
     if original_pattern[source].event[i] ~= "pause" then
       io.write(original_pattern[source].event[i].id .. "\n")
@@ -3868,6 +3897,8 @@ function save_pattern(source,slot)
       io.write("pause" .. "\n")
     end
   end
+  --/new stuff!
+
   io.write(original_pattern[source].metro.props.time .. "\n")
   io.write(original_pattern[source].prev_time .. "\n")
   io.write("which playmode?" .. "\n")
@@ -3876,6 +3907,15 @@ function save_pattern(source,slot)
   io.write(original_pattern[source].start_point .. "\n")
   io.write("end point" .. "\n")
   io.write(original_pattern[source].end_point .. "\n")
+
+  --new stuff, quantum and time_beats!
+  io.write("cheat codes 2.0" .. "\n")
+  for i = 1,original_pattern[source].count do
+    io.write(original_pattern[source].quantum[i] .. "\n")
+    io.write(original_pattern[source].time_beats[i] .. "\n")
+  end
+  --/new stuff, quantum and time_beats!
+
   io.close(file)
   save_external_timing(source,slot)
   print("saved pattern "..source.." to slot "..slot)
@@ -4169,6 +4209,7 @@ function load_pattern(slot,destination)
       grid_pat[destination].count = tonumber(io.read())
       for i = 1,grid_pat[destination].count do
         grid_pat[destination].time[i] = tonumber(io.read())
+
         -- new stuff
         local pause_or_id = io.read()
         print(pause_or_id)
@@ -4245,6 +4286,7 @@ function load_pattern(slot,destination)
         else
           grid_pat[destination].event[i] = "pause"
         end
+
       end
       grid_pat[destination].metro.props.time = tonumber(io.read())
       grid_pat[destination].prev_time = tonumber(io.read())
@@ -4264,7 +4306,17 @@ function load_pattern(slot,destination)
       else
         grid_pat[destination].end_point = grid_pat[destination].count
       end
+
+      --new stuff, quantum and time_beats!
+      if io.read() == "cheat codes 2.0" then
+        for i = 1,grid_pat[destination].count do
+          grid_pat[destination].quantum[i] = tonumber(io.read())
+          grid_pat[destination].time_beats[i] = tonumber(io.read())
+        end
+      end
+      --/new stuff, quantum and time_beats!
     end
+
     io.close(file)
     load_external_timing(destination,slot)
   else

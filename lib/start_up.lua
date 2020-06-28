@@ -176,8 +176,19 @@ function start_up.init()
   
   --params:add_option("zilchmo_bind_rand","bind random zilchmo?", {"no","yes"}, 1)
   
-  params:add_group("grid/arc pattern params",3)
+  params:add_group("grid/arc pattern params",7)
   params:add_option("zilchmo_patterning", "grid pat style", { "classic", "rad sauce" })
+  for i = 1,3 do
+    params:add_option("pattern_"..i.."_quantization", "quantize pat "..i.."?", {"no", "yes"})
+    params:set_action("pattern_"..i.."_quantization", function(x)
+      grid_pat[i]:quant(x == 1 and 0 or 1)
+      if midi_pat ~= nil then -- TODO FIXME
+        midi_pat[i]:quant(x == 1 and 0 or 1)
+      end
+    end
+    )
+  end
+  params:add_option("launch_quantization", "pat launch quant", {"next beat", "next bar"})
   params:add_option("random_patterning","rand pat style", 
     { "rand"
     , "horizontal"
