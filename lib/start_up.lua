@@ -203,7 +203,10 @@ function start_up.init()
   params:set_action("random_patterning", function(x)
     if x > 1 then
       for i = 1,3 do
-        grid_pat[i].playmode = 3
+        grid_pat[i].playmode = 2
+        if midi_pat ~= nil then -- TODO FIXME
+          midi_pat[i].playmode = 2
+        end
       end
     end
   end)

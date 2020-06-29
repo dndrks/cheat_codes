@@ -428,11 +428,14 @@ function encoder_actions.init(n,d)
           bank[page_line].crow_execute = util.clamp(bank[page_line].crow_execute+d,0,1)
         elseif time_page[page_line] == 1 then
           if pattern.rec ~= 1 then
-            --if there's no grid attached, there's no need for quant + quant+trim
             if not key1_hold then
-              pattern.playmode = util.clamp(pattern.playmode+d,1,g.device ~= nil and 4 or 2)
-              --midi_pat[page_line].playmode = util.clamp(midi_pat[page_line].playmode+d,1,2)
-              set_pattern_mode(page_line)
+              if pattern.play == 1 then
+                stop_pattern(pattern)
+                pattern.playmode = util.clamp(pattern.playmode+d,1,2)
+                start_pattern(pattern)
+              else
+                pattern.playmode = util.clamp(pattern.playmode+d,1,2)
+              end
             elseif key1_hold and pattern.play == 0 and pattern.playmode == 2 then
               pattern.rec_clock_time = util.clamp(pattern.rec_clock_time+d,1,64)
             end
@@ -444,7 +447,7 @@ function encoder_actions.init(n,d)
         elseif time_page[page_line] == 6 then
           if pattern.rec ~= 1 and pattern.count > 0 then
             pattern.start_point = util.clamp(pattern.start_point+d,1,pattern.end_point)
-            pattern_length_to_bars(pattern, "non-destructive")
+            --pattern_length_to_bars(pattern, "non-destructive")
             if quantized_grid_pat[page_line].current_step < pattern.start_point then
               quantized_grid_pat[page_line].current_step = pattern.start_point
               quantized_grid_pat[page_line].sub_step = 1
@@ -453,7 +456,7 @@ function encoder_actions.init(n,d)
         elseif time_page[page_line] == 7 then
           if pattern.rec ~= 1 and pattern.count > 0 then
             pattern.end_point = util.clamp(pattern.end_point+d,pattern.start_point,pattern.count)
-            pattern_length_to_bars(pattern, "non-destructive")
+            --pattern_length_to_bars(pattern, "non-destructive")
             if quantized_grid_pat[page_line].current_step > pattern.end_point then
               quantized_grid_pat[page_line].current_step = pattern.start_point
               quantized_grid_pat[page_line].sub_step = 1

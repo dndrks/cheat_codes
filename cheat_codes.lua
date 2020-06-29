@@ -186,7 +186,8 @@ function cheat_clock_synced(i)
   end
 end
 
-function set_pattern_mode(bank)
+--[[
+function set_pattern_mode(target,bank)
   grid_pat[bank].step = grid_pat[bank].start_point
   quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
   quantized_grid_pat[bank].sub_step = 1
@@ -220,6 +221,7 @@ function set_pattern_mode(bank)
     end
   end
 end
+--]]
 
 function how_many_bars(bank)
   local total_pattern_time = 0
@@ -303,36 +305,43 @@ function random_grid_pat(which,mode)
       pattern.time[i], pattern.time[j] = pattern.time[j], pattern.time[i]
     end
   elseif mode == 2 then
+    stop_pattern(pattern)
     for i = #pattern.event,2,-1 do
       local j = math.random(i)
       local original, shuffled = pattern.event[i], pattern.event[j]
-      original.id, shuffled.id = shuffled.id, original.id
-      original.rate, shuffled.rate = shuffled.rate, original.rate
-      original.loop, shuffled.loop = shuffled.loop, original.loop
-      original.mode, shuffled.mode = shuffled.mode, original.mode
-      original.pause, shuffled.pause = shuffled.pause, original.pause
-      original.start_point, shuffled.start_point = shuffled.start_point, original.start_point
-      original.clip, shuffled.clip = shuffled.clip, original.clip
-      original.end_point = original.end_point
-      original.rate_adjusted, shuffled.rate_adjusted = shuffled.rate_adjusted, original.rate_adjusted
-      original.y, shuffled.y = shuffled.y, original.y
-      original.x, shuffled.x = shuffled.x, original.x
-      original.action, shuffled.action = shuffled.action, original.action
-      original.i, shuffled.i = shuffled.i, original.i
-      original.previous_rate, shuffled.previous_rate = shuffled.previous_rate, original.previous_rate
-      original.row, shuffled.row = shuffled.row, original.row
-      original.con, shuffled.con = shuffled.con, original.con
-      original.bank, shuffled.bank = shuffled.bank, original.bank
+      if original ~= "pause" and shuffled ~= "pause" then
+        original.id, shuffled.id = shuffled.id, original.id
+        original.rate, shuffled.rate = shuffled.rate, original.rate
+        original.loop, shuffled.loop = shuffled.loop, original.loop
+        original.mode, shuffled.mode = shuffled.mode, original.mode
+        original.pause, shuffled.pause = shuffled.pause, original.pause
+        original.start_point, shuffled.start_point = shuffled.start_point, original.start_point
+        original.clip, shuffled.clip = shuffled.clip, original.clip
+        original.end_point = original.end_point
+        original.rate_adjusted, shuffled.rate_adjusted = shuffled.rate_adjusted, original.rate_adjusted
+        original.y, shuffled.y = shuffled.y, original.y
+        original.x, shuffled.x = shuffled.x, original.x
+        original.action, shuffled.action = shuffled.action, original.action
+        original.i, shuffled.i = shuffled.i, original.i
+        original.previous_rate, shuffled.previous_rate = shuffled.previous_rate, original.previous_rate
+        original.row, shuffled.row = shuffled.row, original.row
+        original.con, shuffled.con = shuffled.con, original.con
+        original.bank, shuffled.bank = shuffled.bank, original.bank
+      else
+        original, shuffled = shuffled, original
+      end
     end
   elseif mode == 3 then
     local auto_pat = params:get("random_patterning")
     if pattern.playmode == 3 or pattern.playmode == 4 then
-      clock.sync(1/4)
+      --clock.sync(1/4)
+      -- new stuff!
+      pattern.playmode = 2
+      -- /new stuff!
     end
     local count = auto_pat == 1 and math.random(2,24) or 16
     if pattern.count > 0 or pattern.rec == 1 then
       pattern:rec_stop()
-      --pattern:stop()
       stop_pattern(pattern)
       pattern.tightened_start = 0
       pattern:clear()
@@ -398,7 +407,6 @@ function random_grid_pat(which,mode)
       print("auto-snap")
       snap_to_bars(which,how_many_bars(which))
     end
-    --pattern:start()
     start_pattern(pattern)
     pattern.loop = 1
   else
@@ -1546,12 +1554,13 @@ function random_midi_pat(target)
   local pattern = midi_pat[target]
   local auto_pat = params:get("random_patterning")
   if pattern.playmode == 2 then
-    clock.sync(1/4)
+    --clock.sync(1/4)
+    --huh????
   end
   local count = auto_pat == 1 and math.random(4,24) or 16
   if pattern.count > 0 or pattern.rec == 1 then
     pattern:rec_stop()
-    pattern:stop()
+    stop_pattern(pattern)
     pattern:clear()
   end
   for i = 1,count do
@@ -1578,12 +1587,14 @@ function random_midi_pat(target)
     }
     assigning_pad.level = new_levels[math.abs(assigning_pad.rate)]
     pattern.time[i] = auto_pat == 1 and ((60/bpm) / math.pow(2,math.random(-2,2))) or (60/bpm) / 4
+    pattern.time_beats[i] = pattern.time[i] / clock.get_beat_sec()
+    pattern:calculate_quantum(i)
   end
   pattern.count = count
   pattern.start_point = 1
   pattern.end_point = count
   pattern_length_to_bars(pattern, "destructive")
-  pattern:start()
+  start_pattern(pattern)
 end
 
 ---
@@ -2504,9 +2515,11 @@ function key(n,z)
         end
         if page.time_page_sel[time_nav] == 2 then
           if g.device ~= nil then
+            print("random grid pat!", id)
             random_grid_pat(id,2)
           else
             shuffle_midi_pat(id)
+            ("random midi pat!")
           end
         elseif page.time_page_sel[time_nav] == 5 then
           if not key1_hold then
@@ -3722,7 +3735,7 @@ function loadstate()
     if io.read() == "last Pattern playmode" then
       for i = 1,3 do
         grid_pat[i].playmode = tonumber(io.read())
-        set_pattern_mode(i)
+        --set_pattern_mode(grid_pat[i],i)
       end
     end
     if io.read() == "1.2.1: arc patterning" then
@@ -4295,7 +4308,7 @@ function load_pattern(slot,destination)
       else
         grid_pat[destination].playmode = 1
       end
-      set_pattern_mode(destination)
+      --set_pattern_mode(grid_pat[destination],destination)
       if io.read() == "start point" then
         grid_pat[destination].start_point = tonumber(io.read())
       else

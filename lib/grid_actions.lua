@@ -151,7 +151,7 @@ function grid_actions.init(x,y,z)
       for i = 1,3 do
         if z == 0 and x == (k+1)+(5*(i-1)) and y<=k then
           if grid_pat[i].quantize == 0 then -- still relevant
-            if bank[i].alt_lock then
+            if bank[i].alt_lock and grid.alt == 0 then
               if grid_pat[i].play == 1 then
                 grid_pat[i].overdub = grid_pat[i].overdub == 0 and 1 or 0
               end
