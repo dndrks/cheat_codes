@@ -24,8 +24,12 @@ rnd = include 'lib/rnd_actions'
 rytm = include 'lib/euclid'
 math.randomseed(os.time())
 
+--all the .quantize stuff is irrelevant now. it's been replaced by .mode = "quantized"
+
 function screenshot()
-  _norns.screen_export_png("/home/we/"..menu.."-"..os.time()..".png")
+  --_norns.screen_export_png("/home/we/"..menu.."-"..os.time()..".png")
+  local which_screen = string.match(string.match(string.match(norns.state.script,"/home/we/dust/code/(.*)"),"/(.*)"),"(.+).lua")
+  _norns.screen_export_png("/home/we/"..which_screen.."-"..os.time()..".png")
 end
 
 function rerun()
@@ -186,43 +190,6 @@ function cheat_clock_synced(i)
   end
 end
 
---[[
-function set_pattern_mode(target,bank)
-  grid_pat[bank].step = grid_pat[bank].start_point
-  quantized_grid_pat[bank].current_step = grid_pat[bank].start_point
-  quantized_grid_pat[bank].sub_step = 1
-  if grid_pat[bank].playmode == 1 then
-    grid_pat[bank].quantize = 0
-    grid_pat[bank].auto_snap = 0
-    if grid_pat[bank].tightened_start == 1 then
-      grid_pat[bank].tightened_start = 0
-      grid_pat[bank]:start()
-    end
-  elseif grid_pat[bank].playmode == 2 then
-    grid_pat[bank].quantize = 0
-    grid_pat[bank].auto_snap = 1
-    if grid_pat[bank].tightened_start == 1 then
-      grid_pat[bank].tightened_start = 0
-      grid_pat[bank]:start()
-    end
-  elseif grid_pat[bank].playmode == 3 then
-    grid_pat[bank].quantize = 1
-    grid_pat[bank].auto_snap = 0
-    if grid_pat[bank].play == 1 then
-      grid_pat[bank]:stop()
-      grid_pat[bank].tightened_start = 1
-    end
-  elseif grid_pat[bank].playmode == 4 then
-    grid_pat[bank].quantize = 1
-    grid_pat[bank].auto_snap = 1
-    if grid_pat[bank].play == 1 then
-      grid_pat[bank]:stop()
-      grid_pat[bank].tightened_start = 1
-    end
-  end
-end
---]]
-
 function how_many_bars(bank)
   local total_pattern_time = 0
   for i = 1,#grid_pat[bank].event do
@@ -333,6 +300,9 @@ function random_grid_pat(which,mode)
     end
   elseif mode == 3 then
     local auto_pat = params:get("random_patterning")
+    if auto_pat ~= 1 then
+      params:set("pattern_"..which.."_quantization", 2)
+    end
     if pattern.playmode == 3 or pattern.playmode == 4 then
       --clock.sync(1/4)
       -- new stuff!
@@ -391,9 +361,12 @@ function random_grid_pat(which,mode)
       end
       constructed.action = "pads"
       constructed.i = which
-      pattern.time[i] = auto_pat == 1 and ((60/bpm) / math.pow(2,math.random(-2,2))) or (60/bpm) / 4
+      local tempo = clock.get_beat_sec()
+      local divisors = { 4,2,1,0.5,0.25,math.pow(2,math.random(-2,2)) }
+      local note_length = (tempo / divisors[params:get("rand_pattern_"..which.."_note_length")])
+      pattern.time[i] = note_length
       --new stuff!
-      pattern.time_beats[i] = pattern.time[i] / clock.get_beat_sec()
+      pattern.time_beats[i] = pattern.time[i] / tempo
       pattern:calculate_quantum(i)
       --/new stuff!
     end
@@ -670,6 +643,7 @@ end
   --]]
 
 key1_hold = false
+key1_hold_and_modify = false
 
 grid.alt = 0
 grid.alt_pp = 0
@@ -1418,8 +1392,6 @@ function start_pattern(target)
   end
 end
 
-
-
 function synced_record_start(target,i)
   --midi_pat[i].sync_hold = true
   target.sync_hold = true
@@ -1809,7 +1781,8 @@ osc_in = function(path, args, from)
     elseif path == "/start_pat_"..i then
       if grid_pat[i].quantize == 0 then
         if grid_pat[i].play == 0 then
-          grid_pat[i]:start()
+          --grid_pat[i]:start()
+          start_pattern(grid_pat[i])
           osc.send(dest, "/start_pat_"..i, {1})
         else
           grid_pat[i]:stop()
@@ -2496,7 +2469,8 @@ function key(n,z)
               elseif midi_pat[time_nav].rec == 1 then
                 midi_pat[time_nav]:rec_stop()
                 if midi_pat[time_nav].playmode == 1 then
-                  midi_pat[time_nav]:start()
+                  --midi_pat[time_nav]:start()
+                  start_pattern(midi_pat[time_nav])
                 elseif midi_pat[time_nav].playmode == 2 then
                   --midi_pat[time_nav]:start()
                   print("line 2196")
@@ -2701,39 +2675,46 @@ function key(n,z)
       key1_hold = false
     end
     if menu == 7 then
-      local time_nav = page.time_sel
-      local id = time_nav
-      if midi_pat[id].play == 1 then
-        if midi_pat[id].clock ~= nil then
-          clock.cancel(midi_pat[id].clock)
-          print("pausing clock")
-          midi_pat[id].step = 1
-        end
-        midi_pat[id]:stop()
-      else
-        if midi_pat[id].count > 0 then
-          if midi_pat[id].playmode == 1 then
-            midi_pat[id]:start()
-          elseif midi_pat[id].playmode == 2 then
-            print("line 2387")
-            --midi_pat[id].clock = clock.run(synced_loop, midi_pat[id], "restart")
-            midi_pat[id].clock = clock.run(alt_synced_loop, midi_pat[id], "restart")
+      if key1_hold_and_modify == false then
+        local time_nav = page.time_sel
+        local id = time_nav
+        if midi_pat[id].play == 1 then
+          if midi_pat[id].clock ~= nil then
+            clock.cancel(midi_pat[id].clock)
+            print("pausing clock")
+            midi_pat[id].step = 1
           end
-        end
-      end
-      if grid_pat[id].count > 0 then
-        if grid_pat[id].quantize == 0 then
-          if grid_pat[id].play == 1 then
-            grid_pat[id]:stop()
-          else
-            grid_pat[id]:start()
-          end
+          midi_pat[id]:stop()
         else
-          grid_pat[id].tightened_start = (grid_pat[id].tightened_start + 1)%2
-          grid_pat[id].step = grid_pat[id].start_point
-          quantized_grid_pat[id].current_step = grid_pat[id].start_point
-          quantized_grid_pat[id].sub_step = 1
+          if midi_pat[id].count > 0 then
+            if midi_pat[id].playmode == 1 then
+              --midi_pat[id]:start()
+              start_pattern(midi_pat[id])
+            elseif midi_pat[id].playmode == 2 then
+              print("line 2387")
+              --midi_pat[id].clock = clock.run(synced_loop, midi_pat[id], "restart")
+              midi_pat[id].clock = clock.run(alt_synced_loop, midi_pat[id], "restart")
+            end
+          end
         end
+        if grid_pat[id].count > 0 then
+          if grid_pat[id].quantize == 0 then
+            if grid_pat[id].play == 1 then
+              --grid_pat[id]:stop()
+              stop_pattern(grid_pat[id])
+            else
+              --grid_pat[id]:start()
+              start_pattern(grid_pat[id])
+            end
+          else
+            grid_pat[id].tightened_start = (grid_pat[id].tightened_start + 1)%2
+            grid_pat[id].step = grid_pat[id].start_point
+            quantized_grid_pat[id].current_step = grid_pat[id].start_point
+            quantized_grid_pat[id].sub_step = 1
+          end
+        end
+      else
+        key1_hold_and_modify = false
       end
     end
   end
@@ -3831,7 +3812,6 @@ end
 function test_load(slot,destination)
   if pattern_saver[destination].saved[slot-((destination-1)*8)] == 1 then
     if grid_pat[destination].play == 1 then
-      --grid_pat[destination]:stop()
       stop_pattern(grid_pat[destination])
     elseif grid_pat[destination].tightened_start == 1 then
       grid_pat[destination].tightened_start = 0
@@ -3841,13 +3821,6 @@ function test_load(slot,destination)
     end
     load_pattern(slot,destination)
     start_pattern(grid_pat[destination])
-    --[[
-    if grid_pat[destination].quantize == 0 then
-      grid_pat[destination]:start()
-    elseif grid_pat[destination].quantize == 1 then
-      grid_pat[destination].tightened_start = 1
-    end
-    --]]
   end
 end
 

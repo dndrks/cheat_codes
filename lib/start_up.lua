@@ -176,7 +176,7 @@ function start_up.init()
   
   --params:add_option("zilchmo_bind_rand","bind random zilchmo?", {"no","yes"}, 1)
   
-  params:add_group("grid/arc pattern params",7)
+  params:add_group("grid/arc pattern params",10)
   params:add_option("zilchmo_patterning", "grid pat style", { "classic", "rad sauce" })
   for i = 1,3 do
     params:add_option("pattern_"..i.."_quantization", "quantize pat "..i.."?", {"no", "yes"})
@@ -210,6 +210,11 @@ function start_up.init()
       end
     end
   end)
+
+  for i = 1,3 do
+    params:add_option("rand_pattern_"..i.."_note_length", "rand pat "..i.." note length", {"1/16", "1/8", "1/4", "1/2", "1", "rand"})
+  end
+  
 
   params:add_option("arc_patterning", "arc pat style", { "passive", "active" })
   

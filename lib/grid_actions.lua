@@ -454,12 +454,27 @@ function grid_actions.init(x,y,z)
           --if grid.alt == 0 then
           if not bank[i].alt_lock and grid.alt == 0 then
             if y == 3 then
-              --menu = 9
-              page.arp_page_sel = i
-              arp[i].hold = not arp[i].hold
-              if not arp[i].hold then
-                arps.clear(i)
+              
+              if #arp[i].notes > 0 then
+                if arp[i].hold == true then
+                  if arp[i].playing == true then
+                    arp[i].pause = true
+                    arp[i].playing = false
+                  else
+                    arp[i].step = arp[i].start_point
+                    arp[i].pause = false
+                    arp[i].playing = true
+                  end
+                end
               end
+              
+              
+              if arp[i].hold == false then
+                arp[i].hold = true
+              end
+
+              
+
             else
               if key1_hold == true then key1_hold = false end
               if y == 4 then
@@ -475,6 +490,17 @@ function grid_actions.init(x,y,z)
               else
                 random_grid_pat(math.ceil(x/4),3)
               end
+            end
+            if y == 3 then
+              page.arp_page_sel = i
+              arp[i].hold = not arp[i].hold
+              if not arp[i].hold then
+                arps.clear(i)
+              end
+
+
+
+              --arp[i].pause = not arp[i].pause
             end
             if y == 4 then
               local current = math.floor(x/5)+1
