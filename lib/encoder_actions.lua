@@ -89,7 +89,7 @@ function encoder_actions.init(n,d)
       elseif page.rnd_page_section == 3 then
         local selected_slot = page.rnd_page_sel[page.rnd_page]
         local current_param = rnd[page.rnd_page][selected_slot].param
-        local reasonable_max = (current_param == "loop" or current_param == "delay send") and 2 or 3
+        local reasonable_max = (current_param == "loop" or current_param == "delay send") and 3 or 4
         page.rnd_page_edit[page.rnd_page] = util.clamp(page.rnd_page_edit[page.rnd_page]+d,1,reasonable_max)
       end
     end
@@ -314,13 +314,22 @@ function encoder_actions.init(n,d)
             current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
           end
         elseif page.rnd_page_edit[page.rnd_page] == 2 then
+          if d > 0 then
+            current.mode = "destructive"
+          elseif d < 0 then
+            current.mode = "non-destructive"
+          end
+        elseif page.rnd_page_edit[page.rnd_page] == 3 then
+          current.num = util.clamp(current.num+d,1,32)
+          --[[
           if key1_hold then
             current.denom = util.clamp(current.denom+d,1,32)
           else
             current.num = util.clamp(current.num+d,1,32)
           end
+          --]]
           current.time = current.num / current.denom
-        elseif page.rnd_page_edit[page.rnd_page] == 3 then
+        elseif page.rnd_page_edit[page.rnd_page] == 4 then
           if current.param == "pan" then
             current.pan_min = util.clamp(current.pan_min+d,-100,current.pan_max-1)
           elseif current.param == "rate" then
@@ -527,10 +536,10 @@ function encoder_actions.init(n,d)
       if page.rnd_page_section == 3 then
         if page.rnd_page_edit[page.rnd_page] == 1 then
           --current.param = rnd.targets[util.clamp(find_the_key(rnd.targets,current.param)+d,1,#rnd.targets)]
-        elseif page.rnd_page_edit[page.rnd_page] == 2 then
+        elseif page.rnd_page_edit[page.rnd_page] == 3 then
           current.denom = util.clamp(current.denom+d,1,32)
           current.time = current.num / current.denom
-        elseif page.rnd_page_edit[page.rnd_page] == 3 then
+        elseif page.rnd_page_edit[page.rnd_page] == 4 then
           if current.param == "pan" then
             current.pan_max = util.clamp(current.pan_max+d,current.pan_min+1,100)
           elseif current.param == "rate" then

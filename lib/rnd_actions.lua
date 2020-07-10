@@ -22,6 +22,7 @@ function rnd.init(t)
         rnd[t][i].rate_max = 4
         rnd[t][i].offset_scale = MusicUtil.SCALES[1].name
         rnd[t][i].offset_octave = 2
+        rnd[t][i].mode = "non-destructive"
     end
     math.randomseed(os.time())
 end
@@ -107,6 +108,9 @@ function rnd.rate(t,i)
     local max = rates_to_int[rnd[t][i].rate_max]
     local rand_rate = rates[math.random(min,max)]
     local rev = math.random(0,1)
+    if rnd[t][i].mode == "destructive" then
+        bank[t][bank[t].id].rate = rand_rate*(rev == 0 and -1 or 1)
+    end
     softcut.rate(t+1,rand_rate*(rev == 0 and -1 or 1))
 end
 
@@ -133,6 +137,10 @@ end
 function rnd.offset(t,i)
     local scale = MusicUtil.generate_scale(0,rnd[t][i].offset_scale,rnd[t][i].offset_octave)
     local rand_offset = scale[math.random(1,#scale)]
+    print(rand_offset)
+    if rnd[t][i].mode == "destructive" then
+        bank[t][bank[t].id].offset = math.pow(0.5, -rand_offset / 12)
+    end
     softcut.rate(t+1,bank[t][bank[t].id].rate*(math.pow(0.5, -rand_offset / 12)))
 end
 

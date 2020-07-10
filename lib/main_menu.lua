@@ -751,13 +751,13 @@ function main_menu.init()
     local edit_line = page.rnd_page_edit[page.rnd_page]
     screen.font_size(8)
     screen.move(0,60)
-    screen.text(tostring(current.playing) == "true" and "running" or "")
+    screen.text(tostring(current.playing) == "true" and "active" or "")
     screen.level(3)
     screen.move(0,20)
     if page.rnd_page_section == 2 then
       screen.text(tostring(current.playing) == "false" and "K1+K3: run / K3: edit / E1: <->" or "K1+K3: kill / K3: edit / E1: <->")
     elseif page.rnd_page_section == 3 then
-      if edit_line < 2 then
+      if edit_line < 3 then
         screen.text("E1: nav / E2: mod / K2: back")
       else
         screen.text("E2: mod L / E3: mod R")
@@ -769,9 +769,12 @@ function main_menu.init()
     screen.text("param: "..current.param)
     screen.move(30,40)
     screen.level(page.rnd_page_section == 3 and (edit_line == 2 and 15 or 3) or 3)
-    screen.text("clock: "..current.num.."/"..current.denom)
+    screen.text("mode: "..current.mode)
     screen.move(30,50)
     screen.level(page.rnd_page_section == 3 and (edit_line == 3 and 15 or 3) or 3)
+    screen.text("clock: "..current.num.."/"..current.denom)
+    screen.move(30,60)
+    screen.level(page.rnd_page_section == 3 and (edit_line == 4 and 15 or 3) or 3)
     local params_to_lims =
     { ["pan"] = {"min: "..(current.pan_min < 0 and "L " or "R ")..math.abs(current.pan_min), "max: "..(current.pan_max > 0 and "R " or "L ")..math.abs(current.pan_max)}
     , ["rate"] = {"min: "..current.rate_min, "max: "..current.rate_max}

@@ -2799,10 +2799,18 @@ function clip_table()
   clip[3].max = clip[3].min + clip[3].sample_length
 end
 
+-- length mods
+
 function scale_loop_points(pad,old_min,old_max,new_min,new_max)
   --local pad = bank[b][p]
+  local duration = pad.end_point - pad.start_point
   pad.start_point = util.linlin(old_min,old_max,new_min,new_max,pad.start_point)
-  pad.end_point = util.linlin(old_min,old_max,new_min,new_max,pad.end_point)
+  --pad.end_point = util.linlin(old_min,old_max,new_min,new_max,pad.end_point)
+  if pad.start_point + duration > new_max then
+    pad.end_point = new_max
+  else
+    pad.end_point = pad.start_point + duration
+  end
 end
 
 function change_mode(target,old_mode)
@@ -2810,49 +2818,48 @@ function change_mode(target,old_mode)
   local live_max = live[target.clip].max
   local clip_min = clip[target.clip].min
   local clip_max = clip[target.clip].max
+  local duration = target.end_point - target.start_point
   if old_mode == 1 then
     target.start_point = util.linlin(live_min,live_max,clip_min,clip_max,target.start_point)
-    target.end_point = util.linlin(live_min,live_max,clip_min,clip_max,target.end_point)
+    --target.end_point = util.linlin(live_min,live_max,clip_min,clip_max,target.end_point)
   elseif old_mode == 2 then
     target.start_point = util.linlin(clip_min,clip_max,live_min,live_max,target.start_point)
-    target.end_point = util.linlin(clip_min,clip_max,live_min,live_max,target.end_point)
+    --target.end_point = util.linlin(clip_min,clip_max,live_min,live_max,target.end_point)
+  end
+  if target.start_point + duration > (old_mode == 1 and clip[target.clip].max or live[target.clip].max) then
+    target.end_point = (old_mode == 1 and clip[target.clip].max or live[target.clip].max)
+  else
+    target.end_point = target.start_point + duration
   end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function jump_clip(i,s,y,z)
   local pad = bank[i][s]
+  local current_difference = (pad.end_point - pad.start_point)
   if pad.mode == 2 then
     local old_clip = pad.clip
     pad.clip = math.abs(y-5)
-    local current_difference = (pad.end_point - pad.start_point)
+    --local current_difference = (pad.end_point - pad.start_point)
     pad.start_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[pad.clip].min,clip[pad.clip].max,pad.start_point)
-    pad.end_point = util.linlin(clip[old_clip].min,clip[old_clip].max,clip[pad.clip].min,clip[pad.clip].max,pad.end_point)
+    if pad.start_point + current_difference > clip[pad.clip].max then
+      pad.end_point = clip[pad.clip].max
+    else
+      pad.end_point = pad.start_point + current_difference
+    end
   else
     local old_clip = pad.clip
     pad.clip = math.abs(y-5)
-    local current_difference = (pad.end_point - pad.start_point)
+    --local current_difference = (pad.end_point - pad.start_point)
     pad.start_point = util.linlin(live[old_clip].min,live[old_clip].max,live[pad.clip].min,live[pad.clip].max,pad.start_point)
-    pad.end_point = util.linlin(live[old_clip].min,live[old_clip].max,live[pad.clip].min,live[pad.clip].max,pad.end_point)
+    if pad.start_point + current_difference > live[pad.clip].max then
+      pad.end_point = live[pad.clip].max
+    else
+      pad.end_point = pad.start_point + current_difference
+    end
   end
 end
+
+--/ length mods
 
 function grid_entry(e)
   if e.state > 0 then
