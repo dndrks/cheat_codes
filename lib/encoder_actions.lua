@@ -484,12 +484,13 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 8 then
-
-      if rytm.screen_focus == "right" then
-        rytm.track[rytm.track_edit].pad_offset = util.clamp(rytm.track[rytm.track_edit].pad_offset+d,-15,15)
-      else
-        rytm.track[rytm.track_edit].n = util.clamp(rytm.track[rytm.track_edit].n+d,1,16)
-        rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k,0,rytm.track[rytm.track_edit].n)
+      if not key1_hold then
+        if rytm.screen_focus == "right" then
+          rytm.track[rytm.track_edit].pad_offset = util.clamp(rytm.track[rytm.track_edit].pad_offset+d,-15,15)
+        else
+          rytm.track[rytm.track_edit].n = util.clamp(rytm.track[rytm.track_edit].n+d,1,16)
+          rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k,0,rytm.track[rytm.track_edit].n)
+        end
       end
 
       --[==[

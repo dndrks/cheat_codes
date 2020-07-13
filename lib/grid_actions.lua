@@ -170,7 +170,10 @@ function grid_actions.init(x,y,z)
                   print("auto-snap")
                   snap_to_bars(i,how_many_bars(i))
                 end
-                grid_pat[i]:start()
+                if grid_pat[i].mode ~= "quantized" then
+                  --grid_pat[i]:start()
+                  start_pattern(grid_pat[i])
+                end
                 grid_pat[i].loop = 1
               elseif grid_pat[i].count == 0 then
                 if grid_pat[i].playmode ~= 2 then

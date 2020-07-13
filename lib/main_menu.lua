@@ -475,12 +475,8 @@ function main_menu.init()
       screen.level((i == rytm.track_edit and rytm.screen_focus == "left" and not key1_hold) and 15 or 4)
       screen.move(5, i*12 + 20)
       screen.text_center(rytm.track[i].k)
-      screen.level((i == rytm.track_edit and rytm.screen_focus == "left") and 15 or 4)
       screen.move(20, i*12 + 20)
       screen.text_center(rytm.track[i].n)
-      --screen.move(13, i*12 + 20)
-      --screen.text_center(",")
-      --screen.text_center(rytm.track[i].rotation)
   
       for x = 1,rytm.track[i].n do
         screen.level((rytm.track[i].pos == x and not rytm.reset) and 15 or 2)
@@ -496,10 +492,8 @@ function main_menu.init()
       screen.level((i == rytm.track_edit and rytm.screen_focus == "right" and not key1_hold) and 15 or 4)
       screen.move(105, i*12 + 20)
       screen.text_center(rytm.track[i].rotation)
-      screen.level((i == rytm.track_edit and rytm.screen_focus == "right") and 15 or 4)
       screen.move(120, i*12 + 20)
       screen.text_center(rytm.track[i].pad_offset)
-      --screen.move((rytm.track[i].focus*4) + 28, i*15 + 18)
 
     end
   

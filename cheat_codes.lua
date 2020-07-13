@@ -1410,42 +1410,46 @@ end
 
 function synced_pattern_record(target)
   clock.sleep((60/bpm)*target.rec_clock_time)
-  target:rec_stop()
-  -- if target is a grid pat, should do all the grid pat thing:
-  --[[
-    midi_clock_linearize(i)
-    if grid_pat[i].auto_snap == 1 then
-      print("auto-snap")
-      snap_to_bars(i,how_many_bars(i))
+  if target.rec_clock ~= nil then
+    target:rec_stop()
+    -- if target is a grid pat, should do all the grid pat thing:
+    --[[
+      midi_clock_linearize(i)
+      if grid_pat[i].auto_snap == 1 then
+        print("auto-snap")
+        snap_to_bars(i,how_many_bars(i))
+      end
+      grid_pat[i]:start()
+      grid_pat[i].loop = 1
+    --]]
+    pattern_length_to_bars(target, "destructive")
+    if target.time[1] ~= nil and target.time[1] < (60/bpm)/4 and target.event[1] == "pause" then
+      print("we could lose the first event..."..target.count, target.end_point)
+      local butts = 0
+      for i = 1,target.count do
+        butts = butts + target.time[i]
+      end
+      print(butts)
+      target.time[2] = target.time[2] + target.time[1]
+      target.time_beats[2] = target.time_beats[2] + target.time_beats[1]
+      table.remove(target.event,1)
+      table.remove(target.time,1)
+      table.remove(target.time_beats,1)
+      target.count = #target.event
+      target.end_point = target.count
+      print(target.count, target.end_point)
+      for i = 1,target.count do
+        target:calculate_quantum(i)
+      end
     end
-    grid_pat[i]:start()
-    grid_pat[i].loop = 1
-  --]]
-  pattern_length_to_bars(target, "destructive")
-  if target.time[1] ~= nil and target.time[1] < (60/bpm)/4 and target.event[1] == "pause" then
-    print("we could lose the first event..."..target.count, target.end_point)
-    local butts = 0
-    for i = 1,target.count do
-      butts = butts + target.time[i]
+    if target.count > 0 then -- just in case the recording was canceled...
+      --target:start()
+      print("started first run..."..clock.get_beats())
+      --target.clock = clock.run(synced_loop, target)
+      target.clock = clock.run(alt_synced_loop, target)
     end
-    print(butts)
-    target.time[2] = target.time[2] + target.time[1]
-    target.time_beats[2] = target.time_beats[2] + target.time_beats[1]
-    table.remove(target.event,1)
-    table.remove(target.time,1)
-    table.remove(target.time_beats,1)
-    target.count = #target.event
-    target.end_point = target.count
-    print(target.count, target.end_point)
-    for i = 1,target.count do
-      target:calculate_quantum(i)
-    end
-  end
-  if target.count > 0 then -- just in case the recording was canceled...
-    --target:start()
-    print("started first run..."..clock.get_beats())
-    --target.clock = clock.run(synced_loop, target)
-    target.clock = clock.run(alt_synced_loop, target)
+  else
+    print("clock got canceled already, not going to restart it")
   end
 end
 

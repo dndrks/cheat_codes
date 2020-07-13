@@ -101,6 +101,13 @@ function pattern:rec_stop()
     end
   else print("not recording")
   end
+  --NEW STUFF
+  if self.rec_clock ~= nil then
+    print("canceling record clock")
+    clock.cancel(self.rec_clock)
+    self.rec_clock = nil
+  end
+  --/ NEW STUFF
 end
 
 --- watch
