@@ -102,12 +102,9 @@ function zilchmos.start_end_default( pad )
   pad.end_point   = 1+((8/16) *  pad.pad_id)    + (8*(pad.clip-1))
 end
 
-function zilchmos.start_end_sixteenths( pad )
+function zilchmos.end_sixteenths( pad )
   local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
   local s_p = pad.mode == 1 and live[pad.clip].min or clip[pad.clip].min
-  -- FIXME bpm is global
-  --pad.start_point = (1+((duration/16)*(pad.pad_id-1)))+(duration*(pad.clip-1))
-  pad.start_point = (s_p+((duration/16)*(pad.pad_id-1)))
   pad.end_point   = pad.start_point + (clock.get_beat_sec()/4)
 end
 
@@ -151,9 +148,14 @@ end
 
 function zilchmos.loop_double( pad )
   local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
-  local double = (pad.end_point - pad.start_point)*2
+  --local double = (pad.end_point - pad.start_point)*2
+  local double = pad.end_point - pad.start_point
   local maximum_val = (duration+1)+(duration*(pad.clip-1))
   local minimum_val = 1+(duration*(pad.clip-1))
+  if pad.end_point + double < maximum_val then
+    pad.end_point = pad.end_point + double
+  end
+  --[[
   if pad.start_point - double >= minimum_val then
     pad.start_point = pad.end_point - double
   elseif pad.start_point - double < minimum_val then
@@ -161,12 +163,17 @@ function zilchmos.loop_double( pad )
       pad.end_point = pad.end_point + double
     end
   end
+  -]]
 end
 
 function zilchmos.loop_halve( pad )
+  --[[
   local quarter = ((pad.end_point - pad.start_point)/2)/2
   pad.start_point = pad.start_point + quarter
   pad.end_point   = pad.end_point - quarter
+  --]]
+  local half = (pad.end_point-pad.start_point)/2
+  pad.end_point = pad.end_point - half
 end
 
 function zilchmos.loop_sync( pad, dir )
@@ -287,7 +294,7 @@ zilchmos.actions =
 , [4] = -- start/end points, rate, direction
   { ['1']    = { z.start_zero           , z.sc.start }
   , ['2']    = { z.start_end_default    , z.sc.start_end }
-  , ['3']    = { z.start_end_sixteenths , z.sc.start_end }
+  , ['3']    = { z.end_sixteenths       , z.sc.start_end }
   , ['4']    = { z.end_at_eight         , z.sc._end }
   , ['12']   = { z.start_random         , z.sc.cheat }
   , ['34']   = { z.end_random           , z.sc._end }

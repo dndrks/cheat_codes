@@ -740,7 +740,7 @@ function main_menu.init()
           break
         end
       end
-      screen.text(tostring(some_playing[page.rnd_page]) == "true" and ("K1+K3 to kill all running in "..page.rnd_page) or "")
+      screen.text(tostring(some_playing[page.rnd_page]) == "true" and ("K1+K3 to kill all active in "..page.rnd_page) or "")
     end
     screen.level(3)
     screen.level(page.rnd_page_section == 2 and 15 or 3)
