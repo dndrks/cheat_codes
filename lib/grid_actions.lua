@@ -33,8 +33,7 @@ function grid_actions.init(x,y,z)
             end
             pad_clipboard = nil
             if bank[i].quantize_press == 0 then
-              --if ((arp[i].hold and page.arp_page_sel == i) or (menu == 9)) and grid_pat[i].rec == 0 then
-              if (arp[i].hold or (menu == 9)) and grid_pat[i].rec == 0 then
+              if (arp[i].hold or (menu == 9)) and grid_pat[i].rec == 0 and not arp[i].pause then
                 arps.momentary(i, bank[i].id, "on")
               else
                 cheat(i, bank[i].id)
