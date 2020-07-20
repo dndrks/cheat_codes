@@ -95,6 +95,7 @@ function pattern:rec_stop()
       for i = 1,self.count do
         self:calculate_quantum(i)
       end
+      self:calculate_duration()
       --tab.print(self.time)
     else
       print("no events recorded")
@@ -182,14 +183,12 @@ function pattern:overdub_event(e)
   end
 end
 
-function calculate_duration()
-  butts = 0
-  butts2 = 0
-  for i = 1,grid_pat[1].count do
-    butts = butts + grid_pat[1].time_beats[i]
-    butts2 = butts2 + grid_pat[1].time[i]
+function pattern:calculate_duration()
+  local total_time = 0
+  for i = 1,#self.time_beats do
+    total_time = total_time + self.time_beats[i]
   end
-  print("beats: "..butts, "time: "..butts2)
+  self.rec_clock_time = util.round(total_time)
 end
 
 function pattern:print()

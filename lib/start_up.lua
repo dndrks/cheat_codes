@@ -176,8 +176,10 @@ function start_up.init()
   
   --params:add_option("zilchmo_bind_rand","bind random zilchmo?", {"no","yes"}, 1)
   
-  params:add_group("grid/arc pattern params",10)
+  params:add_group("grid/arc pattern params",16)
+  params:add_separator("grid")
   params:add_option("zilchmo_patterning", "grid pat style", { "classic", "rad sauce" })
+  params:add_separator("quantization")
   for i = 1,3 do
     params:add_option("pattern_"..i.."_quantization", "quantize pat "..i.."?", {"no", "yes"})
     params:set_action("pattern_"..i.."_quantization", function(x)
@@ -189,33 +191,34 @@ function start_up.init()
     )
   end
   params:add_option("launch_quantization", "pat launch quant", {"next beat", "next bar"})
-  params:add_option("random_patterning","rand pat style", 
-    { "rand"
-    , "horizontal"
-    , "h.snake"
-    , "vertical"
-    , "v.snake"
-    , "top-in"
-    , "bottom-in"
-    , "zig-zag"
-    , "wrap"
-  })
-  params:set_action("random_patterning", function(x)
-    if x > 1 then
-      for i = 1,3 do
+  params:add_separator("random patterns")
+  for i = 1,3 do
+    params:add_option("random_patterning_"..i,"rand pat "..i.." style", 
+      { "rand"
+      , "horizontal"
+      , "h.snake"
+      , "vertical"
+      , "v.snake"
+      , "top-in"
+      , "bottom-in"
+      , "zig-zag"
+      , "wrap"
+    })
+    params:set_action("random_patterning_"..i, function(x)
+      if x > 1 then
         grid_pat[i].playmode = 2
         if midi_pat ~= nil then -- TODO FIXME
           midi_pat[i].playmode = 2
         end
       end
-    end
-  end)
+    end)
+  end
 
   for i = 1,3 do
     params:add_option("rand_pattern_"..i.."_note_length", "rand pat "..i.." note length", {"1/16", "1/8", "1/4", "1/2", "1", "rand"})
   end
   
-
+  params:add_separator("arc")
   params:add_option("arc_patterning", "arc pat style", { "passive", "active" })
   
   params:add_group("manual control params",27)

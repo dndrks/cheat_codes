@@ -299,7 +299,7 @@ function random_grid_pat(which,mode)
       end
     end
   elseif mode == 3 then
-    local auto_pat = params:get("random_patterning")
+    local auto_pat = params:get("random_patterning_"..which)
     if auto_pat ~= 1 then
       params:set("pattern_"..which.."_quantization", 2)
     end
@@ -513,6 +513,8 @@ function load_external_timing(bank,slot)
         end
       end
     end
+    print("unpacking old quantized table")
+    unpack_quantized_table(bank)
     io.close(file)
   else
     print("creating external timing file...")
@@ -554,8 +556,15 @@ function copy_entire_pattern(bank)
   original_pattern[bank].start_point = grid_pat[bank].start_point
   original_pattern[bank].end_point = grid_pat[bank].end_point
   original_pattern[bank].mode = grid_pat[bank].mode
+  -- new stuff
+  original_pattern[bank].rec_clock_time = grid_pat[bank].rec_clock_time
+  --/ new stuff
   if grid_pat[bank].playmode ~= nil then
-    original_pattern[bank].playmode = grid_pat[bank].playmode
+    if grid_pat[bank].playmode ~= 1 then
+      original_pattern[bank].playmode = 2
+    else
+      original_pattern[bank].playmode = 1
+    end
   else
     original_pattern[bank].playmode = 1
   end
@@ -580,11 +589,20 @@ function table.clone(org)
   return {table.unpack(org)}
 end
 
+function calc_rec_clock_time(target)
+  local total_time = 0
+  for i = 1,#grid_pat[target].time_beats do
+    total_time = total_time + grid_pat[target].time_beats[i]
+  end
+  grid_pat[target].rec_clock_time = util.round(total_time)
+end
+
 function unpack_quantized_table(target)
   for i = 1,#quantized_grid_pat[target].event do
     grid_pat[target].quantum[i] = #quantized_grid_pat[target].event[i] * 0.25
     grid_pat[target].time_beats[i] = grid_pat[target].time[i] / clock.get_beat_sec()
   end
+  calc_rec_clock_time(target)
 end
 
 function midi_clock_linearize(bank)
@@ -1528,7 +1546,7 @@ end
 
 function random_midi_pat(target)
   local pattern = midi_pat[target]
-  local auto_pat = params:get("random_patterning")
+  local auto_pat = params:get("random_patterning_"..target)
   if pattern.playmode == 2 then
     --clock.sync(1/4)
     --huh????
@@ -3007,7 +3025,11 @@ function grid_redraw()
           if arp[i].hold == false then
             g:led(3+(5*(i-1)),3,0)
           else
-            g:led(3+(5*(i-1)),3,6)
+            if arp[i].playing == true then
+              g:led(3+(5*(i-1)),3,10)
+            else
+              g:led(3+(5*(i-1)),3,6)
+            end
           end
         else
           g:led(1 + (5*(i-1)), math.abs(bank[i][bank[i].focus_pad].clip-5),8)
@@ -3536,6 +3558,26 @@ function savestate()
   io.write("rec_loop_enc_resolution: "..params:get("rec_loop_enc_resolution").."\n")
   io.write("more 1.3.1".."\n")
   io.write("random_rec_clock_prob: "..params:get("random_rec_clock_prob").."\n")
+
+  io.write("cc2.0".."\n")
+
+  for i = 1,3 do
+    local save_arp = arp[i].hold == true and "true" or "false"
+    io.write("arp["..i.."] savestate: "..save_arp.."\n")
+    if arp[i].hold == true then
+      print("saving arp "..i)
+      io.write("#arp["..i.."].notes: "..#arp[i].notes.."\n")
+      for j = 1,#arp[i].notes do
+        io.write("arp["..i.."].notes["..j.."]: "..arp[i].notes[j].."\n")
+      end
+      io.write("arp["..i.."].time: "..arp[i].time.."\n")
+      io.write("arp["..i.."].start_point: "..arp[i].start_point.."\n")
+      io.write("arp["..i.."].end_point: "..arp[i].end_point.."\n")
+      io.write("arp["..i.."].retrigger: "..tostring(arp[i].retrigger).."\n")
+      io.write("arp["..i.."].mode: "..arp[i].mode.."\n")
+    end
+  end
+
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -3726,7 +3768,15 @@ function loadstate()
     end
     if io.read() == "last Pattern playmode" then
       for i = 1,3 do
-        grid_pat[i].playmode = tonumber(io.read())
+        local pm = tonumber(io.read())
+        if pm == 3 or pm == 4 then
+          grid_pat[i].playmode = 2
+        else
+          grid_pat[i].playmode = 1
+        end
+        
+        --grid_pat[i].playmode = tonumber(io.read())
+
         --set_pattern_mode(grid_pat[i],i)
       end
     end
@@ -3752,6 +3802,28 @@ function loadstate()
     if io.read() == "more 1.3.1" then
       params:set("random_rec_clock_prob", tonumber(string.match(io.read(), ': (.*)')))
     end
+    if io.read() == "cc2.0" then
+      for i = 1,3 do
+        local restore_arp = string.match(io.read(), ': (.*)')
+        if restore_arp == "true" then
+          print("restoring arp "..i)
+          local how_many_notes = tonumber(string.match(io.read(), ': (.*)'))
+          for j = 1,how_many_notes do
+            arp[i].notes[j] = tonumber(string.match(io.read(), ': (.*)'))
+          end
+          arp[i].time = tonumber(string.match(io.read(), ': (.*)'))
+          arp[i].start_point = tonumber(string.match(io.read(), ': (.*)'))
+          arp[i].end_point = tonumber(string.match(io.read(), ': (.*)'))
+          local retrigger = string.match(io.read(), ': (.*)')
+          arp[i].retrigger = retrigger == "true" and true or false
+          arp[i].mode = string.match(io.read(), ': (.*)')
+          arp[i].hold = true
+          arp[i].pause = true
+          arp[i].playing = false
+        end
+      end
+    end
+      
     io.close(file)
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
@@ -3763,6 +3835,9 @@ function loadstate()
     end
   end
   already_saved()
+
+  --- unpack quantized table here?
+
   for i = 1,3 do
     if step_seq[i].active == 1 and step_seq[i][step_seq[i].current_step].assigned_to ~= 0 then
       test_load(step_seq[i][step_seq[i].current_step].assigned_to+((i-1)*8),i)
@@ -3913,8 +3988,14 @@ function save_pattern(source,slot)
   end
   --/new stuff, quantum and time_beats!
 
+  -- new stuff, quant or unquant + rec_clock_time
+  io.write(original_pattern[source].mode.."\n")
+  io.write(original_pattern[source].rec_clock_time.."\n")
+
   io.close(file)
-  save_external_timing(source,slot)
+  --GIRAFFE
+  --save_external_timing(source,slot)
+  --/GIRAFFE
   print("saved pattern "..source.." to slot "..slot)
 end
 
@@ -4198,6 +4279,7 @@ function meta_copy_coll(read_coll,write_coll)
 end
 
 function load_pattern(slot,destination)
+  local ignore_external_timing = false
   local file = io.open(_path.data .. "cheat_codes/pattern"..selected_coll.."_"..slot..".data", "r")
   if file then
     io.input(file)
@@ -4288,7 +4370,12 @@ function load_pattern(slot,destination)
       grid_pat[destination].metro.props.time = tonumber(io.read())
       grid_pat[destination].prev_time = tonumber(io.read())
       if io.read() == "which playmode?" then
-        grid_pat[destination].playmode = tonumber(io.read())
+        local pm = tonumber(io.read())
+        if pm ~= 1 then
+          grid_pat[destination].playmode = 2
+        else
+          grid_pat[destination].playmode = 1
+        end
       else
         grid_pat[destination].playmode = 1
       end
@@ -4310,12 +4397,17 @@ function load_pattern(slot,destination)
           grid_pat[destination].quantum[i] = tonumber(io.read())
           grid_pat[destination].time_beats[i] = tonumber(io.read())
         end
+        grid_pat[destination].mode = io.read()
+        grid_pat[destination].rec_clock_time = tonumber(io.read())
+        ignore_external_timing = true
       end
       --/new stuff, quantum and time_beats!
     end
 
     io.close(file)
-    load_external_timing(destination,slot)
+    if not ignore_external_timing then
+      load_external_timing(destination,slot)
+    end
   else
     print("nofile")
   end
