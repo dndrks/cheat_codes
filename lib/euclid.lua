@@ -6,19 +6,16 @@ function euclid.reer(i)
     if euclid.track[i].k == 0 then
       for n=1,32 do euclid.track[i].s[n] = false end
     else
-      --euclid.track[i].s = er.gen(euclid.track[i].k,euclid.track[i].n)
       euclid.track[i].s = euclid.rotate_pattern(er.gen(euclid.track[i].k,euclid.track[i].n), euclid.track[i].rotation)
     end
 end
 
-function euclid.trig()
-    for i=1,3 do
-        if euclid.track[i].s[euclid.track[i].pos] then
-            if euclid.track[i].mode == "single" then
-                cheat(i,euclid.rotate_pads(bank[i].id + euclid.track[i].pad_offset))
-            elseif euclid.track[i].mode == "span" then
-                cheat(i,euclid.rotate_pads(euclid.track[i].pos + euclid.track[i].pad_offset))
-            end
+function euclid.trig(target)
+    if euclid.track[target].s[euclid.track[target].pos] then
+        if euclid.track[target].mode == "single" then
+            cheat(target,euclid.rotate_pads(bank[target].id + euclid.track[target].pad_offset))
+        elseif euclid.track[target].mode == "span" then
+            cheat(target,euclid.rotate_pads(euclid.track[target].pos + euclid.track[target].pad_offset))
         end
     end
 end
@@ -30,8 +27,13 @@ function euclid.init()
     euclid.running = false
     euclid.track_edit = 1
     euclid.current_pattern = 0
-    euclid.clock_div = 1/4
-    euclid.clock = clock.run(euclid.step)
+    euclid.clock_div = {1/2,1/2,1/2}
+    euclid.clock =
+    {
+        clock.run(euclid.step,1)
+    ,   clock.run(euclid.step,2)
+    ,   clock.run(euclid.step,3)
+    }
     euclid.screen_focus = "left"
 
     euclid.track = {}
@@ -50,36 +52,31 @@ function euclid.init()
 
     euclid.pattern = {}
     for i = 1,112 do
-    euclid.pattern[i] = {
-        data = 0,
-        k = {},
-        n = {}
-    }
-    for x=1,3 do
-        euclid.pattern[i].k[x] = 0
-        euclid.pattern[i].n[x] = 0
+        euclid.pattern[i] = {
+            data = 0,
+            k = {},
+            n = {}
+        }
+        for x=1,3 do
+            euclid.pattern[i].k[x] = 0
+            euclid.pattern[i].n[x] = 0
+        end
     end
-    end
+    
     for i=1,3 do euclid.reer(i) end
 end
 
 function euclid.reset_pattern()
     euclid.reset = true
+    for i=1,3 do euclid.track[i].pos = 1 end
+    euclid.reset = false
 end
 
-function euclid.step()
+function euclid.step(target)
     while true do
-        clock.sync(euclid.clock_div)
-
-        if euclid.reset then
-            for i=1,3 do euclid.track[i].pos = 1 end
-            euclid.reset = false
-        else
-            for i=1,3 do
-                euclid.track[i].pos = (euclid.track[i].pos % euclid.track[i].n) + 1
-            end
-        end
-        euclid.trig()
+        clock.sync(euclid.clock_div[target])
+        euclid.track[target].pos = (euclid.track[target].pos % euclid.track[target].n) + 1
+        euclid.trig(target)
         redraw()
     end
 end

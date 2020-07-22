@@ -221,7 +221,20 @@ function start_up.init()
   params:add_separator("arc")
   params:add_option("arc_patterning", "arc pat style", { "passive", "active" })
   
-  params:add_group("manual control params",27)
+  params:add_group("manual control params",32)
+
+  params:add_separator("arc encoders")
+  for i = 1,3 do
+    params:add_option("enc "..i.." param", "enc "..i.." param", {"loop window", "loop start", "loop end", "filter tilt", "level", "pan"})
+    params:set_action("enc "..i.." param", function(x)
+      arc_param[i] = x
+    end)
+  end
+
+  params:add_option("enc 4 param", "enc 4 param",{"L delay","R delay"})
+  params:set_action("enc 4 param", function(x)
+    arc.alt = x == 1 and 0 or 1
+  end)
   
   for i = 1,3 do
     banks = {"(a)","(b)","(c)"}

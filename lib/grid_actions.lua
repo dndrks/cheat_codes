@@ -259,6 +259,7 @@ function grid_actions.init(x,y,z)
         grid.alt_pp = 0
       end
       grid.alt = z
+      arc.alt = z
       if menu == 11 then
         if grid.alt == 1 then
           help_menu = "alt"

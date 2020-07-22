@@ -37,11 +37,32 @@ function aa.init(n,d)
       aa.record(n)
     end
   else
-    local side = grid.alt == 0 and "L" or "R"
+    local side = (arc.alt == nil or arc.alt == 0) and "L" or "R"
     aa.delay_rate(d,side)
     aa.record_delay(side)
   end
   redraw()
+end
+
+function aa.pattern_watch(enc)
+  arc_p[enc] = {}
+  arc_p[enc].i = enc
+  arc_p[enc].param = arc_param[enc]
+  local id = arc_control[enc]
+  if bank[id].focus_hold == false then
+    arc_p[enc].pad = bank[id].id
+  else
+    arc_p[enc].pad = bank[id].focus_pad
+  end
+  arc_p[enc].start_point = bank[id][arc_p[enc].pad].start_point - (8*(bank[id][arc_p[enc].pad].clip-1))
+  arc_p[enc].end_point = bank[id][arc_p[enc].pad].end_point - (8*(bank[id][arc_p[enc].pad].clip-1))
+  arc_p[enc].prev_tilt = slew_counter[id].prev_tilt
+  arc_p[enc].tilt = bank[id][bank[id].id].tilt
+  --new new!
+  arc_p[enc].pan = bank[id][bank[id].id].pan
+  arc_p[enc].level = bank[id][bank[id].id].level
+  --/new new!
+  arc_pat[enc]:watch(arc_p[enc])
 end
 
 function aa.map(fn, bank, delta, enc)
@@ -58,20 +79,25 @@ function aa.delay_rate(d,side)
 end
 
 function aa.record(enc)
-  arc_p[enc] = {}
-  arc_p[enc].i = enc
-  arc_p[enc].param = arc_param[enc]
-  local id = arc_control[enc]
-  if bank[id].focus_hold == false then
-    arc_p[enc].pad = bank[id].id
-  else
-    arc_p[enc].pad = bank[id].focus_pad
-  end
-  arc_p[enc].start_point = bank[id][arc_p[enc].pad].start_point - (8*(bank[id][arc_p[enc].pad].clip-1))
-  arc_p[enc].end_point = bank[id][arc_p[enc].pad].end_point - (8*(bank[id][arc_p[enc].pad].clip-1))
-  arc_p[enc].prev_tilt = slew_counter[id].prev_tilt
-  arc_p[enc].tilt = bank[id][bank[id].id].tilt
-  arc_pat[enc]:watch(arc_p[enc])
+  aa.pattern_watch(enc)
+  -- arc_p[enc] = {}
+  -- arc_p[enc].i = enc
+  -- arc_p[enc].param = arc_param[enc]
+  -- local id = arc_control[enc]
+  -- if bank[id].focus_hold == false then
+  --   arc_p[enc].pad = bank[id].id
+  -- else
+  --   arc_p[enc].pad = bank[id].focus_pad
+  -- end
+  -- arc_p[enc].start_point = bank[id][arc_p[enc].pad].start_point - (8*(bank[id][arc_p[enc].pad].clip-1))
+  -- arc_p[enc].end_point = bank[id][arc_p[enc].pad].end_point - (8*(bank[id][arc_p[enc].pad].clip-1))
+  -- arc_p[enc].prev_tilt = slew_counter[id].prev_tilt
+  -- arc_p[enc].tilt = bank[id][bank[id].id].tilt
+  -- --new new!
+  -- arc_p[enc].pan = bank[id][bank[id].id].pan
+  -- arc_p[enc].level = bank[id][bank[id].id].level
+  -- --/new new!
+  -- arc_pat[enc]:watch(arc_p[enc])
 end
 
 function aa.record_delay(side)

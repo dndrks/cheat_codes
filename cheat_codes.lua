@@ -2402,18 +2402,12 @@ function load_sample(file,sample)
     else
       clip[sample].sample_length = 32
     end
-
-    --need this to calculate at 32 second intervals...1,33,65
-    --buffer_read_mono (file, start_src, start_dst, dur, ch_src, ch_dst)	
-    --softcut.buffer_read_mono(file, 0, 1+(32*(sample-1)),clip[sample].sample_length + 0.05, 1, 2)
     softcut.buffer_clear_region_channel(2,1+(32*(sample-1)),32)
     softcut.buffer_read_mono(file, 0, 1+(32*(sample-1)),clip[sample].sample_length + 0.05, 1, 2)
-    --print("start point: "..1+(32*(sample-1)))
-    --print("duration: "..clip[sample].sample_length + 0.05)
     clip_table()
     for p = 1,16 do
       for b = 1,3 do
-        if bank[b][p].mode == 2 and bank[b][p].clip == sample then
+        if bank[b][p].mode == 2 and bank[b][p].clip == sample and pre_cc2_sample[b] == false then
           scale_loop_points(bank[b][p], old_min, old_max, clip[sample].min, clip[sample].max)
         end
       end
@@ -2556,47 +2550,6 @@ function key(n,z)
         rytm.track[rytm.track_edit].pos = 1
       end
 
-      --[==[
-      if key1_hold then
-        if page.track_page < 4 then
-          if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
-            page.track_page_section[page.track_page] = 4
-          end
-        end
-      else
-        if page.track_page < 4 then
-          if page.track_page_section[page.track_page] == 1 then
-            page.track_page_section[page.track_page] = 2
-          elseif page.track_page_section[page.track_page] == 2 then
-            page.track_page_section[page.track_page] = 3
-          elseif page.track_page_section[page.track_page] == 3 then
-            if tracker[page.track_page][page.track_sel[page.track_page]].pad ~= nil then
-              tracker[page.track_page].step = page.track_sel[page.track_page]
-              trackers.cheat(page.track_page,page.track_sel[page.track_page])
-            else
-              local source = tracker[page.track_page][page.track_sel[page.track_page]-1]
-              local destination = tracker[page.track_page][page.track_sel[page.track_page]]
-              if source ~= nil then
-                trackers.copy_prev(source,destination)
-                trackers.append()
-              end
-            end
-          elseif page.track_page_section[page.track_page] == 4 then
-            tracker[page.track_page].step = page.track_sel[page.track_page]
-            trackers.cheat(page.track_page,page.track_sel[page.track_page])
-          end
-        else
-          if page.track_page_section[page.track_page] == 1 then
-            page.track_page_section[page.track_page] = 2
-          elseif page.track_page_section[page.track_page] == 2 then
-            page.track_page_section[page.track_page] = 3
-          elseif page.track_page_section[page.track_page] == 3 then
-            trackers.snake(1,tracker[1].snake)
-          end
-        end
-      end
-      --]==]
-
     elseif menu == 9 then
       arp[page.arp_page_sel].hold = not arp[page.arp_page_sel].hold
       if not arp[page.arp_page_sel].hold then
@@ -2636,17 +2589,6 @@ function key(n,z)
       end
     elseif menu == 8 then
       menu = 1
-      --[[
-      if page.track_page_section[page.track_page] == 3 then
-        page.track_page_section[page.track_page] = 2
-      elseif page.track_page_section[page.track_page] == 4 then
-        page.track_page_section[page.track_page] = 3
-      elseif page.track_page_section[page.track_page] == 2 then
-        page.track_page_section[page.track_page] = 1
-      else
-        menu = 1
-      end
-      --]]
     elseif menu == 10 then
       if page.rnd_page_section == 2 then
         page.rnd_page_section = 1
@@ -3237,6 +3179,13 @@ function arc_pattern_execute(entry)
       softcut.loop_start(id+1, (entry.start_point + (8*(bank[id][which_pad].clip-1))) + arc_offset)
       softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][which_pad].clip-1))) + arc_offset)
     end
+    --new new!
+    bank[id][which_pad].pan = (entry.pan + arc_offset)
+    bank[id][which_pad].level = (entry.level + arc_offset)
+    if bank[id].id == which_pad then
+      softcut.pan(id+1, (entry.pan + arc_offset))
+      softcut.level(id+1, (entry.level + arc_offset))
+    end
   else
     slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
   end
@@ -3363,7 +3312,7 @@ arc_redraw = function()
     local arc_left_delay_level = (params:get("delay L: rate") == i and 15 or 5)
     local arc_right_delay_level = (params:get("delay R: rate") == i and 15 or 5)
     local arc_try = params:get("delay L: rate")
-    if grid.alt == 0 then
+    if arc.alt == nil or arc.alt == 0 then
       a:led(4,(41+((i-1)*4)-16),arc_left_delay_level)
     else
       a:led(4,(41+((i-1)*4)-16),arc_right_delay_level)
@@ -3578,6 +3527,20 @@ function savestate()
     end
   end
 
+  io.write("euclid".."\n")
+  for i = 1,3 do
+    io.write("clock div: "..rytm.clock_div[i].."\n")
+    io.write("track.["..i.."].pad_offset: "..rytm.track[i].pad_offset.."\n")
+    io.write("track.["..i.."].mode: "..rytm.track[i].mode.."\n") -- string
+    io.write("track.["..i.."].n: "..rytm.track[i].n.."\n")
+    io.write("track.["..i.."].k: "..rytm.track[i].k.."\n")
+    io.write("track.["..i.."].rotation: "..rytm.track[i].rotation.."\n")
+    io.write("track.["..i.."] s count: "..#rytm.track[i].s.."\n")
+    for j = 1,#rytm.track[i].s do
+      io.write("track.["..i.."].s["..j.."]: "..tostring(rytm.track[i].s[j]).."\n") -- boolean
+    end
+  end
+
   io.close(file)
   if selected_coll ~= params:get("collection") then
     meta_copy_coll(selected_coll,params:get("collection"))
@@ -3598,6 +3561,8 @@ function loadstate()
   local file = io.open(_path.data .. "cheat_codes/collections"..selected_coll..".data", "r")
   if file then
     io.input(file)
+    pre_cc2_sample = { false, false, false }
+    restored_clip_file = {"","",""}
     if io.read() == "PERMANENCE" then
       for i = 1,3 do
         for k = 1,16 do
@@ -3644,7 +3609,8 @@ function loadstate()
         end
       params:set("rate slew time ".. i,tonumber(io.read()))
       local string_to_sample = io.read()
-      params:set("clip "..i.." sample", string_to_sample)
+      restored_clip_file[i] = string_to_sample
+      -- params:set("clip "..i.." sample", string_to_sample)
       local sides = {"delay L: ", "delay R: "}
       for k = 1,2 do
         params:set(sides[k].."rate",tonumber(io.read()))
@@ -3771,13 +3737,10 @@ function loadstate()
         local pm = tonumber(io.read())
         if pm == 3 or pm == 4 then
           grid_pat[i].playmode = 2
+          params:set("pattern_"..i.."_quantization",2)
         else
           grid_pat[i].playmode = 1
         end
-        
-        --grid_pat[i].playmode = tonumber(io.read())
-
-        --set_pattern_mode(grid_pat[i],i)
       end
     end
     if io.read() == "1.2.1: arc patterning" then
@@ -3804,6 +3767,8 @@ function loadstate()
     end
     if io.read() == "cc2.0" then
       for i = 1,3 do
+        pre_cc2_sample[i] = false
+        params:set("clip "..i.." sample", restored_clip_file[i])
         local restore_arp = string.match(io.read(), ': (.*)')
         if restore_arp == "true" then
           print("restoring arp "..i)
@@ -3821,6 +3786,27 @@ function loadstate()
           arp[i].pause = true
           arp[i].playing = false
         end
+      end
+      if io.read() == "euclid" then
+        for i = 1,3 do
+          rytm.clock_div[i] = tonumber(string.match(io.read(), ': (.*)'))
+          rytm.track[i].pad_offset = tonumber(string.match(io.read(), ': (.*)'))
+          rytm.track[i].mode = string.match(io.read(), ': (.*)')
+          rytm.track[i].n = tonumber(string.match(io.read(), ': (.*)'))
+          rytm.track[i].k = tonumber(string.match(io.read(), ': (.*)'))
+          rytm.track[i].rotation = tonumber(string.match(io.read(), ': (.*)'))
+          local limit = tonumber(string.match(io.read(), ': (.*)'))
+          for j = 1,limit do
+            local state = string.match(io.read(), ': (.*)')
+            rytm.track[i].s[j] = state == "true" and true or false
+          end
+        end
+        rytm.reset_pattern()
+      end
+    else
+      for i = 1,3 do
+        pre_cc2_sample[i] = true
+        params:set("clip "..i.." sample", restored_clip_file[i])
       end
     end
       
