@@ -110,6 +110,19 @@ for i = 1,3 do
   end
 end
 
+replacement_pattern_saver = { {},{},{} }
+for i = 1,3 do
+  replacement_pattern_saver[i].active = false
+  replacement_pattern_saver[i].source = i
+  replacement_pattern_saver[i].save_slot = nil
+  replacement_pattern_saver[i].load_slot = 0
+  replacement_pattern_saver[i].saved = {}
+  for j = 1,8 do
+    replacement_pattern_saver[i].saved[j] = 0
+  end
+end
+
+
 env_counter = {}
 for i = 1,3 do
   env_counter[i] = metro.init()
@@ -1018,6 +1031,13 @@ function init()
       arc_pat[i].process = arc_delay_pattern_execute
     end
   end
+
+  -- test_arc_pat = {{},{},{}}
+  -- for i = 1,3 do
+  --   for j = 1,3 do
+  --     test_arc_pat[i][j] = pattern_time.new()
+  --   end
+  -- end
   
   --if g then grid_redraw() end
   --/GRID
@@ -3172,19 +3192,24 @@ function arc_pattern_execute(entry)
         slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
       end
     end
-      
-    bank[id][which_pad].start_point = (entry.start_point + (8*(bank[id][which_pad].clip-1)) + arc_offset)
-    bank[id][which_pad].end_point = (entry.end_point + (8*(bank[id][which_pad].clip-1)) + arc_offset)
-    if bank[id].id == which_pad then
-      softcut.loop_start(id+1, (entry.start_point + (8*(bank[id][which_pad].clip-1))) + arc_offset)
-      softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][which_pad].clip-1))) + arc_offset)
-    end
-    --new new!
-    bank[id][which_pad].pan = (entry.pan + arc_offset)
-    bank[id][which_pad].level = (entry.level + arc_offset)
-    if bank[id].id == which_pad then
-      softcut.pan(id+1, (entry.pan + arc_offset))
-      softcut.level(id+1, (entry.level + arc_offset))
+    
+    if entry.param == 1 or entry.param == 2 or entry.param == 3 then
+      bank[id][which_pad].start_point = (entry.start_point + (8*(bank[id][which_pad].clip-1)) + arc_offset)
+      bank[id][which_pad].end_point = (entry.end_point + (8*(bank[id][which_pad].clip-1)) + arc_offset)
+      if bank[id].id == which_pad then
+        softcut.loop_start(id+1, (entry.start_point + (8*(bank[id][which_pad].clip-1))) + arc_offset)
+        softcut.loop_end(id+1, (entry.end_point + (8*(bank[id][which_pad].clip-1))) + arc_offset)
+      end
+    elseif entry.param == 5 then
+      bank[id][which_pad].level = (entry.level + arc_offset)
+      if bank[id].id == which_pad then
+        softcut.level(id+1, (entry.level + arc_offset))
+      end
+    elseif entry.param == 6 then
+      bank[id][which_pad].pan = (entry.pan + arc_offset)
+      if bank[id].id == which_pad then
+        softcut.pan(id+1, (entry.pan + arc_offset))
+      end
     end
   else
     slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
@@ -3879,6 +3904,34 @@ function test_save(i)
       print("no pattern data to delete")
     end
   end
+end
+
+function replacement_test_save(i)
+  replacement_pattern_saver[i].active = true
+  clock.sleep(1)
+  if grid.alt_pp == 0 then
+    if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
+      copy_entire_pattern(i)
+      save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
+      pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
+      pattern_saver[i].load_slot = pattern_saver[i].save_slot
+      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,15)
+      g:refresh()
+    else
+      print("no pattern data to save")
+      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,0)
+      g:refresh()
+    end
+  else
+    if pattern_saver[i].saved[pattern_saver[i].save_slot] == 1 then
+      delete_pattern(pattern_saver[i].save_slot+8*(i-1))
+      pattern_saver[i].saved[pattern_saver[i].save_slot] = 0
+      pattern_saver[i].load_slot = 0
+    else
+      print("no pattern data to delete")
+    end
+  end
+  replacement_pattern_saver[i].active = false
 end
 
 function test_load(slot,destination)
