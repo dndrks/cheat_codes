@@ -409,17 +409,10 @@ function main_menu.init()
       else
         display_step[i] = grid_pat[i].step
       end
-      
 
       local pattern = g.device ~= nil and grid_pat[i] or midi_pat[i]
-      local playing_options =
-      screen.move(10+(40*(i-1)),25)
+      screen.move(10+(20*(i-1)),25)
       screen.text("P"..i)
-      --[[
-      { [i] = { "P"..i  , "P"..i.."  > "..display_step[i],  "P"..i.."  x "..display_step[i]} }
-      screen.move(10+(40*(i-1)),25)
-      screen.text(playing_options[i][pattern.count == 0 and 1 or playing[i] == 1 and 2 or playing[i] == 0 and 3])
-      --]]
 
       if pattern.sync_hold ~= nil and pattern.sync_hold then
         screen.level(3)
@@ -433,36 +426,83 @@ function main_menu.init()
         screen.text(" x ")
       end
 
-      local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
-      local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
-      local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
-      local p_options_rand = {"low rates", "mid rates", "hi rates", "full range", "keep rates"}
-      if page.time_scroll[page_line] == 1 then
-        for j = 1,3 do
-          screen.level(time_page[page_line] == j and 15 or 3)
-          screen.move(10,40+(10*(j-1)))
-          screen.text(p_options[j])
-          local mode_options = {"loose","distro "..string.format("%.4g", pattern.rec_clock_time/4),"quant","quant+trim"}
-          local fine_options = {mode_options[pattern.playmode], pattern.count > 0 and pattern.rec == 0 and "[K3]" or "(no pat!)", bank[page_line].crow_execute == 1 and "pads" or "clk"}
-          screen.move(80,40+(10*(j-1)))
-          screen.text(fine_options[j])
-          if bank[page_line].crow_execute ~= 1 then
-            screen.move(97,60)
-            screen.level(time_page[page_line] == 4 and 15 or 3)
-            screen.text("(/"..crow.count_execute[page_line]..")")
+      if page.time_sel < 4 then
+        local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
+        local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
+        local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
+        local p_options_rand = {"low rates", "mid rates", "hi rates", "full range", "keep rates"}
+        if page.time_scroll[page_line] == 1 then
+          for j = 1,3 do
+            screen.level(time_page[page_line] == j and 15 or 3)
+            screen.move(10,40+(10*(j-1)))
+            screen.text(p_options[j])
+            local mode_options = {"loose","distro "..string.format("%.4g", pattern.rec_clock_time/4),"quant","quant+trim"}
+            local fine_options = {mode_options[pattern.playmode], pattern.count > 0 and pattern.rec == 0 and "[K3]" or "(no pat!)", bank[page_line].crow_execute == 1 and "pads" or "clk"}
+            screen.move(80,40+(10*(j-1)))
+            screen.text(fine_options[j])
+            if bank[page_line].crow_execute ~= 1 then
+              screen.move(97,60)
+              screen.level(time_page[page_line] == 4 and 15 or 3)
+              screen.text("(/"..crow.count_execute[page_line]..")")
+            end
           end
-        end
-      else
-        for j = 5,7 do
-          screen.level(time_page[page_line] == j and 15 or 3)
-          screen.move(10,40+(10*(j-5)))
-          screen.text(p_options[j])
-          screen.move(80,40+(10*(j-5)))
-          local fine_options = {p_options_rand[pattern.random_pitch_range], pattern.count > 0 and pattern.rec == 0 and pattern.start_point or "(no pat!)", pattern.count > 0 and pattern.rec == 0 and pattern.end_point or "(no pat!)"}
-          screen.text(fine_options[j-4])
+        else
+          for j = 5,7 do
+            screen.level(time_page[page_line] == j and 15 or 3)
+            screen.move(10,40+(10*(j-5)))
+            screen.text(p_options[j])
+            screen.move(80,40+(10*(j-5)))
+            local fine_options = {p_options_rand[pattern.random_pitch_range], pattern.count > 0 and pattern.rec == 0 and pattern.start_point or "(no pat!)", pattern.count > 0 and pattern.rec == 0 and pattern.end_point or "(no pat!)"}
+            screen.text(fine_options[j-4])
+          end
         end
       end
     end
+    screen.level(3)
+    screen.move(65,25)
+    screen.text("/")
+
+    for i = 4,6 do
+      local id = i-3
+      local time_page = page.time_page_sel
+      local page_line = page.time_sel
+      --local pattern = grid_pat[page_line]
+      
+      screen.level(page_line == i and 15 or 3)
+      screen.move(75+(20*(id-1)),25)
+      screen.text("A"..id)
+
+      if page.time_sel >= 4 then
+        if a.device == nil then
+          screen.move(10,40)
+          screen.level(15)
+          screen.text("no arc connected")
+        else
+          screen.move(10,40)
+          screen.level(3)
+          screen.text("ENCODER PATTERNS")
+          local param_options = {"loop", "filter", "level", "pan"}
+          for j = 1,4 do
+            screen.move((j==1 or j==3) and 10 or 65,(j==1 or j==2) and 50 or 60)
+            screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
+            local pattern = test_arc_pat[id][j]
+            screen.text(param_options[j]..": ")
+            screen.move((j==1 or j==3) and 35 or 90,(j==1 or j==2) and 50 or 60)
+            if (test_arc_pat[id][j].rec == 0 and test_arc_pat[id][j].play == 0 and test_arc_pat[id][j].count == 0) then
+              screen.text("none")
+            elseif test_arc_pat[id][j].play == 1 then
+              screen.text("active")
+            elseif test_arc_pat[id][j].rec == 1 then
+              screen.text("rec")
+            elseif (test_arc_pat[id][j].rec == 0 and test_arc_pat[id][j].play == 0 and test_arc_pat[id][j].count > 0) then
+              screen.text("stopped")
+            end
+          end
+        end
+      end
+    end
+
+
     screen.level(3)
     screen.move(0,64)
     screen.text("...")

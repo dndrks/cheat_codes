@@ -33,7 +33,7 @@ function encoder_actions.init(n,d)
     elseif menu == 6 then
       page.delay_sel = util.clamp(page.delay_sel+d,0,4)
     elseif menu == 7 then
-      page.time_sel = util.clamp(page.time_sel+d,1,3)
+      page.time_sel = util.clamp(page.time_sel+d,1,6)
     elseif menu == 8 then
 
       if key1_hold then
@@ -162,7 +162,7 @@ function encoder_actions.init(n,d)
         else
           page.time_scroll[page_line] = 1
         end
-      else
+      elseif page_line >= 1 and page_line < 4 then
         time_page[page_line] = util.clamp(time_page[page_line]+d,1,7)
         if time_page[page_line] < 4 then
           page.time_scroll[page_line] = 1
@@ -177,6 +177,8 @@ function encoder_actions.init(n,d)
         elseif time_page[page_line] > 4 and bank[page_line].crow_execute == 1 then
           page.time_scroll[page_line] = 2
         end
+      elseif page_line >=4 then
+        time_page[page_line] = util.clamp(time_page[page_line]+d,1,4)
       end
     elseif menu == 8 then
       if not key1_hold then

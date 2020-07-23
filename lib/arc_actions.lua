@@ -44,25 +44,33 @@ function aa.init(n,d)
   redraw()
 end
 
-function aa.pattern_watch(enc)
-  arc_p[enc] = {}
-  arc_p[enc].i = enc
-  arc_p[enc].param = arc_param[enc]
-  local id = arc_control[enc]
-  if bank[id].focus_hold == false then
-    arc_p[enc].pad = bank[id].id
+function aa.new_pattern_watch(enc)
+  local a_p; -- this will index the arc encoder recorders
+  if arc_param[enc] == 1 or arc_param[enc] == 2 or arc_param[enc] == 3 then
+    a_p = 1
   else
-    arc_p[enc].pad = bank[id].focus_pad
+    a_p = arc_param[enc] - 2
   end
-  arc_p[enc].start_point = bank[id][arc_p[enc].pad].start_point - (8*(bank[id][arc_p[enc].pad].clip-1))
-  arc_p[enc].end_point = bank[id][arc_p[enc].pad].end_point - (8*(bank[id][arc_p[enc].pad].clip-1))
-  arc_p[enc].prev_tilt = slew_counter[id].prev_tilt
-  arc_p[enc].tilt = bank[id][bank[id].id].tilt
+  arc_p[enc] = {}
+  arc_p[enc][a_p] = {}
+  arc_p[enc][a_p].i1 = enc
+  arc_p[enc][a_p].i2 = a_p
+  arc_p[enc][a_p].param = arc_param[enc]
+  local id = arc_control[enc] -- could also just be enc, but this allows arc/bank mapping to be redefined
+  if bank[id].focus_hold == false then
+    arc_p[enc][a_p].pad = bank[id].id
+  else
+    arc_p[enc][a_p].pad = bank[id].focus_pad
+  end
+  arc_p[enc][a_p].start_point = bank[id][arc_p[enc][a_p].pad].start_point - (8*(bank[id][arc_p[enc][a_p].pad].clip-1))
+  arc_p[enc][a_p].end_point = bank[id][arc_p[enc][a_p].pad].end_point - (8*(bank[id][arc_p[enc][a_p].pad].clip-1))
+  arc_p[enc][a_p].prev_tilt = slew_counter[id].prev_tilt
+  arc_p[enc][a_p].tilt = bank[id][bank[id].id].tilt
   --new new!
-  arc_p[enc].pan = bank[id][bank[id].id].pan
-  arc_p[enc].level = bank[id][bank[id].id].level
+  arc_p[enc][a_p].pan = bank[id][bank[id].id].pan
+  arc_p[enc][a_p].level = bank[id][bank[id].id].level
   --/new new!
-  arc_pat[enc]:watch(arc_p[enc])
+  test_arc_pat[enc][a_p]:watch(arc_p[enc][a_p])
 end
 
 function aa.map(fn, bank, delta, enc)
@@ -79,25 +87,7 @@ function aa.delay_rate(d,side)
 end
 
 function aa.record(enc)
-  aa.pattern_watch(enc)
-  -- arc_p[enc] = {}
-  -- arc_p[enc].i = enc
-  -- arc_p[enc].param = arc_param[enc]
-  -- local id = arc_control[enc]
-  -- if bank[id].focus_hold == false then
-  --   arc_p[enc].pad = bank[id].id
-  -- else
-  --   arc_p[enc].pad = bank[id].focus_pad
-  -- end
-  -- arc_p[enc].start_point = bank[id][arc_p[enc].pad].start_point - (8*(bank[id][arc_p[enc].pad].clip-1))
-  -- arc_p[enc].end_point = bank[id][arc_p[enc].pad].end_point - (8*(bank[id][arc_p[enc].pad].clip-1))
-  -- arc_p[enc].prev_tilt = slew_counter[id].prev_tilt
-  -- arc_p[enc].tilt = bank[id][bank[id].id].tilt
-  -- --new new!
-  -- arc_p[enc].pan = bank[id][bank[id].id].pan
-  -- arc_p[enc].level = bank[id][bank[id].id].level
-  -- --/new new!
-  -- arc_pat[enc]:watch(arc_p[enc])
+  aa.new_pattern_watch(enc)
 end
 
 function aa.record_delay(side)

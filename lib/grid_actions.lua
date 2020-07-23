@@ -212,19 +212,25 @@ function grid_actions.init(x,y,z)
     for i = 4,2,-1 do
       if x == 16 and y == i and z == 0 then
         local current = math.abs(y-5)
-        if grid.alt == 1 then
-          arc_pat[current]:rec_stop()
-          arc_pat[current]:stop()
-          arc_pat[current]:clear()
-        elseif arc_pat[current].rec == 1 then
-          arc_pat[current]:rec_stop()
-          arc_pat[current]:start()
-        elseif arc_pat[current].count == 0 then
-          arc_pat[current]:rec_start()
-        elseif arc_pat[current].play == 1 then
-          arc_pat[current]:stop()
+        local a_p; -- this will index the arc encoder recorders
+        if arc_param[current] == 1 or arc_param[current] == 2 or arc_param[current] == 3 then
+          a_p = 1
         else
-          arc_pat[current]:start()
+          a_p = arc_param[current] - 2
+        end
+        if grid.alt == 1 then
+          test_arc_pat[current][a_p]:rec_stop()
+          test_arc_pat[current][a_p]:stop()
+          test_arc_pat[current][a_p]:clear()
+        elseif test_arc_pat[current][a_p].rec == 1 then
+          test_arc_pat[current][a_p]:rec_stop()
+          test_arc_pat[current][a_p]:start()
+        elseif test_arc_pat[current][a_p].count == 0 then
+          test_arc_pat[current][a_p]:rec_start()
+        elseif test_arc_pat[current][a_p].play == 1 then
+          test_arc_pat[current][a_p]:stop()
+        else
+          test_arc_pat[current][a_p]:start()
         end
         if menu == 11 then
           help_menu = "arc patterns"
@@ -534,7 +540,8 @@ function grid_actions.init(x,y,z)
               if step_seq[current].held == 0 then
                 pattern_saver[current].source = math.floor(x/5)+1
                 pattern_saver[current].save_slot = 9-y
-                pattern_saver[current]:start()
+                --pattern_saver[current]:start()
+                clock.run(test_save,current)
               else
                 --if there's a pattern saved there...
                 if pattern_saver[current].saved[9-y] == 1 then
@@ -545,7 +552,8 @@ function grid_actions.init(x,y,z)
               end
             elseif z == 0 then
               if step_seq[current].held == 0 then
-                pattern_saver[math.floor(x/5)+1]:stop()
+                pattern_saver[math.floor(x/5)+1].active = false
+                --pattern_saver[math.floor(x/5)+1]:stop()
                 if grid.alt_pp == 0 and saved_already == 1 then
                   if pattern_saver[current].saved[9-y] == 1 then
                     pattern_saver[current].load_slot = 9-y

@@ -95,12 +95,9 @@ function f2()
   params:set("filter 1 cutoff",12000)
 end
 
-pattern_saver = {}
+pattern_saver = { {},{},{} }
 for i = 1,3 do
-  pattern_saver[i] = metro.init()
-  pattern_saver[i].time = 1
-  pattern_saver[i].count = 1
-  pattern_saver[i].event = function() test_save(i) end
+  pattern_saver[i].active = false
   pattern_saver[i].source = i
   pattern_saver[i].save_slot = nil
   pattern_saver[i].load_slot = 0
@@ -109,19 +106,6 @@ for i = 1,3 do
     pattern_saver[i].saved[j] = 0
   end
 end
-
-replacement_pattern_saver = { {},{},{} }
-for i = 1,3 do
-  replacement_pattern_saver[i].active = false
-  replacement_pattern_saver[i].source = i
-  replacement_pattern_saver[i].save_slot = nil
-  replacement_pattern_saver[i].load_slot = 0
-  replacement_pattern_saver[i].saved = {}
-  for j = 1,8 do
-    replacement_pattern_saver[i].saved[j] = 0
-  end
-end
-
 
 env_counter = {}
 for i = 1,3 do
@@ -887,7 +871,7 @@ function init()
   page.time_page = {}
   page.time_page_sel = {}
   page.time_scroll = {}
-  for i = 1,5 do
+  for i = 1,6 do
     page.time_page[i] = 1
     page.time_page_sel[i] = 1
     page.time_scroll[i] = 1
@@ -1021,23 +1005,14 @@ function init()
     quantized_grid_pat[i].sub_step = 1
     quantized_grid_pat[i].current_step = 1
   end
-  
-  arc_pat = {}
+
+  test_arc_pat = {{},{},{}}
   for i = 1,3 do
-    arc_pat[i] = pattern_time.new()
-    if i ~=4 then
-      arc_pat[i].process = arc_pattern_execute
-    else
-      arc_pat[i].process = arc_delay_pattern_execute
+    for j = 1,4 do
+      test_arc_pat[i][j] = pattern_time.new()
+      test_arc_pat[i][j].process = new_arc_pattern_execute
     end
   end
-
-  -- test_arc_pat = {{},{},{}}
-  -- for i = 1,3 do
-  --   for j = 1,3 do
-  --     test_arc_pat[i][j] = pattern_time.new()
-  --   end
-  -- end
   
   --if g then grid_redraw() end
   --/GRID
@@ -2899,11 +2874,17 @@ function grid_redraw()
       end
       
       for i = 1,3 do
-        if arc_pat[i].rec == 1 then
+        local a_p; -- this will index the arc encoder recorders
+        if arc_param[i] == 1 or arc_param[i] == 2 or arc_param[i] == 3 then
+          a_p = 1
+        else
+          a_p = arc_param[i] - 2
+        end
+        if test_arc_pat[i][a_p].rec == 1 then
           g:led(16,5-i,15)
-        elseif arc_pat[i].play == 1 then
+        elseif test_arc_pat[i][a_p].play == 1 then
           g:led(16,5-i,9)
-        elseif arc_pat[i].count > 0 then
+        elseif test_arc_pat[i][a_p].count > 0 then
           g:led(16,5-i,5)
         else
           g:led(16,5-i,0)
@@ -3107,6 +3088,12 @@ function grid_pattern_execute(entry)
   if entry ~= nil then
     if entry ~= "pause" then
       local i = entry.i
+      local a_p; -- this will index the arc encoder recorders
+        if arc_param[i] == 1 or arc_param[i] == 2 or arc_param[i] == 3 then
+          a_p = 1
+        else
+          a_p = arc_param[i] - 2
+        end
       if entry.action == "pads" then
         if params:get("zilchmo_patterning") == 2 then
           bank[i][entry.id].rate = entry.rate
@@ -3119,7 +3106,7 @@ function grid_pattern_execute(entry)
           bank[i][bank[i].id].mode = entry.mode
           bank[i][bank[i].id].clip = entry.clip
         end
-        if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
+        if arc_param[i] ~= 4 and #test_arc_pat[i][a_p].event == 0 then -- TODO what is this?
           if params:get("zilchmo_patterning") == 2 then
             bank[i][bank[i].id].start_point = entry.start_point
             bank[i][bank[i].id].end_point = entry.end_point
@@ -3134,7 +3121,7 @@ function grid_pattern_execute(entry)
           end
           fingers[entry.row][entry.bank].con = entry.con
           zilchmo(entry.row,entry.bank)
-          if arc_param[i] ~= 4 and #arc_pat[1].event == 0 then
+          if arc_param[i] ~= 4 and #test_arc_pat[i][a_p].event == 0 then -- TODO what is this?
             bank[i][bank[i].id].start_point = entry.start_point
             bank[i][bank[i].id].end_point = entry.end_point
             softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
@@ -3155,41 +3142,42 @@ function grid_pattern_execute(entry)
   end
 end
 
-function arc_pattern_execute(entry)
-  local i = entry.i
+function new_arc_pattern_execute(entry)
+  local i = entry.i1
+  local j = entry.i2
   local id = arc_control[i]
   local param = entry.param
   if param ~= 4 then
     local which_pad = entry.pad
 
-    if arc_pat[i].step ~= 0 then
-      if arc_pat[i].step > 1 then
+    if test_arc_pat[i][j].step ~= 0 then
+      if test_arc_pat[i][j].step > 1 then
         if params:get("arc_patterning") == 2 then
-          if arc_pat[i].event[arc_pat[i].step].pad ~= arc_pat[i].event[arc_pat[i].step-1].pad then
-            bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
+          if test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad ~= test_arc_pat[i][j].event[test_arc_pat[i][j].step-1].pad then
+            bank[id].id = test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad
             selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
             selected[id].y = 8-((bank[id].id-1)%4)
-            cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
+            cheat(id,test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad)
             slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
           end
         end
-      elseif arc_pat[i].step == 1 then
+      elseif test_arc_pat[i][j].step == 1 then
         if params:get("arc_patterning") == 2 then
-          bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
+          bank[id].id = test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad
           selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
           selected[id].y = 8-((bank[id].id-1)%4)
-          cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
-          slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+          cheat(id,test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad)
+          slew_filter(id,test_arc_pat[i][j].event[test_arc_pat[i][j].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
         end
       end 
-    elseif arc_pat[i].step == 0 then
-      arc_pat[i].step = 1
+    elseif test_arc_pat[i][j].step == 0 then
+      test_arc_pat[i][j].step = 1
       if params:get("arc_patterning") == 2 then
-        bank[id].id = arc_pat[i].event[arc_pat[i].step].pad
+        bank[id].id = test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad
         selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
         selected[id].y = 8-((bank[id].id-1)%4)
-        cheat(id,arc_pat[i].event[arc_pat[i].step].pad)
-        slew_filter(id,arc_pat[i].event[arc_pat[i].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+        cheat(id,test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad)
+        slew_filter(id,test_arc_pat[i][j].event[test_arc_pat[i][j].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
       end
     end
     
@@ -3216,6 +3204,14 @@ function arc_pattern_execute(entry)
   end
   redraw()
 end
+
+
+
+
+
+
+
+
 
 function arc_delay_pattern_execute(entry)
   local i = entry.i
@@ -3881,57 +3877,59 @@ function loadstate()
   end
 end
 
-function test_save(i)
-  if grid.alt_pp == 0 then
-    if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
-      copy_entire_pattern(i)
-      save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
-      pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
-      pattern_saver[i].load_slot = pattern_saver[i].save_slot
-      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,15)
-      g:refresh()
-    else
-      print("no pattern data to save")
-      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,0)
-      g:refresh()
-    end
-  else
-    if pattern_saver[i].saved[pattern_saver[i].save_slot] == 1 then
-      delete_pattern(pattern_saver[i].save_slot+8*(i-1))
-      pattern_saver[i].saved[pattern_saver[i].save_slot] = 0
-      pattern_saver[i].load_slot = 0
-    else
-      print("no pattern data to delete")
-    end
-  end
-end
+-- function test_save(i)
+--   if grid.alt_pp == 0 then
+--     if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
+--       copy_entire_pattern(i)
+--       save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
+--       pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
+--       pattern_saver[i].load_slot = pattern_saver[i].save_slot
+--       g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,15)
+--       g:refresh()
+--     else
+--       print("no pattern data to save")
+--       g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,0)
+--       g:refresh()
+--     end
+--   else
+--     if pattern_saver[i].saved[pattern_saver[i].save_slot] == 1 then
+--       delete_pattern(pattern_saver[i].save_slot+8*(i-1))
+--       pattern_saver[i].saved[pattern_saver[i].save_slot] = 0
+--       pattern_saver[i].load_slot = 0
+--     else
+--       print("no pattern data to delete")
+--     end
+--   end
+-- end
 
-function replacement_test_save(i)
-  replacement_pattern_saver[i].active = true
+function test_save(i)
+  pattern_saver[i].active = true
   clock.sleep(1)
-  if grid.alt_pp == 0 then
-    if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
-      copy_entire_pattern(i)
-      save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
-      pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
-      pattern_saver[i].load_slot = pattern_saver[i].save_slot
-      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,15)
-      g:refresh()
+  if pattern_saver[i].active then
+    if grid.alt_pp == 0 then
+      if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
+        copy_entire_pattern(i)
+        save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
+        pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
+        pattern_saver[i].load_slot = pattern_saver[i].save_slot
+        g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,15)
+        g:refresh()
+      else
+        print("no pattern data to save")
+        g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,0)
+        g:refresh()
+      end
     else
-      print("no pattern data to save")
-      g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,0)
-      g:refresh()
-    end
-  else
-    if pattern_saver[i].saved[pattern_saver[i].save_slot] == 1 then
-      delete_pattern(pattern_saver[i].save_slot+8*(i-1))
-      pattern_saver[i].saved[pattern_saver[i].save_slot] = 0
-      pattern_saver[i].load_slot = 0
-    else
-      print("no pattern data to delete")
+      if pattern_saver[i].saved[pattern_saver[i].save_slot] == 1 then
+        delete_pattern(pattern_saver[i].save_slot+8*(i-1))
+        pattern_saver[i].saved[pattern_saver[i].save_slot] = 0
+        pattern_saver[i].load_slot = 0
+      else
+        print("no pattern data to delete")
+      end
     end
   end
-  replacement_pattern_saver[i].active = false
+  pattern_saver[i].active = false
 end
 
 function test_load(slot,destination)
