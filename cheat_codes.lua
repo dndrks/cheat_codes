@@ -876,6 +876,7 @@ function init()
     page.time_page_sel[i] = 1
     page.time_scroll[i] = 1
   end
+  page.time_arc_loop = {1,1,1}
   page.track_sel = {}
   page.track_page = 1
   page.track_page_section = {}
@@ -2536,6 +2537,38 @@ function key(n,z)
             midi_pat[id]:clear()
           end
         end
+      elseif time_nav >= 4 then
+        if a.device ~= nil then
+          local pattern = test_arc_pat[time_nav-3][page.time_page_sel[time_nav]]
+          if page.time_page_sel[page.time_sel] <= 4 then
+            if not key1_hold then
+              if pattern.rec == 0 and pattern.play == 0 and pattern.count == 0 then
+                pattern:rec_start()
+              elseif pattern.rec == 1 then
+                pattern:rec_stop()
+                pattern:start()
+              elseif pattern.play == 1 then
+                pattern:stop()
+              elseif (pattern.rec == 0 and pattern.play == 0 and pattern.count > 0) then
+                pattern:start()
+              end
+            else
+              pattern:clear()
+            end
+          else
+            for i = 1,4 do
+              if page.time_page_sel[page.time_sel] == 5 then
+                if test_arc_pat[time_nav-3][i].count > 0 then
+                  test_arc_pat[time_nav-3][i]:start()
+                end
+              elseif page.time_page_sel[page.time_sel] == 6 then
+                test_arc_pat[time_nav-3][i]:stop()
+              elseif page.time_page_sel[page.time_sel] == 7 then
+                test_arc_pat[time_nav-3][i]:clear()
+              end
+            end
+          end
+        end
       end
     elseif menu == 8 then
 
@@ -2634,46 +2667,48 @@ function key(n,z)
       key1_hold = false
     end
     if menu == 7 then
-      if key1_hold_and_modify == false then
-        local time_nav = page.time_sel
-        local id = time_nav
-        if midi_pat[id].play == 1 then
-          if midi_pat[id].clock ~= nil then
-            clock.cancel(midi_pat[id].clock)
-            print("pausing clock")
-            midi_pat[id].step = 1
-          end
-          midi_pat[id]:stop()
-        else
-          if midi_pat[id].count > 0 then
-            if midi_pat[id].playmode == 1 then
-              --midi_pat[id]:start()
-              start_pattern(midi_pat[id])
-            elseif midi_pat[id].playmode == 2 then
-              print("line 2387")
-              --midi_pat[id].clock = clock.run(synced_loop, midi_pat[id], "restart")
-              midi_pat[id].clock = clock.run(alt_synced_loop, midi_pat[id], "restart")
+      if page.time_sel < 4 then
+        if key1_hold_and_modify == false then
+          local time_nav = page.time_sel
+          local id = time_nav
+          if midi_pat[id].play == 1 then
+            if midi_pat[id].clock ~= nil then
+              clock.cancel(midi_pat[id].clock)
+              print("pausing clock")
+              midi_pat[id].step = 1
             end
-          end
-        end
-        if grid_pat[id].count > 0 then
-          if grid_pat[id].quantize == 0 then
-            if grid_pat[id].play == 1 then
-              --grid_pat[id]:stop()
-              stop_pattern(grid_pat[id])
-            else
-              --grid_pat[id]:start()
-              start_pattern(grid_pat[id])
-            end
+            midi_pat[id]:stop()
           else
-            grid_pat[id].tightened_start = (grid_pat[id].tightened_start + 1)%2
-            grid_pat[id].step = grid_pat[id].start_point
-            quantized_grid_pat[id].current_step = grid_pat[id].start_point
-            quantized_grid_pat[id].sub_step = 1
+            if midi_pat[id].count > 0 then
+              if midi_pat[id].playmode == 1 then
+                --midi_pat[id]:start()
+                start_pattern(midi_pat[id])
+              elseif midi_pat[id].playmode == 2 then
+                print("line 2387")
+                --midi_pat[id].clock = clock.run(synced_loop, midi_pat[id], "restart")
+                midi_pat[id].clock = clock.run(alt_synced_loop, midi_pat[id], "restart")
+              end
+            end
           end
+          if grid_pat[id].count > 0 then
+            if grid_pat[id].quantize == 0 then
+              if grid_pat[id].play == 1 then
+                --grid_pat[id]:stop()
+                stop_pattern(grid_pat[id])
+              else
+                --grid_pat[id]:start()
+                start_pattern(grid_pat[id])
+              end
+            else
+              grid_pat[id].tightened_start = (grid_pat[id].tightened_start + 1)%2
+              grid_pat[id].step = grid_pat[id].start_point
+              quantized_grid_pat[id].current_step = grid_pat[id].start_point
+              quantized_grid_pat[id].sub_step = 1
+            end
+          end
+        else
+          key1_hold_and_modify = false
         end
-      else
-        key1_hold_and_modify = false
       end
     end
   end

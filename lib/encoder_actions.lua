@@ -178,7 +178,15 @@ function encoder_actions.init(n,d)
           page.time_scroll[page_line] = 2
         end
       elseif page_line >=4 then
-        time_page[page_line] = util.clamp(time_page[page_line]+d,1,4)
+        time_page[page_line] = util.clamp(time_page[page_line]+d,1,7)
+        local target = page.time_sel-3
+        if g.device == nil and time_page[page_line] <= 4 then
+          if time_page[page_line] == 1 then
+            arc_param[target] = page.time_arc_loop[page_line-3]
+          else
+            arc_param[target] = time_page[page_line]+2
+          end
+        end
       end
     elseif menu == 8 then
       if not key1_hold then
@@ -434,7 +442,7 @@ function encoder_actions.init(n,d)
       local time_page = page.time_page_sel
       local page_line = page.time_sel
       local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
-      if page_line <= 4 then
+      if page_line < 4 then
         if time_page[page_line] == 3 then
           bank[page_line].crow_execute = util.clamp(bank[page_line].crow_execute+d,0,1)
         elseif time_page[page_line] == 1 then
@@ -482,6 +490,21 @@ function encoder_actions.init(n,d)
               quantized_grid_pat[page_line].current_step = pattern.start_point
               quantized_grid_pat[page_line].sub_step = 1
             end
+          end
+        end
+      else
+        if not key1_hold then
+          if time_page[page_line] == 1 then
+            page.time_arc_loop[page_line-3] = util.clamp(page.time_arc_loop[page_line-3]+d,1,3)
+            if g.device == nil then
+              arc_param[page_line-3] = page.time_arc_loop[page_line-3]
+            end
+          end
+        else
+          if page.time_page_sel[page.time_sel] <= 4 then
+            local id = page.time_sel-3
+            local val = page.time_page_sel[page.time_sel]
+            test_arc_pat[id][val].time_factor = util.clamp(test_arc_pat[id][val].time_factor + d/10,0.1,10)
           end
         end
       end

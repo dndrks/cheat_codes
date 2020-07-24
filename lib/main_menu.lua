@@ -385,7 +385,7 @@ function main_menu.init()
     screen.move(10,30)
     screen.line(123,30)
     screen.stroke()
-    if key1_hold and (page.time_page_sel[page.time_sel] == 1 or page.time_page_sel[page.time_sel] == 5) then
+    if key1_hold and (page.time_page_sel[page.time_sel] == 1 or page.time_page_sel[page.time_sel] == 5) and page.time_sel < 4 then
       screen.level(15)
       screen.move(5,40)
       screen.text("*")
@@ -471,23 +471,31 @@ function main_menu.init()
       screen.level(page_line == i and 15 or 3)
       screen.move(75+(20*(id-1)),25)
       screen.text("A"..id)
+    end
 
-      if page.time_sel >= 4 then
-        if a.device == nil then
-          screen.move(10,40)
-          screen.level(15)
-          screen.text("no arc connected")
-        else
-          screen.move(10,40)
-          screen.level(3)
-          screen.text("ENCODER PATTERNS")
-          local param_options = {"loop", "filter", "level", "pan"}
-          for j = 1,4 do
-            screen.move((j==1 or j==3) and 10 or 65,(j==1 or j==2) and 50 or 60)
-            screen.level(page.time_page_sel[page.time_sel] == j and 15 or 3)
-            local pattern = test_arc_pat[id][j]
-            screen.text(param_options[j]..": ")
-            screen.move((j==1 or j==3) and 35 or 90,(j==1 or j==2) and 50 or 60)
+    if page.time_sel >= 4 then
+      if a.device == nil then
+        screen.move(10,40)
+        screen.level(15)
+        screen.text("no arc connected")
+      else
+        local id = page.time_sel-3
+        local loop_options = {"loop(w)", "loop(s)", "loop(e)"}
+        local loop_selected = loop_options[page.time_arc_loop[id]]
+        local param_options = {loop_selected, "filter", "level", "pan"}
+        for j = 1,4 do
+          local focus = page.time_page_sel[page.time_sel]
+          if key1_hold and focus <= 4 then
+            screen.level(15)
+            screen.move((focus == 1 or focus == 3) and 5 or 70, (focus == 1 or focus == 2) and 40 or 50)
+            screen.text("*")
+          end
+          screen.move((j==1 or j==3) and 10 or 75,(j==1 or j==2) and 40 or 50)
+          screen.level(focus == j and 15 or 3)
+          local pattern = test_arc_pat[id][j]
+          screen.text(param_options[j]..": ")
+          screen.move((j==1 or j==3) and 45 or 100,(j==1 or j==2) and 40 or 50)
+          if not key1_hold then
             if (test_arc_pat[id][j].rec == 0 and test_arc_pat[id][j].play == 0 and test_arc_pat[id][j].count == 0) then
               screen.text("none")
             elseif test_arc_pat[id][j].play == 1 then
@@ -495,9 +503,21 @@ function main_menu.init()
             elseif test_arc_pat[id][j].rec == 1 then
               screen.text("rec")
             elseif (test_arc_pat[id][j].rec == 0 and test_arc_pat[id][j].play == 0 and test_arc_pat[id][j].count > 0) then
-              screen.text("stopped")
+              screen.text("idle")
             end
+          else
+            screen.text(string.format("%.1f",test_arc_pat[id][j].time_factor).."x")
           end
+        end
+        for i = 5,7 do
+          local scaled = i-4
+          screen.move(10,60)
+          screen.level(page.time_page_sel[page.time_sel]>4 and 15 or 3)
+          screen.text("all: ")
+          screen.move(30+((scaled-1)*35), 60)
+          local options = {"play", "stop", "clear"}
+          screen.level(page.time_page_sel[page.time_sel] == i and 15 or 3)
+          screen.text(options[scaled])
         end
       end
     end
