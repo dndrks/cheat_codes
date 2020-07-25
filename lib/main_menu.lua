@@ -59,9 +59,12 @@ function main_menu.init()
     local bank_a = rate_to_frac[tostring(util.round(bank[1][bank[1].id].rate, 0.001))]
     local bank_b = rate_to_frac[tostring(util.round(bank[2][bank[2].id].rate, 0.001))]
     local bank_c = rate_to_frac[tostring(util.round(bank[3][bank[3].id].rate, 0.001))]
-    screen.move(120,10)
-    screen.text_right(bank_a.."x \\ "..bank_b.."x \\ "..bank_c.."x")
-    if key1_hold then
+    if page.loops_page == 0 then
+      screen.move(120,10)
+      screen.text_right(bank_a.."x \\ "..bank_b.."x \\ "..bank_c.."x")
+    end
+    --if key1_hold then
+    if page.loops_page == 1 then
       local id = page.loops_sel+1
       local focused_pad = nil
       if grid.alt == 1 then

@@ -862,6 +862,7 @@ function init()
   page = {}
   page.main_sel = 1
   page.loops_sel = 0
+  page.loops_page = 0
   page.levels_sel = 0
   page.panning_sel = 1
   page.filtering_sel = 0
@@ -2453,8 +2454,12 @@ function key(n,z)
         end
       end
     elseif menu == 2 then
-      local loop_nav = (page.loops_sel + 1)%4
-      page.loops_sel = loop_nav
+      if not key1_hold then
+        local loop_nav = (page.loops_sel + 1)%4
+        page.loops_sel = loop_nav
+      else
+        page.loops_page = (page.loops_page+1)%2
+      end
     elseif menu == 3 then
       local level_nav = (page.levels_sel + 1)%3
       page.levels_sel = level_nav
@@ -2625,14 +2630,33 @@ function key(n,z)
       else
         menu = 1
       end
+    elseif menu == 2 then
+      if key1_hold then
+        if page.loops_page == 0 then
+          if page.loops_sel < 3 then
+            local id = page.loops_sel+1
+            bank[id][bank[id].id].loop = not bank[id][bank[id].id].loop
+            if bank[id][bank[id].id].loop then
+              softcut.loop(id+1,1)
+              softcut.position(id+1,bank[id][bank[id].id].start_point)
+            else
+              softcut.loop(id+1,0)
+            end
+          end
+        end
+      else
+        menu = 1
+      end
     else
       menu = 1
     end
-    if key1_hold == true then key1_hold = false end
+    if menu ~= 2 then
+      if key1_hold == true then key1_hold = false end
+    end
   end
 
   if n == 1 and z == 1 then
-    if menu == 2 or menu == 5 or menu == 11 then
+    if menu == 5 or menu == 11 then
       if key1_hold == false then
         key1_hold = true
       else
@@ -2663,7 +2687,7 @@ function key(n,z)
     end
     
   elseif n == 1 and z == 0 then
-    if menu ~= 2 and menu ~= 5 and menu ~= 11 then
+    if menu ~= 5 and menu ~= 11 then
       key1_hold = false
     end
     if menu == 7 then

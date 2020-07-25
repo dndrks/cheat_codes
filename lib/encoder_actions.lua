@@ -8,7 +8,7 @@ function encoder_actions.init(n,d)
     if menu == 2 then
       local id = page.loops_sel + 1
       if id ~= 4 then
-        if key1_hold or grid.alt == 1 then
+        if page.loops_page == 1 then
           ea.change_pad(id,d)
         else
           local which_pad = nil
@@ -17,13 +17,14 @@ function encoder_actions.init(n,d)
           else
             which_pad = bank[id].focus_pad
           end
-          ea.move_play_window(bank[id][which_pad],d/loop_enc_resolution)
+          local resolution = loop_enc_resolution * (key1_hold and 10 or 1)
+          ea.move_play_window(bank[id][which_pad],d/resolution)
         end
         if bank[id].focus_hold == false then
           ea.sc.move_play_window(id)
         end
       elseif id == 4 then
-        if key1_hold or grid.alt == 1 then
+        if page.loops_page == 1 then
           ea.change_buffer(rec,d)
         else
           ea.move_rec_window(rec,d)
@@ -100,22 +101,23 @@ function encoder_actions.init(n,d)
     elseif menu == 2 then
       local id = page.loops_sel + 1
       if id ~=4 then
-        if key1_hold and grid.alt == 0 then
+        if page.loops_page == 1 then
           ea.change_pad_clip(id,d)
-        elseif key1_hold == false and grid.alt == 0 then
+        else
           local which_pad = nil
           if bank[id].focus_hold == false then
             which_pad = bank[id].id
           else
             which_pad = bank[id].focus_pad
           end
-          ea.move_start(bank[id][which_pad],d/loop_enc_resolution)
+          local resolution = loop_enc_resolution * (key1_hold and 10 or 1)
+          ea.move_start(bank[id][which_pad],d/resolution)
           if bank[id].focus_hold == false then
             ea.sc.move_start(id)
           end
         end
       elseif id == 4 then
-        if key1_hold or grid.alt == 1 then
+        if page.loops_page == 1 then
           local preadjust = rec.state
           rec.state = util.clamp(rec.state+d,0,1)
           if preadjust ~= rec.state then
@@ -374,7 +376,7 @@ function encoder_actions.init(n,d)
     if menu == 2 then
       local id = page.loops_sel + 1
       if id ~= 4 then
-        if key1_hold or grid.alt == 1 then
+        if page.loops_page == 1 then
           local focused_pad = nil
           if grid_pat[id].play == 0 and grid_pat[id].tightened_start == 0 and not arp[id].playing and midi_pat[id].play == 0 then
             focused_pad = bank[id].id
@@ -407,13 +409,14 @@ function encoder_actions.init(n,d)
           else
             which_pad = bank[id].focus_pad
           end
-          ea.move_end(bank[id][which_pad],d/loop_enc_resolution)
+          local resolution = loop_enc_resolution * (key1_hold and 10 or 1)
+          ea.move_end(bank[id][which_pad],d/resolution)
           if bank[id].focus_hold == false then
             softcut.loop_end(id+1, bank[id][bank[id].id].end_point)
           end
         end
       elseif id == 4 then
-        if key1_hold or grid.alt == 1 then
+        if page.loops_page == 1 then
           params:delta("live_buff_rate",d)
         else
           local lbr = {1,2,4}
