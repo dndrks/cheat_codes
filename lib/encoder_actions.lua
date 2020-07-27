@@ -451,22 +451,16 @@ function encoder_actions.init(n,d)
         elseif time_page[page_line] == 1 then
           if pattern.rec ~= 1 then
             if not key1_hold then
-              if pattern.play == 1 then
-                local pre_adjust_mode = pattern.playmode
-                pattern.playmode = util.clamp(pattern.playmode+d,1,2)
-                if pattern.playmode ~= pre_adjust_mode then
-                  stop_pattern(pattern)
-                  start_pattern(pattern)
-                end
-                --[[
-                stop_pattern(pattern)
-                pattern.playmode = util.clamp(pattern.playmode+d,1,2)
-                start_pattern(pattern)
-                --]]
+              if pattern.play == 1 then -- actually, we won't want to allow change...
+                -- local pre_adjust_mode = pattern.playmode
+                -- pattern.playmode = util.clamp(pattern.playmode+d,1,2)
+                -- if pattern.playmode ~= pre_adjust_mode then
+                --   stop_pattern(pattern)
+                --   start_pattern(pattern)
+                -- end
               else
                 pattern.playmode = util.clamp(pattern.playmode+d,1,2)
               end
-            --elseif key1_hold and pattern.play == 0 and pattern.playmode == 2 then
             elseif key1_hold and pattern.playmode == 2 then
               key1_hold_and_modify = true
               pattern.rec_clock_time = util.clamp(pattern.rec_clock_time+d,1,64)

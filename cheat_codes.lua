@@ -1577,8 +1577,11 @@ function random_midi_pat(target)
     , [4.0]   = 0.5
     }
     assigning_pad.level = new_levels[math.abs(assigning_pad.rate)]
-    pattern.time[i] = auto_pat == 1 and ((60/bpm) / math.pow(2,math.random(-2,2))) or (60/bpm) / 4
-    pattern.time_beats[i] = pattern.time[i] / clock.get_beat_sec()
+    local tempo = clock.get_beat_sec()
+    local divisors = { 4,2,1,0.5,0.25,math.pow(2,math.random(-2,2)) }
+    local note_length = (tempo / divisors[params:get("rand_pattern_"..target.."_note_length")])
+    pattern.time[i] = note_length
+    pattern.time_beats[i] = pattern.time[i] / tempo
     pattern:calculate_quantum(i)
   end
   pattern.count = count
@@ -2481,7 +2484,9 @@ function key(n,z)
                     midi_pat[time_nav].rec_clock = clock.run(synced_record_start,midi_pat[time_nav],time_nav)
                   end
                 else
-                  midi_pat[time_nav].overdub = midi_pat[time_nav].overdub == 0 and 1 or 0
+                  if midi_pat[time_nav].play == 1 then
+                    midi_pat[time_nav].overdub = midi_pat[time_nav].overdub == 0 and 1 or 0
+                  end
                 end
               elseif midi_pat[time_nav].rec == 1 then
                 midi_pat[time_nav]:rec_stop()

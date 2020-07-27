@@ -395,44 +395,41 @@ function main_menu.init()
     end
     local playing = {}
     local display_step = {}
-    for i = 1,3 do
-      local time_page = page.time_page_sel
-      local page_line = page.time_sel
-      --local pattern = grid_pat[page_line]
-      local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
-      screen.level(page_line == i and 15 or 3)
-      
-      if grid_pat[i].play == 1 or grid_pat[i].tightened_start == 1 or arp[i].playing then
-        playing[i] = 1
-      else
-        playing[i] = 0
-      end
-      if grid_pat[i].quantize == 1 then
-        display_step[i] = quantized_grid_pat[i].current_step
-      else
-        display_step[i] = grid_pat[i].step
-      end
 
+    local time_page = page.time_page_sel
+    local page_line = page.time_sel
+
+    for i = 1,3 do
+      screen.level(page_line == i and 15 or 3)
       local pattern = g.device ~= nil and grid_pat[i] or midi_pat[i]
       screen.move(10+(20*(i-1)),25)
       screen.text("P"..i)
-
+      screen.move(5+(20*(i-1)),25)
+      screen.level(3)
+      if pattern.play == 1 then
+        screen.text(pattern.overdub == 0 and (">") or "o")
+      elseif pattern.play == 0 and pattern.count > 0 and pattern.rec == 0 then
+        screen.text("x")
+      end
+    end
+    
+    if page.time_sel < 4 then
+      local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
       if pattern.sync_hold ~= nil and pattern.sync_hold then
         screen.level(3)
-        screen.text(" -"..math.modf(4-show_me_beats).."."..math.modf(4-show_me_frac,1))
-      end
-      if pattern.rec == 1 then
-        screen.text(pattern.rec == 1 and (": rec") or "")
-      elseif pattern.play == 1 then
-        screen.text(pattern.overdub == 0 and (" > "..pattern.step) or ": over")
-      elseif pattern.play == 0 and pattern.count > 0 then
-        screen.text(" x ")
-      end
-
-      if page.time_sel < 4 then
-        local pattern = g.device ~= nil and grid_pat[page_line] or midi_pat[page_line]
-        local p_options = {"rec mode", "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
-        local p_options_external_clock = {"rec mode (ext)","shuffle pat","crow output"}
+        screen.move(45,55)
+        screen.font_size(30)
+        screen.text_center(" -"..math.modf(4-show_me_beats).."."..math.modf(4-show_me_frac,1))
+        screen.font_size(8)
+      elseif pattern.rec == 1 then
+        screen.level(15)
+        screen.move(65,55)
+        screen.font_size(30)
+        screen.text_center("rec")
+        screen.font_size(8)
+      else
+        local state_option = pattern.play == 1 and "current step" or "rec mode"
+        local p_options = {state_option, "shuffle pat","crow output"," ", "rand pat [K3]", "pat start", "pat end"}
         local p_options_rand = {"low rates", "mid rates", "hi rates", "full range", "keep rates"}
         if page.time_scroll[page_line] == 1 then
           for j = 1,3 do
@@ -440,7 +437,8 @@ function main_menu.init()
             screen.move(10,40+(10*(j-1)))
             screen.text(p_options[j])
             local mode_options = {"loose","distro "..string.format("%.4g", pattern.rec_clock_time/4),"quant","quant+trim"}
-            local fine_options = {mode_options[pattern.playmode], pattern.count > 0 and pattern.rec == 0 and "[K3]" or "(no pat!)", bank[page_line].crow_execute == 1 and "pads" or "clk"}
+            local show_state = pattern.play == 1 and pattern.step or mode_options[pattern.playmode]
+            local fine_options = {show_state, pattern.count > 0 and pattern.rec == 0 and "[K3]" or "(no pat!)", bank[page_line].crow_execute == 1 and "pads" or "clk"}
             screen.move(80,40+(10*(j-1)))
             screen.text(fine_options[j])
             if bank[page_line].crow_execute ~= 1 then
@@ -461,6 +459,7 @@ function main_menu.init()
         end
       end
     end
+
     screen.level(3)
     screen.move(65,25)
     screen.text("/")
@@ -469,7 +468,6 @@ function main_menu.init()
       local id = i-3
       local time_page = page.time_page_sel
       local page_line = page.time_sel
-      --local pattern = grid_pat[page_line]
       
       screen.level(page_line == i and 15 or 3)
       screen.move(75+(20*(id-1)),25)
