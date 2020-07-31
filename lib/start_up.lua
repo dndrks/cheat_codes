@@ -44,6 +44,7 @@ function start_up.init()
   softcut.pre_level(5, 0.5)
   softcut.position(5, 41)
   softcut.rec_offset(5, -0.0003)
+  --softcut.fade_time(5,0)
   softcut.enable(5, 1)
   
   softcut.level(6,1)
@@ -62,6 +63,7 @@ function start_up.init()
   softcut.pre_level(6, 0.5)
   softcut.position(6, 71)
   softcut.rec_offset(6, -0.0003)
+  --softcut.fade_time(6,0)
   softcut.enable(6, 1)
   
   --params:add_separator()
@@ -108,11 +110,11 @@ function start_up.init()
     local resolutions =
     { [1] = 10
     , [2] = 100
-    , [3] = 1/((60/bpm)/4)
-    , [4] = 1/((60/bpm)/2)
-    , [5] = 1/((60/bpm))
-    , [6] = (1/((60/bpm)))/2
-    , [7] = (1/((60/bpm)))/4
+    , [3] = 1/(clock.get_beat_sec()/4)
+    , [4] = 1/(clock.get_beat_sec()/2)
+    , [5] = 1/(clock.get_beat_sec())
+    , [6] = (1/(clock.get_beat_sec()))/2
+    , [7] = (1/(clock.get_beat_sec()))/4
     }
     rec_loop_enc_resolution = resolutions[x]
     if x > 2 then
@@ -165,11 +167,11 @@ function start_up.init()
     local resolutions =
     { [1] = 10
     , [2] = 100
-    , [3] = 1/((60/bpm)/4)
-    , [4] = 1/((60/bpm)/2)
-    , [5] = 1/((60/bpm))
-    , [6] = (1/((60/bpm)))/2
-    , [7] = (1/((60/bpm)))/4
+    , [3] = 1/(clock.get_beat_sec()/4)
+    , [4] = 1/(clock.get_beat_sec()/2)
+    , [5] = 1/(clock.get_beat_sec())
+    , [6] = (1/(clock.get_beat_sec()))/2
+    , [7] = (1/(clock.get_beat_sec()))/4
     }
     loop_enc_resolution = resolutions[x]
   end)
@@ -300,25 +302,94 @@ function start_up.init()
       end)
   end
   
-  params:add_group("delay params",24)
+  params:add_group("delay params",35)
   
+  params:add_separator("delay output")
   for i = 4,5 do
     local sides = {"L","R"}
     params:add_control("delay "..sides[i-3]..": global level", "delay "..sides[i-3]..": global level", controlspec.new(0,1,'lin',0,0,""))
     params:set_action("delay "..sides[i-3]..": global level", function(x) softcut.level(i+1,x) redraw() end)
-    params:add_option("delay "..sides[i-3]..": rate", "delay "..sides[i-3]..": div/mult", {"x2","x1 3/4","x1 2/3","x1 1/2","x1 1/3","x1 1/4","x1","/1 1/4","/1 1/3","/1 1/2","/1 2/3","/1 3/4","/2"},7)
-    params:set_action("delay "..sides[i-3]..": rate", function(x)
+    params:add_option("delay "..sides[i-3]..": mode", "delay "..sides[i-3]..": mode", {"clocked", "free"},1)
+    params:set_action("delay "..sides[i-3]..": mode", function(x)
+      if x == 1 then
+        delay[i-3].mode = "clocked"
+        softcut.loop_end(i+1,delay[i-3].end_point)
+      else
+        delay[i-3].mode = "free"
+        softcut.loop_end(i+1,delay[i-3].free_end_point)
+      end
+      redraw()
+    end)
+    params:add_option("delay "..sides[i-3]..": div/mult", "--> clocked div/mult: ", {"x2","x1 3/4","x1 2/3","x1 1/2","x1 1/3","x1 1/4","x1","/1 1/4","/1 1/3","/1 1/2","/1 2/3","/1 3/4","/2"},7)
+    params:set_action("delay "..sides[i-3]..": div/mult", function(x)
       delay[i-3].rate = delay_rates[x]
       delay[i-3].id = x
-      local delay_rate_to_time = (60/bpm) * delay_rates[x]
+      local delay_rate_to_time = clock.get_beat_sec() * delay_rates[x]
       local delay_time = delay_rate_to_time + (41 + (30*(i-4)))
       delay[i-3].end_point = delay_time
       softcut.loop_end(i+1,delay[i-3].end_point)
       redraw()
-      end)
+    end)
+    params:add{
+      type='control',
+      id='delay '..sides[i-3]..': free length',
+      name='--> free length: ',
+      controlspec=controlspec.def{
+        min=0.001,
+        max=30.0,
+        warp='lin',
+        step=0.001,
+        default=1,
+        quantum=0.001,
+        wrap=false,
+      },
+    }
+    params:set_action("delay "..sides[i-3]..": free length", function(x)
+      if delay[i-3].mode == "free" then
+        delay[i-3].free_end_point = delay[i-3].start_point + x
+        softcut.loop_end(i+1,delay[i-3].free_end_point)
+      end
+    end)
+    --params:add_control("delay "..sides[i-3]..": free length", "--> free length: ", controlspec.new(0.01,30,'lin',0.01,0.01,""))
+    params:add{
+      type='control',
+      id="delay "..sides[i-3]..": fade time",
+      name="delay "..sides[i-3]..": fade time",
+      controlspec=controlspec.def{
+        min=0.000,
+        max=2.000,
+        warp='lin',
+        step=0.001,
+        default=0.1,
+        quantum=0.001,
+        wrap=false,
+      },
+    }
+    params:set_action("delay "..sides[i-3]..": fade time", function(x)
+      softcut.fade_time(i+1,x)
+    end)
+    params:add{
+      type='control',
+      id="delay "..sides[i-3]..": rate",
+      name="delay "..sides[i-3]..": rate",
+      controlspec=controlspec.def{
+        min=1.000,
+        max=12.000,
+        warp='lin',
+        step=1,
+        default=1,
+        quantum=1/12,
+        wrap=false,
+      },
+    }
+    params:set_action("delay "..sides[i-3]..": rate", function(x)
+      softcut.rate(i+1,x)
+    end)
     params:add_control("delay "..sides[i-3]..": feedback", "delay "..sides[i-3]..": feedback", controlspec.new(0,100,'lin',0,50,"%"))
     params:set_action("delay "..sides[i-3]..": feedback", function(x) softcut.pre_level(i+1,(x/100)) redraw() end)
   end
+
+  params:add_separator("delay input")
   
   for i = 1,3 do
     local banks = {"a","b","c"}
@@ -343,6 +414,7 @@ function start_up.init()
   end
   
   --params:add_separator()
+  params:add_separator("delay filters")
   
   for i = 4,5 do
     local sides = {"L","R"}

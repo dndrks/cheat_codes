@@ -192,7 +192,7 @@ function how_many_bars(bank)
   for i = 1,#grid_pat[bank].event do
     total_pattern_time = total_pattern_time + grid_pat[bank].time[i]
   end
-  local time_per_bar = (60/bpm)*4
+  local time_per_bar = clock.get_beat_sec()*4
   local this_many_bars = math.floor((total_pattern_time/time_per_bar)+0.5)
   -- need at least ONE bar, so...
   if this_many_bars == 0 then this_many_bars = 1 end
@@ -235,7 +235,7 @@ function snap_to_bars(bank,bar_count)
     if old_pat_time == nil then
       old_pat_time = table.clone(grid_pat[bank].time)
     end
-    local bar_time = (((60/bpm)*4)*bar_count)/total_time
+    local bar_time = ((clock.get_beat_sec()*4)*bar_count)/total_time
     for k = 1,grid_pat[bank].count do
       grid_pat[bank].time[k] = grid_pat[bank].time[k] * bar_time
     end
@@ -605,7 +605,7 @@ end
 function midi_clock_linearize(bank)
   quantized_grid_pat[bank].event = {}
   for i = 1,grid_pat[bank].count do
-    quantized_grid_pat[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / ((60/bpm)/4))+0.5)
+    quantized_grid_pat[bank].clicks[i] = math.floor((grid_pat[bank].time[i] / (clock.get_beat_sec()/4))+0.5)
     quantized_grid_pat[bank].event[i] = {} -- critical
     if grid_pat[bank].time[i] == 0 or quantized_grid_pat[bank].clicks[i] == 0 then
       quantized_grid_pat[bank].event[i][1] = "nothing"
@@ -913,7 +913,9 @@ function init()
     delay[i].rate = delay_rates[7]
     delay[i].start_point = 41 + (30*(i-1))
     delay[i].end_point = delay[i].start_point + 0.5
+    delay[i].free_end_point = delay[i].start_point + 1
     delay[i].divisor = 1
+    delay[i].mode = "clocked"
   end
   
   index = 0
@@ -1344,7 +1346,7 @@ function start_synced_loop(target)
 end
 
 function synced_loop(target, state)
-  --clock.sleep((60/bpm)*target.rec_clock_time)
+  --clock.sleep(clock.get_beat_sec()*target.rec_clock_time)
 
   clock.sync(1)
   if state == "restart" then
@@ -1424,7 +1426,7 @@ function synced_record_start(target,i)
 end
 
 function synced_pattern_record(target)
-  clock.sleep((60/bpm)*target.rec_clock_time)
+  clock.sleep(clock.get_beat_sec()*target.rec_clock_time)
   if target.rec_clock ~= nil then
     target:rec_stop()
     -- if target is a grid pat, should do all the grid pat thing:
@@ -1438,7 +1440,7 @@ function synced_pattern_record(target)
       grid_pat[i].loop = 1
     --]]
     pattern_length_to_bars(target, "destructive")
-    if target.time[1] ~= nil and target.time[1] < (60/bpm)/4 and target.event[1] == "pause" then
+    if target.time[1] ~= nil and target.time[1] < clock.get_beat_sec()/4 and target.event[1] == "pause" then
       print("we could lose the first event..."..target.count, target.end_point)
       local butts = 0
       for i = 1,target.count do
@@ -1519,8 +1521,8 @@ function pattern_length_to_bars(target, style)
     for i = target.start_point,target.end_point do
       total_time = total_time + target.time[i]
     end
-    local clean_bars_from_time = util.round(total_time/((60/bpm)*4),0.25)
-    local add_time = (((60/bpm)*4) * clean_bars_from_time) - total_time
+    local clean_bars_from_time = util.round(total_time/(clock.get_beat_sec()*4),0.25)
+    local add_time = ((clock.get_beat_sec()*4) * clean_bars_from_time) - total_time
     print(add_time, clean_bars_from_time)
     if style == "destructive" then
       target.time[#target.event] = target.time[#target.event] + add_time
@@ -1650,11 +1652,11 @@ function compare_rec_resolution(x)
   local resolutions =
     { [1] = 10
     , [2] = 100
-    , [3] = 1/((60/bpm)/4)
-    , [4] = 1/((60/bpm)/2)
-    , [5] = 1/((60/bpm))
-    , [6] = (1/((60/bpm)))/2
-    , [7] = (1/((60/bpm)))/4
+    , [3] = 1/(clock.get_beat_sec()/4)
+    , [4] = 1/(clock.get_beat_sec()/2)
+    , [5] = 1/(clock.get_beat_sec())
+    , [6] = (1/(clock.get_beat_sec()))/2
+    , [7] = (1/(clock.get_beat_sec()))/4
     }
   rec_loop_enc_resolution = resolutions[x]
   if x > 2 then
@@ -1814,7 +1816,7 @@ osc_in = function(path, args, from)
         better_grid_pat_q_clock(i)
       end
     elseif path == "/pad_loop_slice_"..i then
-      local bpm_to_sixteenth = (60/bpm)/4
+      local bpm_to_sixteenth = clock.get_beat_sec()/4
       bank[i][bank[i].id].end_point = bank[i][bank[i].id].start_point + bpm_to_sixteenth
       softcut.loop_end(i+1,bank[i][bank[i].id].end_point)
       osc_redraw(i)
@@ -2385,10 +2387,14 @@ end
 
 function update_delays()
   for i = 1,2 do
-    local delay_rate_to_time = (60/bpm) * delay[i].rate
-    local delay_time = delay_rate_to_time + (41 + (30*(i-1)))
-    delay[i].end_point = delay_time
-    softcut.loop_end(i+4,delay[i].end_point)
+    if delay[i].mode == "clocked" then
+      local delay_rate_to_time = clock.get_beat_sec() * delay[i].rate
+      local delay_time = delay_rate_to_time + (41 + (30*(i-1)))
+      delay[i].end_point = delay_time
+      softcut.loop_end(i+4,delay[i].end_point)
+    else
+      softcut.loop_end(i+4,delay[i].free_end_point)
+    end
   end
 end
 
@@ -3269,24 +3275,16 @@ function new_arc_pattern_execute(entry)
   redraw()
 end
 
-
-
-
-
-
-
-
-
 function arc_delay_pattern_execute(entry)
   local i = entry.i
   local side = entry.delay_focus
   arc_p[4].delay_focus = side
   if side == "L" then
     arc_p[4].left_delay_value = entry.left_delay_value
-    params:set("delay L: rate",entry.left_delay_value)
+    params:set("delay L: div/mult",entry.left_delay_value)
   else
     arc_p[4].right_delay_value = entry.right_delay_value
-    params:set("delay R: rate",entry.right_delay_value)
+    params:set("delay R: div/mult",entry.right_delay_value)
   end
   redraw()
 end
@@ -3394,9 +3392,9 @@ arc_redraw = function()
   end
   
   for i = 1,13 do
-    local arc_left_delay_level = (params:get("delay L: rate") == i and 15 or 5)
-    local arc_right_delay_level = (params:get("delay R: rate") == i and 15 or 5)
-    local arc_try = params:get("delay L: rate")
+    local arc_left_delay_level = (params:get("delay L: div/mult") == i and 15 or 5)
+    local arc_right_delay_level = (params:get("delay R: div/mult") == i and 15 or 5)
+    local arc_try = params:get("delay L: div/mult")
     if arc.alt == nil or arc.alt == 0 then
       a:led(4,(41+((i-1)*4)-16),arc_left_delay_level)
     else
@@ -3479,7 +3477,7 @@ function savestate()
     io.write(tostring(params:get("clip "..i.." sample") .. "\n"))
     local sides = {"delay L: ", "delay R: "}
     for k = 1,2 do
-      io.write(params:get(sides[k].."rate") .. "\n")
+      io.write(params:get(sides[k].."div/mult") .. "\n")
       io.write(params:get(sides[k].."global level") .. "\n")
       io.write(params:get(sides[k].."feedback") .. "\n")
       io.write(params:get(sides[k].."(a) send") .. "\n")
@@ -3698,7 +3696,7 @@ function loadstate()
       -- params:set("clip "..i.." sample", string_to_sample)
       local sides = {"delay L: ", "delay R: "}
       for k = 1,2 do
-        params:set(sides[k].."rate",tonumber(io.read()))
+        params:set(sides[k].."div/mult",tonumber(io.read()))
         params:set(sides[k].."global level",tonumber(io.read()))
         params:set(sides[k].."feedback",tonumber(io.read()))
         params:set(sides[k].."(a) send",tonumber(io.read()))

@@ -513,6 +513,12 @@ function encoder_actions.init(n,d)
           rytm.track[rytm.track_edit].n = util.clamp(rytm.track[rytm.track_edit].n+d,1,16)
           rytm.track[rytm.track_edit].k = util.clamp(rytm.track[rytm.track_edit].k,0,rytm.track[rytm.track_edit].n)
         end
+      elseif key1_hold then
+        local deci = {"0.25","0.5","1","2","4"}
+        local lookup = string.format("%.4g",rytm.clock_div[rytm.track_edit])
+        local current = (tab.key(deci, lookup))
+        local new_value = util.clamp(current+d,1,#deci)
+        rytm.clock_div[rytm.track_edit] = tonumber(deci[new_value])
       end
 
       --[==[

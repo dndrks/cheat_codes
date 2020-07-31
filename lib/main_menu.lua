@@ -34,7 +34,7 @@ function main_menu.init()
     screen.level(3)
     local target = midi_dev[params:get("midi_control_device")]
     if target.device ~= nil and target.device.port == params:get("midi_control_device") and params:get("midi_control_enabled") == 2 then
-      screen.text_right("("..target.device.name..")")
+      screen.text_right("("..util.trim_string_to_width(target.device.name,70)..")")
     elseif target.device == nil and params:get("midi_control_enabled") == 2 then
       screen.text_right("no midi device!")
     end
@@ -534,8 +534,18 @@ function main_menu.init()
     screen.text("euclid")
     if key1_hold then
       screen.level(15)
-      screen.move(128,10)
-      screen.text_right("chain "..rytm.track_edit.." mode: "..rytm.track[rytm.track_edit].mode)
+      screen.move(40,10)
+      screen.text(rytm.track_edit.." mode: "..rytm.track[rytm.track_edit].mode)
+      screen.move(40,20)
+      local divs_to_frac =
+      { ["0.25"] = "1/16"
+      , ["0.5"] = "1/8"
+      , ["1"] = "1/4"
+      , ["2"] = "1/2"
+      , ["4"] = "1"
+      }
+      local lookup = string.format("%.4g",rytm.clock_div[rytm.track_edit])
+      screen.text(rytm.track_edit.." rate: "..divs_to_frac[lookup])
     end
     local labels = {"(k","n)","o","+/-"}
     local spaces = {5,20,105,120}
@@ -576,166 +586,6 @@ function main_menu.init()
       screen.text_center(rytm.track[i].pad_offset)
 
     end
-  
-
-  --[==[
-  elseif menu == 8 then
-    screen.move(0,10)
-    screen.level(3)
-    screen.text("tracker")
-    screen.level(page.track_page_section[page.track_page] == 1 and 15 or 3)
-    screen.move(40,10)
-    local header = {"1","2","3","fill"}
-    for i = 1,4 do
-      screen.level(page.track_page_section[page.track_page] == 1 and (page.track_page == i and 15) or 3)
-      screen.move(35+(i*15),10)
-      screen.text(header[i])
-    end
-    screen.level(page.track_page_section[page.track_page] == 1 and (page.track_page == page.track_page and 15) or 3)
-    screen.move(35+(page.track_page*15),13)
-    screen.text(page.track_page < 4 and "_" or "__")
-    screen.level(3)
-    --[[
-    for i = 0,1 do
-      screen.move(20+(i*60),20)
-      screen.text("p")
-      screen.move(35+(i*60),20)
-      screen.text("d")
-    end
-    --]]
-    local numerator_to_frac =
-    { [2] = "1/16t"
-    , [3] = "1/16"
-    , [4] = "1/8t"
-    , [6] = "1/8"
-    , [8] = "1/4t"
-    , [12] = "1/4"
-    , [16] = "1/2t"
-    , [24] = "1/2"
-    , [32] = "1t"
-    , [48] = "1"
-    }
-
-    function tracker_to_screen(line)
-      screen.level(3)
-      local current = math.modf(line/4)
-      local vert_position = 30+(10*(line-(4*current)))
-      local left_side = current % 2 == 0
-      screen.move(left_side and 0 or 60,tracker[page.track_page].step == line+1 and vert_position or 0)
-      screen.level(15)
-      screen.text(">")
-      if page.track_page_section[page.track_page] ~= 3 then
-        screen.level(3)
-      else  
-        screen.level(page.track_sel[page.track_page] - 1 == line and 15 or 3)
-      end
-      screen.move(left_side and 5 or 65,vert_position)
-      screen.text(line+1)
-      screen.move(left_side and 20 or 80,vert_position)
-      screen.text(tracker[page.track_page][line+1].pad==nil and "--" or tracker[page.track_page][line+1].pad)
-      screen.move(left_side and 35 or 95,vert_position)
-      screen.text(tracker[page.track_page][line+1].time==nil and "--" or numerator_to_frac[tracker[page.track_page][line+1].time])
-    end
-
-
-    local snakes = 
-    { [1] = { 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 }
-    , [2] = { 1,2,3,4,8,7,6,5,9,10,11,12,16,15,14,13 }
-    , [3] = { 1,5,9,13,2,6,10,14,3,7,11,15,4,8,12,16 }
-    , [4] = { 1,5,9,13,14,10,6,2,3,7,11,15,16,12,8,4 }
-    , [5] = { 1,2,3,4,8,12,16,15,14,13,9,5,6,7,11,10 }
-    , [6] = { 13,14,15,16,12,8,4,3,2,1,5,9,10,11,7,6 }
-    , [7] = { 1,2,5,9,6,3,4,7,10,13,14,11,8,12,15,16 }
-    , [8] = { 1,6,11,16,15,10,5,2,7,12,8,3,9,14,13,4 }
-    }
-
-    function fill_to_screen()
-      screen.level(page.track_page_section[page.track_page] == 3 and 15 or 3)
-      screen.move(0,27)
-      screen.text("snake: "..tracker[1].snake)
-    end
-
-    function snake_to_screen()
-      screen.level(3)
-      local source_options = {"a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p"}
-      local fill_options = {}
-      for i = 1,8 do
-        fill_options[i] = {}
-      end
-      for i = 1,16 do
-        fill_options[1][snakes[tracker[1].snake][i]] = source_options[i]
-      end
-      for i = 1,16 do
-        local current_line = math.modf((i-1)/4)
-        local horiz_position = 60+((i-(4*current_line))*10)
-        local vert_position = 27+(10*((1*current_line)))
-        screen.move(horiz_position,vert_position)
-        screen.text(fill_options[1][i].." ")
-      end
-    end
-
-    function deep_edit()
-      screen.level(page.track_page_section[page.track_page] == 4 and 15 or 3)
-      screen.move(0,30)
-      local track = tracker[page.track_page][page.track_sel[page.track_page]]
-      local rate_to_frac =
-      { [-4] = "-4"
-      , [-2] = "-2"
-      , [-1] = "-1"
-      , [-0.5] = "-1/2"
-      , [-0.25] = "-1/4"
-      , [-0.125] = "-1/8"
-      , [0.125] = "1/8"
-      , [0.25] = "1/4"
-      , [0.5] = "1/2"
-      , [1] = "1"
-      , [2] = "2"
-      , [4] = "4"
-      }
-      local parameters =
-      { [1] = {"pad: ", track.pad ~= nil and track.pad or "---"}
-      , [2] = {"rate: ", track.rate ~= nil and rate_to_frac[track.rate] or "---"}
-      , [3] = {"s: ", track.start_point ~= nil and (track.start_point-(8*(track.clip-1))) or "---"}
-      , [4] = {"e: ", track.end_point ~= nil and (track.end_point-(8*(track.clip-1))) or "---"}
-      , [5] = {"loop: ", track.loop ~= nil and (track.loop == false and "no" or "yes") or "---"}
-      , [6] = {track.mode == 1 and "live: " or "clip: ", track.clip ~= nil and track.clip or "---"}
-      , [7] = {"pan: ", track.pan ~= nil and track.pan or "---"}
-      , [8] = {"filter: ", track.tilt ~= nil and track.tilt or "---"}
-      , [9] = {"level: ", track.level ~= nil and track.level or "---"}
-      , [10]  = {"l.del: ", track.left_delay_level ~= nil and track.left_delay_level or "---"}
-      , [11]  = {"r.del: ", track.right_delay_level ~= nil and track.right_delay_level or "---"}
-      }
-
-      screen.move(0,20)
-      screen.level(15)
-      screen.text("line: "..page.track_sel[page.track_page])
-
-      for i = 1,11 do
-        local sel = page.track_param_sel[page.track_page]
-        screen.level(sel == i and 15 or 3)
-        local current = math.modf((i-1)/4)
-        local vert_position = 20+(10*(i-(4*current)))
-        screen.move(0+(45*current),vert_position)
-        screen.text(parameters[i][1]..parameters[i][2])
-      end
-    end
-
-    if page.track_page < 4 then
-      if page.track_page_section[page.track_page] ~= 4 then
-        local screen_lim = tonumber(string.format("%.0f", 9 + (((math.modf((page.track_sel[page.track_page]-1)/8))*8))))
-        if page.track_sel[page.track_page] < screen_lim then
-          for i = screen_lim - 9, screen_lim - 2 do
-            tracker_to_screen(i)
-          end
-        end
-      else
-        deep_edit()
-      end
-    else
-      fill_to_screen()
-      snake_to_screen()
-    end
-  --]==]
 
   elseif menu == 9 then
     local focus_arp = arp[page.arp_page_sel]
