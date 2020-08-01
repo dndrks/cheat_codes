@@ -32,7 +32,15 @@ function encoder_actions.init(n,d)
           ea.sc.move_rec_window(rec)
       end
     elseif menu == 6 then
-      page.delay_sel = util.clamp(page.delay_sel+d,0,4)
+      if page.delay_section == 1 then
+        page.delay_focus = util.clamp(page.delay_focus+d,1,2)
+      elseif page.delay_section == 2 then
+        page.delay[page.delay_focus].menu = util.clamp(page.delay[page.delay_focus].menu+d,1,3)
+      elseif page.delay_section == 3 then
+        local max_lines = {3,3,4}
+        local target = page.delay[page.delay_focus].menu_sel[page.delay[page.delay_focus].menu]
+        page.delay[page.delay_focus].menu_sel[page.delay[page.delay_focus].menu] = util.clamp(target+d,1,max_lines[page.delay[page.delay_focus].menu])
+      end
     elseif menu == 7 then
       page.time_sel = util.clamp(page.time_sel+d,1,6)
     elseif menu == 8 then
@@ -142,17 +150,33 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 6 then
-      local line = page.delay_sel
-      if line == 0 then
-        params:delta("delay L: rate",d)
-      elseif line == 1 then
-        params:delta("delay L: feedback",d)
-      elseif line ==  2 then
-        params:delta("delay L: filter cut",d/10)
-      elseif line == 3 then
-        params:delta("delay L: filter q",d/2)
-      elseif line == 4 then
-        params:delta("delay L: global level",d)
+      -- local line = page.delay_sel
+      -- if line == 0 then
+      --   local divisor = (delay[1].mode == "free" and key1_hold) and 100 or 1
+      --   params:delta(delay[1].mode == "clocked" and "delay L: div/mult" or "delay L: free length",d/divisor)
+      -- elseif line == 1 then
+      --   params:delta("delay L: feedback",d)
+      -- elseif line ==  2 then
+      --   params:delta("delay L: filter cut",d/10)
+      -- elseif line == 3 then
+      --   params:delta("delay L: filter q",d/2)
+      -- elseif line == 4 then
+      --   params:delta("delay L: global level",d)
+      -- end
+      local line = page.delay[page.delay_focus].menu_sel[page.delay[page.delay_focus].menu]
+      local delay_name = page.delay_focus == 1 and "L" or "R"
+      local focused_menu = page.delay[page.delay_focus].menu
+      if page.delay_section == 3 then
+        if focused_menu == 1 then
+          if line == 1 then
+            params:delta("delay "..delay_name..": mode",d)
+          elseif line == 2 then
+            local divisor = (delay[page.delay_focus].mode == "free" and key1_hold) and 100 or 1
+            params:delta("delay "..delay_name..": fade time",d/divisor)
+          elseif line == 3 then
+            params:delta("delay L: feedback",d)
+          end
+        end
       end
     elseif menu == 7 then
       local time_page = page.time_page_sel
@@ -429,17 +453,30 @@ function encoder_actions.init(n,d)
         end
       end
     elseif menu == 6 then
-      local line = page.delay_sel
-      if line == 0 then
-        params:delta("delay R: rate",d)
-      elseif line == 1 then
-        params:delta("delay R: feedback",d)
-      elseif line ==  2 then
-        params:delta("delay R: filter cut",d/10)
-      elseif line == 3 then
-        params:delta("delay R: filter q",d/2)
-      elseif line == 4 then
-        params:delta("delay R: global level",d)
+      -- local line = page.delay_sel
+      -- if line == 0 then
+      --   params:delta(delay[2].mode == "clocked" and "delay R: div/mult" or "delay R: free length",d)
+      -- elseif line == 1 then
+      --   params:delta("delay R: feedback",d)
+      -- elseif line ==  2 then
+      --   params:delta("delay R: filter cut",d/10)
+      -- elseif line == 3 then
+      --   params:delta("delay R: filter q",d/2)
+      -- elseif line == 4 then
+      --   params:delta("delay R: global level",d)
+      -- end
+      local line = page.delay[page.delay_focus].menu_sel[page.delay[page.delay_focus].menu]
+      local delay_name = page.delay_focus == 1 and "L" or "R"
+      local focused_menu = page.delay[page.delay_focus].menu
+      if page.delay_section == 3 then
+        if focused_menu == 1 then
+          if line == 1 then
+            local divisor = (delay[1].mode == "free" and key1_hold) and 100 or 1
+            params:delta(delay[1].mode == "clocked" and "delay L: div/mult" or "delay L: free length",d/divisor)
+          elseif line == 2 then
+            params:delta("delay "..delay_name..": rate",d)
+          end
+        end
       end
     elseif menu == 7 then
       local time_page = page.time_page_sel

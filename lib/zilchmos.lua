@@ -275,8 +275,16 @@ function zilchmos.sc.level( pad, i )
   if not pad.enveloped then
     softcut.level_slew_time(i+1,1.0)
     softcut.level(i+1,pad.level)
-    softcut.level_cut_cut(i+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
-    softcut.level_cut_cut(i+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+    if pad.left_delay_thru then
+      softcut.level_cut_cut(i+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level))
+    else
+      softcut.level_cut_cut(i+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+    end
+    if pad.right_delay_thru then
+      softcut.level_cut_cut(i+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level))
+    else
+      softcut.level_cut_cut(i+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+    end
   end
 end
 

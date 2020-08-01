@@ -868,6 +868,14 @@ function init()
   page.filtering_sel = 0
   page.arc_sel = 0
   page.delay_sel = 0
+  page.delay_section = 1
+  page.delay_focus = 1
+  page.delay = {{},{}}
+  for i = 1,2 do
+    page.delay[i].menu = 1
+    page.delay[i].menu_sel = {1,1,1}
+  end
+    
   page.time_sel = 1
   page.time_page = {}
   page.time_page_sel = {}
@@ -2122,6 +2130,8 @@ function reset_all_banks( banks )
       pad.clock_resolution  = 4
       pad.offset            = 1.0
       pad.crow_pad_execute  = 1
+      pad.left_delay_thru   = false
+      pad.right_delay_thru  = false
     end
     cross_filter[i]         = {}
     cross_filter[i].fc      = 12000
@@ -2146,15 +2156,31 @@ function cheat(b,i)
   if pad.enveloped then
     env_counter[b].butt = pad.level
     softcut.level(b+1,pad.level)
-    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
-    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+    if pad.left_delay_thru then
+      softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level))
+    else
+      softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+    end
+    if pad.right_delay_thru then
+      softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level))
+    else
+      softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+    end
     env_counter[b].time = (pad.envelope_time/(pad.level/0.05))
     env_counter[b]:start()
   else
     softcut.level_slew_time(b+1,0.1)
     softcut.level(b+1,pad.level)
-    softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
-    softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+    if pad.left_delay_thru then
+      softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level))
+    else
+      softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+    end
+    if pad.right_delay_thru then
+      softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level))
+    else
+      softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+    end
   end
   if pad.end_point - pad.start_point < 0.11 then
     pad.end_point = pad.start_point + 0.1
@@ -2223,7 +2249,7 @@ function cheat(b,i)
       pad.fifth = true
     end
   end
-  params:set("level "..tonumber(string.format("%.0f",b)),pad.level)
+  params:set("level "..tonumber(string.format("%.0f",b)),pad.level,"true")
   params:set("current pad "..tonumber(string.format("%.0f",b)),i,"true")
   params:set("start point "..tonumber(string.format("%.0f",b)),pad.start_point*100,"true")
   params:set("end point "..tonumber(string.format("%.0f",b)),pad.end_point*100,"true")
@@ -2243,6 +2269,7 @@ function envelope(i)
     env_counter[i]:stop()
     softcut.level(i+1,0)
     env_counter[i].butt = bank[i][bank[i].id].level
+    print("HERE?")
     softcut.level_cut_cut(i+1,5,0)
     softcut.level_cut_cut(i+1,6,0)
     softcut.level_slew_time(i+1,1.0)
@@ -2475,6 +2502,10 @@ function key(n,z)
     elseif menu == 5 then
       local filter_nav = (page.filtering_sel + 1)%3
       page.filtering_sel = filter_nav
+    elseif menu == 6 then
+      if page.delay_section < 3 then
+        page.delay_section = (page.delay_section%3)+1
+      end
     elseif menu == 7 then
       local time_nav = page.time_sel
       local id = time_nav
@@ -2638,6 +2669,14 @@ function key(n,z)
         page.rnd_page_section = 1
       elseif page.rnd_page_section == 3 then
         page.rnd_page_section = 2
+      else
+        menu = 1
+      end
+    elseif menu == 6 then
+      if page.delay_section == 3 then
+        page.delay_section = 2
+      elseif page.delay_section == 2 then
+        page.delay_section = 1
       else
         menu = 1
       end
