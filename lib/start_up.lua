@@ -373,12 +373,12 @@ function start_up.init()
       id="delay "..sides[i-3]..": rate",
       name="delay "..sides[i-3]..": rate",
       controlspec=controlspec.def{
-        min=1.000,
-        max=12.000,
+        min=1,
+        max=24.000,
         warp='lin',
         step=1,
         default=1,
-        quantum=1/12,
+        quantum=1/24,
         wrap=false,
       },
     }

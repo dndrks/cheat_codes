@@ -171,10 +171,37 @@ function encoder_actions.init(n,d)
           if line == 1 then
             params:delta("delay "..delay_name..": mode",d)
           elseif line == 2 then
-            local divisor = (delay[page.delay_focus].mode == "free" and key1_hold) and 100 or 1
+            local divisor = (delay[page.delay_focus].mode == "free" and key1_hold) and 10 or 0.1
             params:delta("delay "..delay_name..": fade time",d/divisor)
           elseif line == 3 then
-            params:delta("delay L: feedback",d)
+            params:delta("delay "..delay_name..": feedback",d)
+          end
+        elseif focused_menu == 2 then
+          if line == 1 then
+            params:delta("delay "..delay_name..": filter cut",d/10)
+          elseif line == 2 then
+            params:delta("delay "..delay_name..": filter lp",d)
+          elseif line == 3 then
+            params:delta("delay "..delay_name..": filter bp",d)
+          end
+
+        -- elseif focused_menu == 3 then
+        --   if line == 1 then
+        --     params:delta("delay "..delay_name..": (a) send",d*2)
+        --   elseif line == 2 then
+        --     params:delta("delay "..delay_name..": (b) send",d*2)
+        --   elseif line == 3 then
+        --     params:delta("delay "..delay_name..": (c) send",d*2)
+        --   end
+        elseif focused_menu == 3 then
+          if line < 4 then
+            if page.delay_focus == 1 then
+              bank[line][bank[line].id].left_delay_level = util.clamp(bank[line][bank[line].id].left_delay_level + d/10,0,1)
+            elseif page.delay_focus == 2 then
+              bank[line][bank[line].id].right_delay_level = util.clamp(bank[line][bank[line].id].right_delay_level + d/10,0,1)
+            end
+          elseif line == 4 then
+            params:delta("delay "..delay_name..": global level",d)
           end
         end
       end
@@ -471,10 +498,28 @@ function encoder_actions.init(n,d)
       if page.delay_section == 3 then
         if focused_menu == 1 then
           if line == 1 then
-            local divisor = (delay[1].mode == "free" and key1_hold) and 100 or 1
-            params:delta(delay[1].mode == "clocked" and "delay L: div/mult" or "delay L: free length",d/divisor)
+            local divisor = (delay[page.delay_focus].mode == "free" and key1_hold) and 100 or 1
+            params:delta(delay[page.delay_focus].mode == "clocked" and "delay L: div/mult" or "delay "..delay_name..": free length",d/divisor)
           elseif line == 2 then
             params:delta("delay "..delay_name..": rate",d)
+          end
+        elseif focused_menu == 2 then
+          if line == 1 then
+            params:delta("delay "..delay_name..": filter q",d/10)
+          elseif line == 2 then
+            params:delta("delay "..delay_name..": filter hp",d)
+          elseif line == 3 then
+            params:delta("delay "..delay_name..": filter dry",d)
+          end
+        elseif focused_menu == 3 then
+          if page.delay_focus == 1 then
+            local current_thru = bank[line][bank[line].id].left_delay_thru == true and 1 or 0
+            current_thru = util.clamp(current_thru + d,0,1)
+            bank[line][bank[line].id].left_delay_thru = current_thru == 1 and true or false
+          elseif page.delay_focus == 2 then
+            local current_thru = bank[line][bank[line].id].right_delay_thru == true and 1 or 0
+            current_thru = util.clamp(current_thru + d,0,1)
+            bank[line][bank[line].id].right_delay_thru = current_thru == 1 and true or false
           end
         end
       end
