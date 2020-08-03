@@ -3260,6 +3260,14 @@ function grid_redraw()
         end
       end
 
+      local shifted_x = (selected[delay_grid.bank].x - (5*(delay_grid.bank-1)))+9
+      local shifted_y = selected[delay_grid.bank].y - 2
+      g:led(shifted_x, shifted_y, 15)
+
+      for i = 4,6 do
+        g:led(14,i,delay_grid.bank == 7-i and 7 or 2)
+      end
+
       for i = 10,14 do
         g:led(i,1,2)
         g:led(i,8,2)

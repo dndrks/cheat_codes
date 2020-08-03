@@ -727,6 +727,28 @@ function grid_actions.init(x,y,z)
         del.quick_mute(6-y,"feedback mute")
       end
     end
+
+    if y == 6 or y == 5 or y == 4 then
+      if x == 14 and z == 1 then
+        delay_grid.bank = 7-y
+      end
+    end
+
+    if z == 1 and x >= 10 and x <= 13 and y >=3 and y <=6 then
+      local id = delay_grid.bank
+      local xval = {9,4,-1}
+      selected[id].x = x - xval[id]
+      selected[id].y = y + 2
+      selected[id].id = (math.abs(selected[id].y-9)+((selected[id].x-1)*4))-(20*(id-1))
+      bank[id].id = selected[id].id
+      if (arp[id].hold or (menu == 9)) and grid_pat[id].rec == 0 and not arp[id].pause then
+        arps.momentary(id, bank[id].id, "on")
+      else
+        cheat(id, bank[id].id)
+        grid_pattern_watch(id)
+      end
+    end
+
   end
   
   if x == 16 and y == 1 and z == 1 then
