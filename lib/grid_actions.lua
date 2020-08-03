@@ -527,7 +527,7 @@ function grid_actions.init(x,y,z)
       end
     end
     
-  else
+  elseif grid_page == 1 then
     
     if grid.loop_mod == 0 then
     
@@ -709,11 +709,13 @@ function grid_actions.init(x,y,z)
       redraw()
     end
   
+  elseif grid_page == 2 then
+    
   end
   
   if x == 16 and y == 1 and z == 1 then
     if grid.alt == 0 then
-      grid_page = (grid_page + 1)%2
+      grid_page = (grid_page + 1)%3
       if menu == 11 then
         if grid_page == 1 then
           help_menu = "meta page"

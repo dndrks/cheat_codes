@@ -5,26 +5,26 @@ rnd = {}
 MusicUtil = include "lib/cc_musicutil"
 
 function rnd.init(t)
-    rnd[t] = {}
-    rnd.targets = {"pan","rate","rate slew","delay send","loop","semitone offset"}
-    for i = 1,5 do
-        rnd[t][i] = {}
-        rnd[t][i].param = rnd.targets[i]
-        rnd[t][i].playing = false
-        rnd[t][i].num = 1
-        rnd[t][i].denom = 1
-        rnd[t][i].time = rnd[t][i].num / rnd[t][i].denom
-        rnd[t][i].rate_slew_min = 0
-        rnd[t][i].rate_slew_max = 1
-        rnd[t][i].pan_min = -100
-        rnd[t][i].pan_max = 100
-        rnd[t][i].rate_min = 0.125
-        rnd[t][i].rate_max = 4
-        rnd[t][i].offset_scale = MusicUtil.SCALES[1].name
-        rnd[t][i].offset_octave = 2
-        rnd[t][i].mode = "non-destructive"
-    end
-    math.randomseed(os.time())
+  rnd[t] = {}
+  rnd.targets = {"pan","rate","rate slew","delay send","loop","semitone offset"}
+  for i = 1,5 do
+      rnd[t][i] = {}
+      rnd[t][i].param = rnd.targets[i]
+      rnd[t][i].playing = false
+      rnd[t][i].num = 1
+      rnd[t][i].denom = 1
+      rnd[t][i].time = rnd[t][i].num / rnd[t][i].denom
+      rnd[t][i].rate_slew_min = 0
+      rnd[t][i].rate_slew_max = 1
+      rnd[t][i].pan_min = -100
+      rnd[t][i].pan_max = 100
+      rnd[t][i].rate_min = 0.125
+      rnd[t][i].rate_max = 4
+      rnd[t][i].offset_scale = MusicUtil.SCALES[1].name
+      rnd[t][i].offset_octave = 2
+      rnd[t][i].mode = "non-destructive"
+  end
+  math.randomseed(os.time())
 end
 
 local param_targets =
@@ -34,36 +34,36 @@ local param_targets =
 }
 
 function rnd.transport(t,i,state)
-    if state == "on" then
-        if not rnd[t][i].playing then
-            rnd[t][i].clock = clock.run(rnd.advance, t, i)
-            rnd[t][i].playing = true
-        end
-    elseif state == "off" then
-        if rnd[t][i].playing then
-            clock.cancel(rnd[t][i].clock)
-            rnd[t][i].playing = false
-        end
+  if state == "on" then
+    if not rnd[t][i].playing then
+      rnd[t][i].clock = clock.run(rnd.advance, t, i)
+      rnd[t][i].playing = true
     end
+  elseif state == "off" then
+    if rnd[t][i].playing then
+      clock.cancel(rnd[t][i].clock)
+      rnd[t][i].playing = false
+    end
+  end
 end
 
 function rnd.advance(t,i)
-    while true do
-        clock.sync(rnd[t][i].time)
-        if rnd[t][i].param == "rate slew" then
-            rnd.rate_slew(t,i)
-        elseif rnd[t][i].param == "pan" then
-            rnd.pan(t)
-        elseif rnd[t][i].param == "delay send" then
-            rnd.delay_send(t,i)
-        elseif rnd[t][i].param == "rate" then
-            rnd.rate(t,i)
-        elseif rnd[t][i].param == "loop" then
-            rnd.loop(t)
-        elseif rnd[t][i].param == "semitone offset" then
-            rnd.offset(t,i)
-        end
+  while true do
+    clock.sync(rnd[t][i].time)
+    if rnd[t][i].param == "rate slew" then
+        rnd.rate_slew(t,i)
+    elseif rnd[t][i].param == "pan" then
+        rnd.pan(t,i)
+    elseif rnd[t][i].param == "delay send" then
+        rnd.delay_send(t,i)
+    elseif rnd[t][i].param == "rate" then
+        rnd.rate(t,i)
+    elseif rnd[t][i].param == "loop" then
+        rnd.loop(t)
+    elseif rnd[t][i].param == "semitone offset" then
+        rnd.offset(t,i)
     end
+  end
 end
 
 function rnd.restore_default(t,i)
@@ -89,9 +89,16 @@ function rnd.rate_slew(t,i)
     softcut.rate_slew_time(t+1,random_slew)
 end
 
-function rnd.pan(t)
-    rightangleslice.actions[3]['123'][1](bank[t][bank[t].id])
-    rightangleslice.actions[3]['123'][2](bank[t][bank[t].id],t)
+function rnd.pan(t,i)
+  local min = util.round(rnd[t][i].pan_min)
+  local max = util.round(rnd[t][i].pan_max)
+  local rand_pan = math.random(min,max)/100
+  if rnd[t][i].mode == "destructive" then
+    bank[t][bank[t].id].pan = rand_pan
+  end
+  softcut.pan(t+1,rand_pan)
+  -- rightangleslice.actions[3]['123'][1](bank[t][bank[t].id])
+  -- rightangleslice.actions[3]['123'][2](bank[t][bank[t].id],t)
 end
 
 function rnd.rate(t,i)

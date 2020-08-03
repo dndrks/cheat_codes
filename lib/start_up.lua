@@ -322,9 +322,9 @@ function start_up.init()
     end)
     params:add_option("delay "..sides[i-3]..": div/mult", "--> clocked div/mult: ", {"x2","x1 3/4","x1 2/3","x1 1/2","x1 1/3","x1 1/4","x1","/1 1/4","/1 1/3","/1 1/2","/1 2/3","/1 3/4","/2"},7)
     params:set_action("delay "..sides[i-3]..": div/mult", function(x)
-      delay[i-3].rate = delay_rates[x]
+      delay[i-3].clocked_length = clocked_delays[x]
       delay[i-3].id = x
-      local delay_rate_to_time = clock.get_beat_sec() * delay_rates[x]
+      local delay_rate_to_time = clock.get_beat_sec() * clocked_delays[x]
       local delay_time = delay_rate_to_time + (41 + (30*(i-4)))
       delay[i-3].end_point = delay_time
       softcut.loop_end(i+1,delay[i-3].end_point)
@@ -383,6 +383,7 @@ function start_up.init()
       },
     }
     params:set_action("delay "..sides[i-3]..": rate", function(x)
+      delay[i-3].rate = x
       softcut.rate(i+1,x)
     end)
     params:add_control("delay "..sides[i-3]..": feedback", "delay "..sides[i-3]..": feedback", controlspec.new(0,100,'lin',0,50,"%"))

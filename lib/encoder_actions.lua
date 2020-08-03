@@ -196,9 +196,21 @@ function encoder_actions.init(n,d)
         elseif focused_menu == 3 then
           if line < 4 then
             if page.delay_focus == 1 then
-              bank[line][bank[line].id].left_delay_level = util.clamp(bank[line][bank[line].id].left_delay_level + d/10,0,1)
+              if key1_hold then
+                for i = 1,16 do
+                  bank[line][i].left_delay_level = util.clamp(bank[line][i].left_delay_level + d/10,0,1)
+                end
+              else
+                bank[line][bank[line].id].left_delay_level = util.clamp(bank[line][bank[line].id].left_delay_level + d/10,0,1)
+              end
             elseif page.delay_focus == 2 then
-              bank[line][bank[line].id].right_delay_level = util.clamp(bank[line][bank[line].id].right_delay_level + d/10,0,1)
+              if key1_hold then
+                for i = 1,16 do
+                  bank[line][i].right_delay_level = util.clamp(bank[line][i].right_delay_level + d/10,0,1)
+                end
+              else
+                bank[line][bank[line].id].right_delay_level = util.clamp(bank[line][bank[line].id].right_delay_level + d/10,0,1)
+              end
             end
           elseif line == 4 then
             params:delta("delay "..delay_name..": global level",d)
@@ -515,7 +527,13 @@ function encoder_actions.init(n,d)
           if page.delay_focus == 1 then
             local current_thru = bank[line][bank[line].id].left_delay_thru == true and 1 or 0
             current_thru = util.clamp(current_thru + d,0,1)
-            bank[line][bank[line].id].left_delay_thru = current_thru == 1 and true or false
+            if key1_hold then
+              for i = 1,16 do
+                bank[line][i].left_delay_thru = current_thru == 1 and true or false
+              end
+            else
+              bank[line][bank[line].id].left_delay_thru = current_thru == 1 and true or false
+            end
           elseif page.delay_focus == 2 then
             local current_thru = bank[line][bank[line].id].right_delay_thru == true and 1 or 0
             current_thru = util.clamp(current_thru + d,0,1)

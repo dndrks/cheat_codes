@@ -332,14 +332,25 @@ function main_menu.init()
     screen.move(0,10)
     screen.level(3)
     screen.text("delays")
-
-
+    local focused_menu = page.delay[page.delay_focus].menu
+    if key1_hold then
+      screen.move(128,10)
+      if page.delay_section == 3 and focused_menu == 1 then
+        if page.delay[page.delay_focus].menu_sel[focused_menu] == 1 or page.delay[page.delay_focus].menu_sel[focused_menu] == 2 then
+          screen.text_right("e3: fine-tune")
+        end
+      elseif page.delay_section == 3 and focused_menu == 3 then
+        if page.delay[page.delay_focus].menu_sel[focused_menu] < 4 then
+          screen.text_right("e3: map to all in bank")
+        end
+      end
+    end
     screen.level(page.delay_section == 1 and 15 or 3)
     screen.font_size(40)
     screen.move(0,50)
     screen.text(page.delay_focus == 1 and "L" or "R")
     screen.font_size(8)
-    local focused_menu = page.delay[page.delay_focus].menu
+    -- local focused_menu = page.delay[page.delay_focus].menu
     local options = {"ctl","flt","mix"}
     for i = 1,3 do
       screen.level((page.delay_section == 2 and focused_menu == i) and 15 or 3)

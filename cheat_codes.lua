@@ -20,7 +20,7 @@ easingFunctions = include 'lib/easing'
 midicontrol = include 'lib/midicheat'
 arps = include 'lib/arp_actions'
 rnd = include 'lib/rnd_actions'
---trackers = include 'lib/tracker'
+del = include 'lib/delay'
 rytm = include 'lib/euclid'
 math.randomseed(os.time())
 
@@ -911,20 +911,22 @@ function init()
     page.rnd_page_edit[i] = 1
   end
   
-  delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
-  delay = {}
-  for i = 1,2 do
-    delay[i] = {}
-    delay[i].id = 7
-    delay[i].arc_rate_tracker = 7
-    delay[i].arc_rate = 7
-    delay[i].rate = delay_rates[7]
-    delay[i].start_point = 41 + (30*(i-1))
-    delay[i].end_point = delay[i].start_point + 0.5
-    delay[i].free_end_point = delay[i].start_point + 1
-    delay[i].divisor = 1
-    delay[i].mode = "clocked"
-  end
+  del.init()
+
+  -- delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
+  -- delay = {}
+  -- for i = 1,2 do
+  --   delay[i] = {}
+  --   delay[i].id = 7
+  --   delay[i].arc_rate_tracker = 7
+  --   delay[i].arc_rate = 7
+  --   delay[i].rate = delay_rates[7]
+  --   delay[i].start_point = 41 + (30*(i-1))
+  --   delay[i].end_point = delay[i].start_point + 0.5
+  --   delay[i].free_end_point = delay[i].start_point + 1
+  --   delay[i].divisor = 1
+  --   delay[i].mode = "clocked"
+  -- end
   
   index = 0
   
@@ -2415,7 +2417,7 @@ end
 function update_delays()
   for i = 1,2 do
     if delay[i].mode == "clocked" then
-      local delay_rate_to_time = clock.get_beat_sec() * delay[i].rate
+      local delay_rate_to_time = clock.get_beat_sec() * delay[i].clocked_length
       local delay_time = delay_rate_to_time + (41 + (30*(i-1)))
       delay[i].end_point = delay_time
       softcut.loop_end(i+4,delay[i].end_point)
@@ -3101,7 +3103,7 @@ function grid_redraw()
         g:led(16,8-rec.clip,3)
       end
     
-    else
+    elseif grid_page == 1 then
       
       -- if we're on page 2...
       
@@ -3184,7 +3186,26 @@ function grid_redraw()
       if grid.loop_mod == 1 then
         
       end
-      
+    
+    elseif grid_page == 2 then
+      -- delay page!
+      for i = 1,8 do
+        g:led(i,1,2)
+        g:led(i,2,2)
+        g:led(i,7,2)
+        g:led(i,8,2)
+      end
+      for i = 4,8 do
+        g:led(i,3,2)
+        g:led(i,4,2)
+        g:led(i,5,2)
+        g:led(i,6,2)
+      end
+      for i = 10,14 do
+        g:led(i,1,2)
+        g:led(i,8,2)
+      end
+
     end
     g:led(16,1,15*grid_page)
     
