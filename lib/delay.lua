@@ -15,6 +15,10 @@ function delays.init(target)
     delay[i].free_end_point = delay[i].start_point + 1
     delay[i].divisor = 1
     delay[i].mode = "clocked"
+    delay[i].feedback_mute = false
+    delay[i].level_mute = false
+    delay[i].held = 0
+    delay[i].saver = false
   end
 
   delay_bundle = { {},{} }
@@ -23,28 +27,31 @@ function delays.init(target)
     delay_bundle[2][i] = {}
   end
 
-  grid_delay = { {},{} }
-  for i = 1,2 do
-    grid_delay[i].held = 0
-    grid_delay[i].assigned_to = 0
-  end
+  delay_grid = {}
+  delay_grid.bank = 1
+
 end
 
 function delays.build_bundle(target,slot)
-  local b = delay_bundle[target][slot]
-  local delay_name = target == 1 and "delay L: " or "delay R: "
-  b.mode = params:get(delay_name.."mode")
-  b.clocked_length = params:get(delay_name.."div/mult")
-  b.fade_time = params:get(delay_name.."fade time")
-  b.rate = params:get(delay_name.."rate")
-  b.feedback = params:get(delay_name.."feedback")
-  b.filter_cut = params:get(delay_name.."filter cut")
-  b.filter_q = params:get(delay_name.."filter q")
-  b.filter_lp = params:get(delay_name.."filter lp")
-  b.filter_hp = params:get(delay_name.."filter hp")
-  b.filter_bp = params:get(delay_name.."filter bp")
-  b.filter_dry = params:get(delay_name.."filter dry")
-  b.global_level = params:get(delay_name.."global level")
+  -- delay[target].saver_active = true -- declare this external to the function
+  clock.sleep(1)
+  if delay[target].saver_active then
+    local b = delay_bundle[target][slot]
+    local delay_name = target == 1 and "delay L: " or "delay R: "
+    b.mode = params:get(delay_name.."mode")
+    b.clocked_length = params:get(delay_name.."div/mult")
+    b.fade_time = params:get(delay_name.."fade time")
+    b.rate = params:get(delay_name.."rate")
+    b.feedback = params:get(delay_name.."feedback")
+    b.filter_cut = params:get(delay_name.."filter cut")
+    b.filter_q = params:get(delay_name.."filter q")
+    b.filter_lp = params:get(delay_name.."filter lp")
+    b.filter_hp = params:get(delay_name.."filter hp")
+    b.filter_bp = params:get(delay_name.."filter bp")
+    b.filter_dry = params:get(delay_name.."filter dry")
+    b.global_level = params:get(delay_name.."global level")
+  end
+  delay[target].saver_active = false
 end
 
 function delays.restore_bundle(target,slot)
@@ -89,6 +96,36 @@ function delays.loadstate(collection)
     if tab.load(_path.data .. "cheat_codes/delays/collection-"..collection.."/"..del_name[i]..".data") ~= nil then
       delay_bundle[i] = tab.load(_path.data .. "cheat_codes/delays/collection-"..collection.."/"..del_name[i]..".data")
     end
+  end
+end
+
+function delays.quick_mute(target,param)
+  if param == "level mute" then
+    delay[target].level_mute = not delay[target].level_mute
+    if delay[target].level_mute then
+      softcut.level(target+4,0)
+    else
+      softcut.level(target+4,params:get(target == 1 and "delay L: global level" or "delay R: global level"))
+    end
+  elseif param == "feedback mute" then
+    delay[target].feedback_mute = not delay[target].feedback_mute
+    if delay[target].feedback_mute then
+      softcut.pre_level(target+4,0)
+    else
+      softcut.pre_level(target+4,params:get(target == 1 and "delay L: feedback" or "delay R: feedback")/100)
+    end
+  end
+end
+
+function delays.set_value(target,index,param)
+  if param == "level" then
+    local delay_name = {"delay L: global level", "delay R: global level"}
+    local levels = {1,0.75,0.5,0.25,0}
+    params:set(delay_name[target],levels[index])
+  elseif param == "feedback" then
+    local delay_name = {"delay L: feedback", "delay R: feedback"}
+    local feedback_levels = {100,75,50,25,0}
+    params:set(delay_name[target],feedback_levels[index])
   end
 end
 

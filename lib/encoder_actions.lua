@@ -511,7 +511,7 @@ function encoder_actions.init(n,d)
         if focused_menu == 1 then
           if line == 1 then
             local divisor = (delay[page.delay_focus].mode == "free" and key1_hold) and 100 or 1
-            params:delta(delay[page.delay_focus].mode == "clocked" and "delay L: div/mult" or "delay "..delay_name..": free length",d/divisor)
+            params:delta(delay[page.delay_focus].mode == "clocked" and "delay "..delay_name..": div/mult" or "delay "..delay_name..": free length",d/divisor)
           elseif line == 2 then
             params:delta("delay "..delay_name..": rate",d)
           end
@@ -537,7 +537,13 @@ function encoder_actions.init(n,d)
           elseif page.delay_focus == 2 then
             local current_thru = bank[line][bank[line].id].right_delay_thru == true and 1 or 0
             current_thru = util.clamp(current_thru + d,0,1)
-            bank[line][bank[line].id].right_delay_thru = current_thru == 1 and true or false
+            if key1_hold then
+              for i = 1,16 do
+                bank[line][i].right_delay_thru = current_thru == 1 and true or false
+              end
+            else
+              bank[line][bank[line].id].right_delay_thru = current_thru == 1 and true or false
+            end
           end
         end
       end

@@ -3190,24 +3190,86 @@ function grid_redraw()
     elseif grid_page == 2 then
       -- delay page!
       for i = 1,8 do
+        --right delay presets
         g:led(i,1,2)
         g:led(i,2,2)
+        --left delay presets
         g:led(i,7,2)
         g:led(i,8,2)
       end
-      for i = 4,8 do
-        g:led(i,3,2)
-        g:led(i,4,2)
-        g:led(i,5,2)
-        g:led(i,6,2)
+      
+      -- delay levels
+      local level_to_led = {{},{}}
+      local delay_level = {params:get("delay L: global level"), params:get("delay R: global level")}
+      for i = 1,2 do
+        if delay_level[i] <= 0.125 then
+          level_to_led[i] = 0
+        elseif delay_level[i] <= 0.375 then
+          level_to_led[i] = 1
+        elseif delay_level[i] <= 0.625 then
+          level_to_led[i] = 2
+        elseif delay_level[i] <= 0.875 then
+          level_to_led[i] = 3
+        elseif delay_level[i] <= 1 then
+          level_to_led[i] = 4
+        end
       end
+      for i = 8,4,-1 do
+        g:led(i,6,2)
+        g:led(i,3,2)
+      end
+      for i = 1,2 do
+        if not delay[i].level_mute then
+          for j = 8,4+(4-level_to_led[i]),-1 do
+            g:led(j,i==1 and 6 or 3,7)
+          end
+        end
+      end
+
+      -- feedback levels
+      local feed_to_led = {{},{}}
+      local feedback_level = {params:get("delay L: feedback"), params:get("delay R: feedback")}
+      for i = 1,2 do
+        if feedback_level[i] <= 12.5 then
+          feed_to_led[i] = 0
+        elseif feedback_level[i] <= 37.5 then
+          feed_to_led[i] = 1
+        elseif feedback_level[i] <= 62.5 then
+          feed_to_led[i] = 2
+        elseif feedback_level[i] <= 87.5 then
+          feed_to_led[i] = 3
+        elseif feedback_level[i] <= 100 then
+          feed_to_led[i] = 4
+        end
+      end
+      for i = 8,4,-1 do
+        g:led(i,5,2)
+        g:led(i,4,2)
+      end
+      for i = 1,2 do
+        if not delay[i].feedback_mute then
+          for j = 8,4+(4-feed_to_led[i]),-1 do
+            g:led(j,i==1 and 5 or 4,7)
+          end
+        end
+      end
+
+      for k = 10,13 do
+        for i = 6,3,-1 do
+          g:led(k,i,3)
+        end
+      end
+
       for i = 10,14 do
         g:led(i,1,2)
         g:led(i,8,2)
       end
 
     end
-    g:led(16,1,15*grid_page)
+    local page_led = {[0] = 0, [1] = 7, [2] = 15}
+    if grid_page ~= nil then
+      g:led(16,1,page_led[grid_page])
+    end
     
     g:refresh()
   end

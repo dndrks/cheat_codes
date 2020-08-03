@@ -710,7 +710,23 @@ function grid_actions.init(x,y,z)
     end
   
   elseif grid_page == 2 then
-    
+    if y == 3 or y == 6 then
+      if x >= 4 and x <= 8 then
+        if z == 1 then
+          del.set_value(math.abs(5-y), x-3, "level")
+        end
+      elseif x == 9 then
+        del.quick_mute(math.abs(y-5),"level mute")
+      end
+    elseif y == 4 or y == 5 then
+      if x >= 4 and x <= 8 then
+        if z == 1 then
+          del.set_value(6-y, x-3, "feedback")
+        end
+      elseif x == 9 then
+        del.quick_mute(6-y,"feedback mute")
+      end
+    end
   end
   
   if x == 16 and y == 1 and z == 1 then
