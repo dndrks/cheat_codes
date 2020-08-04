@@ -540,7 +540,6 @@ function grid_actions.init(x,y,z)
               if step_seq[current].held == 0 then
                 pattern_saver[current].source = math.floor(x/5)+1
                 pattern_saver[current].save_slot = 9-y
-                --pattern_saver[current]:start()
                 clock.run(test_save,current)
               else
                 --if there's a pattern saved there...
@@ -553,7 +552,6 @@ function grid_actions.init(x,y,z)
             elseif z == 0 then
               if step_seq[current].held == 0 then
                 pattern_saver[math.floor(x/5)+1].active = false
-                --pattern_saver[math.floor(x/5)+1]:stop()
                 if grid.alt_pp == 0 and saved_already == 1 then
                   if pattern_saver[current].saved[9-y] == 1 then
                     pattern_saver[current].load_slot = 9-y
@@ -711,7 +709,10 @@ function grid_actions.init(x,y,z)
   
   elseif grid_page == 2 then
     if y == 3 or y == 6 then
-      if x >= 4 and x <= 8 then
+      if x <= 3 and z == 1 then
+        local changes = {"double", "halve", "sync"}
+        del.change_duration(y == 6 and 1 or 2, y == 6 and 2 or 1, changes[x])
+      elseif x >= 4 and x <= 8 then
         if z == 1 then
           del.set_value(math.abs(5-y), x-3, "level")
         end
@@ -726,6 +727,57 @@ function grid_actions.init(x,y,z)
       elseif x == 9 then
         del.quick_mute(6-y,"feedback mute")
       end
+    elseif y == 1 or y == 8 then
+      if x >= 10 and x <=14 then
+        if z == 1 then
+          del.set_value(y == 8 and 1 or 2,x-9,grid.alt_delay == true and "send all" or "send")
+        end
+      end
+    end
+
+    if y == 1 or y == 2 or y == 7 or y == 8 then
+      if x <= 8 then
+        if z == 1 then
+          local y_vals = {[8] = 0, [7] = 1, [2] = 0, [1] = 1}
+          local bundle = x+(8*y_vals[y])
+          local target = y<=2 and 2 or 1
+          saved_already = delay_bundle[target][bundle].saved
+          if not saved_already then
+            delay[target].saver_active = true
+            clock.run(del.build_bundle,target,bundle)
+          elseif saved_already then
+            del.restore_bundle(target,bundle)
+            delay[target].selected_bundle = bundle
+          end
+        elseif z == 0 then
+          delay[y<=2 and 2 or 1].saver_active = false
+        end
+      end
+        -- if z == 1 then
+        --   saved_already = pattern_saver[current].saved[9-y]
+        --   if step_seq[current].held == 0 then
+        --     pattern_saver[current].source = math.floor(x/5)+1
+        --     pattern_saver[current].save_slot = 9-y
+        --     clock.run(test_save,current)
+        --   else
+        --     --if there's a pattern saved there...
+        --     if pattern_saver[current].saved[9-y] == 1 then
+        --       if grid.alt_pp == 0 then
+        --         step_seq[current][step_seq[current].held].assigned_to = 9-y
+        --       end
+        --     end
+        --   end
+        -- elseif z == 0 then
+        --   if step_seq[current].held == 0 then
+        --     pattern_saver[math.floor(x/5)+1].active = false
+        --     if grid.alt_pp == 0 and saved_already == 1 then
+        --       if pattern_saver[current].saved[9-y] == 1 then
+        --         pattern_saver[current].load_slot = 9-y
+        --         test_load((9-y)+(8*(current-1)),current)
+        --       end
+        --     end
+        --   end
+        -- end
     end
 
     if y == 6 or y == 5 or y == 4 then
@@ -747,6 +799,10 @@ function grid_actions.init(x,y,z)
         cheat(id, bank[id].id)
         grid_pattern_watch(id)
       end
+    end
+
+    if x == 16 and y == 8 then
+      grid.alt_delay = not grid.alt_delay
     end
 
   end

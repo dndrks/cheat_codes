@@ -17,14 +17,20 @@ function delays.init(target)
     delay[i].mode = "clocked"
     delay[i].feedback_mute = false
     delay[i].level_mute = false
+    delay[i].send_mute = false
     delay[i].held = 0
-    delay[i].saver = false
+    delay[i].saver_active = false
+    delay[i].selected_bundle = 0
   end
 
   delay_bundle = { {},{} }
-  for i = 1,16 do
-    delay_bundle[1][i] = {}
-    delay_bundle[2][i] = {}
+  for i = 1,2 do
+    for j = 1,16 do
+      delay_bundle[i][j] = {}
+      delay_bundle[i][j].saved = false
+      delay_bundle[i][j].load_slot = 0
+      delay_bundle[i][j].save_slot = nil
+    end
   end
 
   delay_grid = {}
@@ -40,6 +46,7 @@ function delays.build_bundle(target,slot)
     local delay_name = target == 1 and "delay L: " or "delay R: "
     b.mode = params:get(delay_name.."mode")
     b.clocked_length = params:get(delay_name.."div/mult")
+    b.free_end_point = params:get(delay_name.."free length")
     b.fade_time = params:get(delay_name.."fade time")
     b.rate = params:get(delay_name.."rate")
     b.feedback = params:get(delay_name.."feedback")
@@ -50,8 +57,10 @@ function delays.build_bundle(target,slot)
     b.filter_bp = params:get(delay_name.."filter bp")
     b.filter_dry = params:get(delay_name.."filter dry")
     b.global_level = params:get(delay_name.."global level")
+    b.saved = true
   end
   delay[target].saver_active = false
+  delay[target].selected_bundle = slot
 end
 
 function delays.restore_bundle(target,slot)
@@ -60,6 +69,7 @@ function delays.restore_bundle(target,slot)
   if b.mode ~= nil then
     params:set(delay_name.."mode", b.mode)
     params:set(delay_name.."div/mult", b.clocked_length)
+    params:set(delay_name.."free length", b.free_end_point)
     params:set(delay_name.."fade time", b.fade_time)
     params:set(delay_name.."rate", b.rate)
     params:set(delay_name.."feedback", b.feedback)
@@ -114,6 +124,15 @@ function delays.quick_mute(target,param)
     else
       softcut.pre_level(target+4,params:get(target == 1 and "delay L: feedback" or "delay R: feedback")/100)
     end
+  elseif param == "send mute" then
+    delay[target].send_mute = not delay[target].send_mute
+    if delay[target].send_mute then
+      if target == 1 then
+      end
+      
+    else
+      
+    end
   end
 end
 
@@ -126,6 +145,44 @@ function delays.set_value(target,index,param)
     local delay_name = {"delay L: feedback", "delay R: feedback"}
     local feedback_levels = {100,75,50,25,0}
     params:set(delay_name[target],feedback_levels[index])
+  elseif param == "send" or param == "send all" then
+    local send_levels = {1,0.75,0.5,0.25,0}
+    local b = bank[delay_grid.bank][bank[delay_grid.bank].id]
+    if target ==  1 then
+      if param == "send" then
+        b.left_delay_level = send_levels[index]
+      else
+        for i = 1,16 do
+          bank[delay_grid.bank][i].left_delay_level = send_levels[index]
+        end
+      end
+      softcut.level_cut_cut(delay_grid.bank+1,5,util.linlin(-1,1,0,1,b.pan)*(b.left_delay_level*b.level))
+    else
+      if param == "send" then
+        b.right_delay_level = send_levels[index]
+      else
+        for i = 1,16 do
+          bank[delay_grid.bank][i].right_delay_level = send_levels[index]
+        end
+      end
+      softcut.level_cut_cut(delay_grid.bank+1,6,util.linlin(-1,1,1,0,b.pan)*(b.right_delay_level*b.level))
+    end
+  end
+end
+
+function delays.change_duration(target,source,param)
+  if param == "sync" then
+    local mode = {"delay L: mode","delay R: mode"}
+    local div_mult = {"delay L: div/mult","delay R: div/mult"}
+    local free_length = {"delay L: free length","delay R: free length"}
+    params:set(mode[target], params:get(mode[source]))
+    params:set(div_mult[target], params:get(div_mult[source]))
+    params:set(free_length[target], params:get(free_length[source]))
+  elseif param == "double" or param == "halve" then
+    if delay[target].mode == "free" then
+      local free_length = {"delay L: free length", "delay R: free length"}
+      params:set(free_length[target], params:get(free_length[target])*(param == "double" and 2 or 0.5))
+    end
   end
 end
 

@@ -644,24 +644,12 @@ function midi_clock_linearize_overdub(bank)
   quantized_grid_pat[bank].sub_step = 1
 end
 
-  --[[
-  local c = self.step + 1
-  local t = self.prev_time
-  self.prev_time = util.time()
-  local a = self.time[c-1]
-  self.time[c-1] = self.prev_time - t
-  table.insert(self.time, c, a - self.time[c-1])
-  table.insert(self.event, c, e)
-  self.step = self.step + 1
-  self.count = self.count + 1
-  self.end_point = self.count
-  --]]
-
 key1_hold = false
 key1_hold_and_modify = false
 
 grid.alt = 0
 grid.alt_pp = 0
+grid.alt_delay = false
 grid.loop_mod = 0
 
 local function crow_flush()
@@ -3191,11 +3179,11 @@ function grid_redraw()
       -- delay page!
       for i = 1,8 do
         --right delay presets
-        g:led(i,1,2)
-        g:led(i,2,2)
+        g:led(i,1,delay[2].selected_bundle == i+8 and 15 or (delay_bundle[2][i+8].saved == true and 7 or 2))
+        g:led(i,2,delay[2].selected_bundle == i and 15 or (delay_bundle[2][i].saved == true and 7 or 2))
         --left delay presets
-        g:led(i,7,2)
-        g:led(i,8,2)
+        g:led(i,7,delay[1].selected_bundle == i+8 and 15 or (delay_bundle[1][i+8].saved == true and 7 or 2))
+        g:led(i,8,delay[1].selected_bundle == i and 15 or (delay_bundle[1][i].saved == true and 7 or 2))
       end
       
       -- delay levels
@@ -3268,10 +3256,29 @@ function grid_redraw()
         g:led(14,i,delay_grid.bank == 7-i and 7 or 2)
       end
 
-      for i = 10,14 do
-        g:led(i,1,2)
-        g:led(i,8,2)
+      local send_to_led = {{},{}}
+      local send_level = {bank[delay_grid.bank][bank[delay_grid.bank].id].left_delay_level, bank[delay_grid.bank][bank[delay_grid.bank].id].right_delay_level}
+      for i = 1,2 do
+        if send_level[i] <= 0.125 then
+          send_to_led[i] = 0
+        elseif send_level[i] <= 0.375 then
+          send_to_led[i] = 1
+        elseif send_level[i] <= 0.625 then
+          send_to_led[i] = 2
+        elseif send_level[i] <= 0.875 then
+          send_to_led[i] = 3
+        elseif send_level[i] <= 1.0 then
+          send_to_led[i] = 4
+        end
       end
+
+      for i = 1,2 do
+        for j = 14,10+(4-send_to_led[i]),-1 do
+          g:led(j,i==1 and 8 or 1,7)
+        end
+      end
+
+      g:led(16,8,(grid.alt_delay == true and 12 or 0)+3)
 
     end
     local page_led = {[0] = 0, [1] = 7, [2] = 15}
@@ -4068,31 +4075,6 @@ function loadstate()
     end
   end
 end
-
--- function test_save(i)
---   if grid.alt_pp == 0 then
---     if grid_pat[i].count > 0 and grid_pat[i].rec == 0 then
---       copy_entire_pattern(i)
---       save_pattern(i,pattern_saver[i].save_slot+8*(i-1))
---       pattern_saver[i].saved[pattern_saver[i].save_slot] = 1
---       pattern_saver[i].load_slot = pattern_saver[i].save_slot
---       g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,15)
---       g:refresh()
---     else
---       print("no pattern data to save")
---       g:led(math.floor((i-1)*5)+1,9-pattern_saver[i].save_slot,0)
---       g:refresh()
---     end
---   else
---     if pattern_saver[i].saved[pattern_saver[i].save_slot] == 1 then
---       delete_pattern(pattern_saver[i].save_slot+8*(i-1))
---       pattern_saver[i].saved[pattern_saver[i].save_slot] = 0
---       pattern_saver[i].load_slot = 0
---     else
---       print("no pattern data to delete")
---     end
---   end
--- end
 
 function test_save(i)
   pattern_saver[i].active = true
