@@ -109,18 +109,26 @@ function delays.loadstate(collection)
   end
 end
 
-function delays.quick_mute(target,param)
+function delays.quick_action(target,param)
   if param == "level mute" then
     delay[target].level_mute = not delay[target].level_mute
     if delay[target].level_mute then
-      softcut.level(target+4,0)
+      if params:get(target == 1 and "delay L: global level" or "delay R: global level") == 0 then
+        softcut.level(target+4,1)
+      else
+        softcut.level(target+4,0)
+      end
     else
       softcut.level(target+4,params:get(target == 1 and "delay L: global level" or "delay R: global level"))
     end
   elseif param == "feedback mute" then
     delay[target].feedback_mute = not delay[target].feedback_mute
     if delay[target].feedback_mute then
-      softcut.pre_level(target+4,0)
+      if params:get(target == 1 and "delay L: feedback" or "delay R: feedback") == 0 then
+        softcut.pre_level(target+4,1)
+      else
+        softcut.pre_level(target+4,0)
+      end
     else
       softcut.pre_level(target+4,params:get(target == 1 and "delay L: feedback" or "delay R: feedback")/100)
     end

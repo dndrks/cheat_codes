@@ -3211,6 +3211,12 @@ function grid_redraw()
           for j = 8,4+(4-level_to_led[i]),-1 do
             g:led(j,i==1 and 6 or 3,7)
           end
+        else
+          if params:get(i == 1 and "delay L: global level" or "delay R: global level") == 0 then
+            for j = 8,4,-1 do
+              g:led(j,i==1 and 6 or 3,7)
+            end
+          end
         end
       end
 
@@ -3238,6 +3244,12 @@ function grid_redraw()
         if not delay[i].feedback_mute then
           for j = 8,4+(4-feed_to_led[i]),-1 do
             g:led(j,i==1 and 5 or 4,7)
+          end
+        else
+          if params:get(i == 1 and "delay L: feedback" or "delay R: feedback") == 0 then
+            for j = 8,4,-1 do
+              g:led(j,i==1 and 5 or 4,7)
+            end
           end
         end
       end
