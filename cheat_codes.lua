@@ -61,6 +61,8 @@ for i = 1,3 do
   clip[i].mode = 1
 end
 
+pre_cc2_sample = { false, false, false }
+
 clip[1].min = 1
 clip[1].max = 1 + clip[1].sample_length
 clip[2].min = 33
@@ -900,21 +902,6 @@ function init()
   end
   
   del.init()
-
-  -- delay_rates = {2,(7/4),(5/3),(3/2),(4/3),(5/4),(1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
-  -- delay = {}
-  -- for i = 1,2 do
-  --   delay[i] = {}
-  --   delay[i].id = 7
-  --   delay[i].arc_rate_tracker = 7
-  --   delay[i].arc_rate = 7
-  --   delay[i].rate = delay_rates[7]
-  --   delay[i].start_point = 41 + (30*(i-1))
-  --   delay[i].end_point = delay[i].start_point + 0.5
-  --   delay[i].free_end_point = delay[i].start_point + 1
-  --   delay[i].divisor = 1
-  --   delay[i].mode = "clocked"
-  -- end
   
   index = 0
   
@@ -1008,11 +995,11 @@ function init()
     quantized_grid_pat[i].current_step = 1
   end
 
-  test_arc_pat = {{},{},{}}
+  arc_pat = {{},{},{}}
   for i = 1,3 do
     for j = 1,4 do
-      test_arc_pat[i][j] = pattern_time.new()
-      test_arc_pat[i][j].process = new_arc_pattern_execute
+      arc_pat[i][j] = pattern_time.new()
+      arc_pat[i][j].process = new_arc_pattern_execute
     end
   end
   
@@ -2146,30 +2133,38 @@ function cheat(b,i)
   if pad.enveloped then
     env_counter[b].butt = pad.level
     softcut.level(b+1,pad.level)
-    if pad.left_delay_thru then
-      softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level))
-    else
-      softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+    if not delay[1].send_mute then
+      if pad.left_delay_thru then
+        softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level))
+      else
+        softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+      end
     end
-    if pad.right_delay_thru then
-      softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level))
-    else
-      softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+    if not delay[2].send_mute then
+      if pad.right_delay_thru then
+        softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level))
+      else
+        softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+      end
     end
     env_counter[b].time = (pad.envelope_time/(pad.level/0.05))
     env_counter[b]:start()
   else
     softcut.level_slew_time(b+1,0.1)
     softcut.level(b+1,pad.level)
-    if pad.left_delay_thru then
-      softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level))
-    else
-      softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+    if not delay[1].send_mute then
+      if pad.left_delay_thru then
+        softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level))
+      else
+        softcut.level_cut_cut(b+1,5,util.linlin(-1,1,0,1,pad.pan)*(pad.left_delay_level*pad.level))
+      end
     end
-    if pad.right_delay_thru then
-      softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level))
-    else
-      softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+    if not delay[2].send_mute then
+      if pad.right_delay_thru then
+        softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level))
+      else
+        softcut.level_cut_cut(b+1,6,util.linlin(-1,1,1,0,pad.pan)*(pad.right_delay_level*pad.level))
+      end
     end
   end
   if pad.end_point - pad.start_point < 0.11 then
@@ -2405,7 +2400,7 @@ end
 function update_delays()
   for i = 1,2 do
     if delay[i].mode == "clocked" then
-      local delay_rate_to_time = clock.get_beat_sec() * delay[i].clocked_length
+      local delay_rate_to_time = clock.get_beat_sec() * delay[i].clocked_length * delay[i].modifier
       local delay_time = delay_rate_to_time + (41 + (30*(i-1)))
       delay[i].end_point = delay_time
       softcut.loop_end(i+4,delay[i].end_point)
@@ -2576,7 +2571,7 @@ function key(n,z)
         end
       elseif time_nav >= 4 then
         if a.device ~= nil then
-          local pattern = test_arc_pat[time_nav-3][page.time_page_sel[time_nav]]
+          local pattern = arc_pat[time_nav-3][page.time_page_sel[time_nav]]
           if page.time_page_sel[page.time_sel] <= 4 then
             if not key1_hold then
               if pattern.rec == 0 and pattern.play == 0 and pattern.count == 0 then
@@ -2595,13 +2590,13 @@ function key(n,z)
           else
             for i = 1,4 do
               if page.time_page_sel[page.time_sel] == 5 then
-                if test_arc_pat[time_nav-3][i].count > 0 then
-                  test_arc_pat[time_nav-3][i]:start()
+                if arc_pat[time_nav-3][i].count > 0 then
+                  arc_pat[time_nav-3][i]:start()
                 end
               elseif page.time_page_sel[page.time_sel] == 6 then
-                test_arc_pat[time_nav-3][i]:stop()
+                arc_pat[time_nav-3][i]:stop()
               elseif page.time_page_sel[page.time_sel] == 7 then
-                test_arc_pat[time_nav-3][i]:clear()
+                arc_pat[time_nav-3][i]:clear()
               end
             end
           end
@@ -2979,11 +2974,11 @@ function grid_redraw()
         else
           a_p = arc_param[i] - 2
         end
-        if test_arc_pat[i][a_p].rec == 1 then
+        if arc_pat[i][a_p].rec == 1 then
           g:led(16,5-i,15)
-        elseif test_arc_pat[i][a_p].play == 1 then
+        elseif arc_pat[i][a_p].play == 1 then
           g:led(16,5-i,9)
-        elseif test_arc_pat[i][a_p].count > 0 then
+        elseif arc_pat[i][a_p].count > 0 then
           g:led(16,5-i,5)
         else
           g:led(16,5-i,0)
@@ -3185,6 +3180,59 @@ function grid_redraw()
         g:led(i,7,delay[1].selected_bundle == i+8 and 15 or (delay_bundle[1][i+8].saved == true and 7 or 2))
         g:led(i,8,delay[1].selected_bundle == i and 15 or (delay_bundle[1][i].saved == true and 7 or 2))
       end
+
+      -- delay time modifiers
+      local time_to_led = {{},{},{},{}}
+      local time = {delay[1].modifier, delay[2].modifier}
+      for i = 1,2 do
+        time_to_led[i] = 0
+        time_to_led[i+2] = 0
+        if time[i] == 0.5 then
+          time_to_led[i+2] = 5
+        elseif time[i] == 0.25 then
+          time_to_led[i+2] = 10
+        elseif time[i] == 0.125 then
+          time_to_led[i+2] = 15
+        elseif time[i] == 2 then
+          time_to_led[i] = 3
+        elseif time[i] == 4 then
+          time_to_led[i] = 6
+        elseif time[i] == 8 then
+          time_to_led[i] = 12
+        elseif time[i] == 16 then
+          time_to_led[i] = 15
+        end
+      end
+      g:led(1,3,time_to_led[2])
+      g:led(2,3,time_to_led[4])
+      g:led(1,6,time_to_led[1])
+      g:led(2,6,time_to_led[3])
+
+      rate_to_led = {{},{},{},{}}
+      local rate = {params:get("delay L: rate"), params:get("delay R: rate")}
+      for i = 1,2 do
+        rate_to_led[i] = 0
+        rate_to_led[i+2] = 0
+        for j = 1,24 do
+          if math.modf(rate[i]) >= j then
+            rate_to_led[i] = math.modf(util.linlin(0,24,3,15,j))
+          end
+        end
+        for j = 0.25,1,0.05 do
+          if rate[i] >= j then
+            rate_to_led[i+2] = math.modf(util.linlin(0.25,1,15,0,j))
+          end
+        end
+        if rate[i] == 1 then
+          rate_to_led[i+2] = 3
+        end
+      end
+      g:led(1,4,rate_to_led[2])
+      g:led(2,4,rate_to_led[4])
+      g:led(3,4,delay[2].wobble_hold == true and 15 or 0)
+      g:led(1,5,rate_to_led[1])
+      g:led(2,5,rate_to_led[3])
+      g:led(3,5,delay[1].wobble_hold == true and 15 or 0)
       
       -- delay levels
       local level_to_led = {{},{}}
@@ -3268,6 +3316,8 @@ function grid_redraw()
         g:led(14,i,delay_grid.bank == 7-i and 7 or 2)
       end
 
+      -- send levels
+
       local send_to_led = {{},{}}
       local send_level = {bank[delay_grid.bank][bank[delay_grid.bank].id].left_delay_level, bank[delay_grid.bank][bank[delay_grid.bank].id].right_delay_level}
       for i = 1,2 do
@@ -3285,8 +3335,16 @@ function grid_redraw()
       end
 
       for i = 1,2 do
-        for j = 14,10+(4-send_to_led[i]),-1 do
-          g:led(j,i==1 and 8 or 1,7)
+        if not delay[i].send_mute then
+          for j = 14,10+(4-send_to_led[i]),-1 do
+            g:led(j,i==1 and 8 or 1,7)
+          end
+        else
+          if (i == 1 and bank[delay_grid.bank][bank[delay_grid.bank].id].left_delay_level or bank[delay_grid.bank][bank[delay_grid.bank].id].right_delay_level) == 0 then
+            for j = 14,10,-1 do
+              g:led(j,i==1 and 8 or 1,7)
+            end
+          end
         end
       end
 
@@ -3325,7 +3383,7 @@ function grid_pattern_execute(entry)
           bank[i][bank[i].id].mode = entry.mode
           bank[i][bank[i].id].clip = entry.clip
         end
-        if arc_param[i] ~= 4 and #test_arc_pat[i][a_p].event == 0 then -- TODO what is this?
+        if arc_param[i] ~= 4 and #arc_pat[i][a_p].event == 0 then -- TODO what is this?
           if params:get("zilchmo_patterning") == 2 then
             bank[i][bank[i].id].start_point = entry.start_point
             bank[i][bank[i].id].end_point = entry.end_point
@@ -3340,7 +3398,7 @@ function grid_pattern_execute(entry)
           end
           fingers[entry.row][entry.bank].con = entry.con
           zilchmo(entry.row,entry.bank)
-          if arc_param[i] ~= 4 and #test_arc_pat[i][a_p].event == 0 then -- TODO what is this?
+          if arc_param[i] ~= 4 and #arc_pat[i][a_p].event == 0 then -- TODO what is this?
             bank[i][bank[i].id].start_point = entry.start_point
             bank[i][bank[i].id].end_point = entry.end_point
             softcut.loop_start(i+1,bank[i][bank[i].id].start_point)
@@ -3369,34 +3427,34 @@ function new_arc_pattern_execute(entry)
   if param ~= 4 then
     local which_pad = entry.pad
 
-    if test_arc_pat[i][j].step ~= 0 then
-      if test_arc_pat[i][j].step > 1 then
+    if arc_pat[i][j].step ~= 0 then
+      if arc_pat[i][j].step > 1 then
         if params:get("arc_patterning") == 2 then
-          if test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad ~= test_arc_pat[i][j].event[test_arc_pat[i][j].step-1].pad then
-            bank[id].id = test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad
+          if arc_pat[i][j].event[arc_pat[i][j].step].pad ~= arc_pat[i][j].event[arc_pat[i][j].step-1].pad then
+            bank[id].id = arc_pat[i][j].event[arc_pat[i][j].step].pad
             selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
             selected[id].y = 8-((bank[id].id-1)%4)
-            cheat(id,test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad)
+            cheat(id,arc_pat[i][j].event[arc_pat[i][j].step].pad)
             slew_filter(id,entry.prev_tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
           end
         end
-      elseif test_arc_pat[i][j].step == 1 then
+      elseif arc_pat[i][j].step == 1 then
         if params:get("arc_patterning") == 2 then
-          bank[id].id = test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad
+          bank[id].id = arc_pat[i][j].event[arc_pat[i][j].step].pad
           selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
           selected[id].y = 8-((bank[id].id-1)%4)
-          cheat(id,test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad)
-          slew_filter(id,test_arc_pat[i][j].event[test_arc_pat[i][j].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+          cheat(id,arc_pat[i][j].event[arc_pat[i][j].step].pad)
+          slew_filter(id,arc_pat[i][j].event[arc_pat[i][j].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
         end
       end 
-    elseif test_arc_pat[i][j].step == 0 then
-      test_arc_pat[i][j].step = 1
+    elseif arc_pat[i][j].step == 0 then
+      arc_pat[i][j].step = 1
       if params:get("arc_patterning") == 2 then
-        bank[id].id = test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad
+        bank[id].id = arc_pat[i][j].event[arc_pat[i][j].step].pad
         selected[id].x = (math.ceil(bank[id].id/4)+(5*(id-1)))
         selected[id].y = 8-((bank[id].id-1)%4)
-        cheat(id,test_arc_pat[i][j].event[test_arc_pat[i][j].step].pad)
-        slew_filter(id,test_arc_pat[i][j].event[test_arc_pat[i][j].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
+        cheat(id,arc_pat[i][j].event[arc_pat[i][j].step].pad)
+        slew_filter(id,arc_pat[i][j].event[arc_pat[i][j].count].tilt,entry.tilt,bank[id][bank[id].id].q,bank[id][bank[id].id].q,15)
       end
     end
     
@@ -3781,12 +3839,59 @@ function savestate()
   --maybe not this? want to clean up
   selected_coll = params:get("collection")
   for i = 1,3 do
-    if arc_pat[i].count > 0 then
+    if arc_pat[i][1].count > 0 then
       save_arc_pattern(i)
     end
     save_midi_pattern(i)
   end
+  for i = 1,2 do
+    del.savestate(i,selected_coll)
+  end
 end
+
+-- function testsavestate()
+--   local dirname = _path.data.."cheat_codes2/"
+--   local collection = params:get("collection")
+--   if os.rename(dirname, dirname) == nil then
+--     os.execute("mkdir " .. dirname)
+--   end
+  
+--   local dirname = _path.data.."cheat_codes2/collection-"..collection.."/"
+--   if os.rename(dirname, dirname) == nil then
+--     os.execute("mkdir " .. dirname)
+--   end
+
+--   local dirname = _path.data.."cheat_codes2/collection-"..collection.."/banks/"
+--   if os.rename(dirname, dirname) == nil then
+--     os.execute("mkdir " .. dirname)
+--   end
+
+--   local dirname = _path.data.."cheat_codes2/collection-"..collection.."/params/"
+--   if os.rename(dirname, dirname) == nil then
+--     os.execute("mkdir " .. dirname)
+--   end
+
+--   for i = 1,3 do
+--     local bank_names = {"a","b","c"}
+--     tab.save(bank[i],_path.data .. "cheat_codes2/collection-"..collection.."/banks/"..bank_names[i]..".data")
+--   end
+
+--   params:write(_path.data.."cheat_codes2/collection-"..collection.."/params/all.pset")
+
+-- end
+
+-- function testloadstate()
+--   local collection = params:get("collection")
+--   local bank_names = {"a","b","c"}
+--   for i = 1,3 do
+--     if tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/banks/"..bank_names[i]..".data") ~= nil then
+--       bank[i] = tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/banks/"..bank_names[i]..".data")
+--     end
+--   end
+--   params:read(_path.data.."cheat_codes2/collection-"..collection.."/params/all.pset")
+-- end
+
+
 
 function loadstate()
   selected_coll = params:get("collection")
@@ -4086,6 +4191,7 @@ function loadstate()
       load_midi_pattern(i)
     end
   end
+  del.loadstate(selected_coll)
 end
 
 function test_save(i)

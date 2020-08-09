@@ -5,6 +5,14 @@ for i = 1,3 do
   held_query[i] = 0
 end
 
+zilch4 = {{},{},{}}
+for i = 1,3 do
+  zilch4[i].held = 0
+  for j = 1,4 do
+    zilch4[i][j] = false
+  end
+end
+
 function grid_actions.init(x,y,z)
   
   if osc_communication == true then osc_communication = false end
@@ -107,8 +115,33 @@ function grid_actions.init(x,y,z)
       end
     end
     
+    -- if x == 5 or x == 10 or x == 15 then
+
+    --   if z == 1 then
+    --     zilch4[x/5][5-y] = true
+    --     zilch4[x/5].held = zilch4[x/5].held + 1
+    --   elseif z == 0 then
+    --     if zilch4[x/5].held > 0 then
+    --       local coll = {}
+    --       for j = 1,4 do
+    --         if zilch4[x/5][j] == true then
+    --           table.insert(coll,j)
+    --         end
+    --       end
+    --       coll = table.concat(coll)
+    --       rightangleslice.actions[4][coll][1](bank[x/5][bank[x/5].id])
+    --       rightangleslice.actions[4][coll][2](bank[x/5][bank[x/5].id],x/5)
+    --       for j = 1,4 do
+    --         zilch4[x/5][j] = false
+    --       end
+    --     end
+    --     zilch4[x/5].held = 0
+    --   end
+    -- end
+
     for k = 4,2,-1 do
       for i = 1,3 do
+
         if z == 1 and x == (k+1)+(5*(i-1)) and y <=k then
           local t1 = util.time()
           fingers[k].dt = t1-fingers[k].t
@@ -263,6 +296,9 @@ function grid_actions.init(x,y,z)
     if x == 16 and y == 8 then
       if grid.alt_pp == 1 then
         grid.alt_pp = 0
+      end
+      if grid.alt_delay then
+        grid.alt_delay = false
       end
       grid.alt = z
       arc.alt = z
@@ -534,6 +570,7 @@ function grid_actions.init(x,y,z)
       for i = 1,11,5 do
         for j = 1,8 do
           if x == i and y == j then
+            local saved_already;
             local current = math.floor(x/5)+1
             if z == 1 then
               saved_already = pattern_saver[current].saved[9-y]
@@ -732,6 +769,8 @@ function grid_actions.init(x,y,z)
         if z == 1 then
           del.set_value(y == 8 and 1 or 2,x-9,grid.alt_delay == true and "send all" or "send")
         end
+      elseif x == 15 then
+        del.quick_action(y == 8 and 1 or 2,"send mute")
       end
     end
 
@@ -741,48 +780,37 @@ function grid_actions.init(x,y,z)
           local y_vals = {[8] = 0, [7] = 1, [2] = 0, [1] = 1}
           local bundle = x+(8*y_vals[y])
           local target = y<=2 and 2 or 1
-          saved_already = delay_bundle[target][bundle].saved
+          local saved_already = delay_bundle[target][bundle].saved
           if not saved_already then
             delay[target].saver_active = true
             clock.run(del.build_bundle,target,bundle)
           elseif saved_already then
-            del.restore_bundle(target,bundle)
-            delay[target].selected_bundle = bundle
+            if grid.alt_delay then
+              del.clear_bundle(target,bundle)
+            else
+              del.restore_bundle(target,bundle)
+              delay[target].selected_bundle = bundle
+            end
           end
         elseif z == 0 then
           delay[y<=2 and 2 or 1].saver_active = false
         end
       end
-        -- if z == 1 then
-        --   saved_already = pattern_saver[current].saved[9-y]
-        --   if step_seq[current].held == 0 then
-        --     pattern_saver[current].source = math.floor(x/5)+1
-        --     pattern_saver[current].save_slot = 9-y
-        --     clock.run(test_save,current)
-        --   else
-        --     --if there's a pattern saved there...
-        --     if pattern_saver[current].saved[9-y] == 1 then
-        --       if grid.alt_pp == 0 then
-        --         step_seq[current][step_seq[current].held].assigned_to = 9-y
-        --       end
-        --     end
-        --   end
-        -- elseif z == 0 then
-        --   if step_seq[current].held == 0 then
-        --     pattern_saver[math.floor(x/5)+1].active = false
-        --     if grid.alt_pp == 0 and saved_already == 1 then
-        --       if pattern_saver[current].saved[9-y] == 1 then
-        --         pattern_saver[current].load_slot = 9-y
-        --         test_load((9-y)+(8*(current-1)),current)
-        --       end
-        --     end
-        --   end
-        -- end
     end
 
     if y == 6 or y == 5 or y == 4 then
       if x == 14 and z == 1 then
         delay_grid.bank = 7-y
+      end
+    end
+
+    if y == 4 or y == 5 then
+      if x == 1 and z == 1 then
+        del.change_rate(6-y, "double")
+      elseif x == 2 and z == 1 then
+        del.change_rate(6-y, "halve")
+      elseif x == 3 then
+        del.change_rate(6-y,z == 1 and "wobble" or "restore")
       end
     end
 

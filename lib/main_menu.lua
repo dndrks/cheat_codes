@@ -368,8 +368,16 @@ function main_menu.init()
       screen.level((page.delay_section == 3 and selected == 1) and 15 or 3)
       screen.move(30,30)
       screen.text(params:string("delay "..delay_name..": mode"))
-      screen.move(85,30)
-      screen.text((delay[page.delay_focus].mode == "clocked" and (params:string("delay "..delay_name..": div/mult")) or (params:get("delay "..delay_name..": free length").." sec")))
+      screen.move(75,30)
+      if delay[page.delay_focus].mode == "clocked" then
+        if delay[page.delay_focus].modifier ~= 1 then
+          screen.text(params:string("delay "..delay_name..": div/mult").."*"..string.format("%.4g",delay[page.delay_focus].modifier))
+        else
+          screen.text(params:string("delay "..delay_name..": div/mult"))
+        end
+      else
+        screen.text(string.format("%.4g",params:get("delay "..delay_name..": free length")).." sec")
+      end
       screen.level((page.delay_section == 3 and selected == 2) and 15 or 3)
       screen.move(30,40)
       screen.text("fade: "..string.format("%.4g",params:get("delay "..delay_name..": fade time")))

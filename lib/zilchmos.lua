@@ -93,15 +93,17 @@ function zilchmos.pan_random( pad )
 end
 
 function zilchmos.start_zero( pad )
-  local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
-  pad.start_point = (duration*(pad.clip-1)) + 1
+  local duration;
+  if pad.mode == 1 and pad.clip == rec.clip then
+    duration = rec.end_point-rec.start_point
+    pad.start_point = (duration*(pad.clip-1)) + 1
+  else
+    duration = pad.mode == 1 and ((8*(pad.clip-1)) + 1) or clip[pad.clip].min
+    pad.start_point = duration
+  end
 end
 
 function zilchmos.start_end_default( pad )
-  --pad.start_point = 1+((8/16) * (pad.pad_id-1)) + (8*(pad.clip-1))
-  --pad.end_point   = 1+((8/16) *  pad.pad_id)    + (8*(pad.clip-1))
-
-  --what if this was just sixteen_slices?
   local duration;
   if pad.mode == 1 and pad.clip == rec.clip then
     --slice within bounds
@@ -109,9 +111,10 @@ function zilchmos.start_end_default( pad )
     pad.start_point = rec.start_point+((duration/16) * (pad.pad_id-1))
     pad.end_point = rec.start_point+((duration/16) * (pad.pad_id))
   else
-    duration = pad.mode == 1 and 8 or math.modf(clip[pad.clip].sample_length)
-    pad.start_point = ((duration/16) * (pad.pad_id-1))+(duration*(pad.clip-1))+1
-    pad.end_point = ((duration/16) * (pad.pad_id))+(duration*(pad.clip-1))+1
+    duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
+    pad.start_point = ((duration/16)*(pad.pad_id-1)) + clip[pad.clip].min
+    pad.end_point = pad.start_point + (duration/16)
+    print(duration, pad.start_point, pad.end_point)
   end
 end
 
@@ -122,8 +125,14 @@ function zilchmos.end_sixteenths( pad )
 end
 
 function zilchmos.end_at_eight( pad )
-  local duration = pad.mode == 1 and 8 or clip[pad.clip].sample_length
-  pad.end_point = (duration*pad.clip)+1
+  local duration;
+  if pad.mode == 1 and pad.clip == rec.clip then
+    duration = rec.end_point-rec.start_point
+    pad.end_point = (duration*pad.clip) + 1
+  else
+    duration = pad.mode == 1 and ((8*pad.clip) + 1) or clip[pad.clip].max
+    pad.end_point = duration
+  end
 end
 
 function zilchmos.start_random( pad )

@@ -171,7 +171,7 @@ function encoder_actions.init(n,d)
           if line == 1 then
             params:delta("delay "..delay_name..": mode",d)
           elseif line == 2 then
-            local divisor = (delay[page.delay_focus].mode == "free" and key1_hold) and 10 or 0.1
+            local divisor = (delay[page.delay_focus].mode == "free" and key1_hold) and 10 or 0.2
             params:delta("delay "..delay_name..": fade time",d/divisor)
           elseif line == 3 then
             params:delta("delay "..delay_name..": feedback",d)
@@ -510,10 +510,25 @@ function encoder_actions.init(n,d)
       if page.delay_section == 3 then
         if focused_menu == 1 then
           if line == 1 then
-            local divisor = (delay[page.delay_focus].mode == "free" and key1_hold) and 100 or 1
+            -- local divisor = (delay[page.delay_focus].mode == "free" and key1_hold) and (1/(33+(1/3)))*100 or 1/(33+(1/3))
+            local divisor;
+            if delay[page.delay_focus].mode == "free" and key1_hold then
+              divisor = 3
+            elseif delay[page.delay_focus].mode == "free" and not key1_hold then
+              divisor = 1/(100/3)
+            else
+              divisor = 1
+            end
             params:delta(delay[page.delay_focus].mode == "clocked" and "delay "..delay_name..": div/mult" or "delay "..delay_name..": free length",d/divisor)
           elseif line == 2 then
-            params:delta("delay "..delay_name..": rate",d)
+            if key1_hold then
+              params:delta("delay "..delay_name..": rate",d)
+            else
+              params:delta("delay "..delay_name..": rate",d*100)
+              if params:get("delay "..delay_name..": rate") < 1.0 then
+                params:set("delay "..delay_name..": rate",1)
+              end
+            end
           end
         elseif focused_menu == 2 then
           if line == 1 then
