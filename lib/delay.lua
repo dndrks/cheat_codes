@@ -1,9 +1,6 @@
 local delays = {}
 
 function delays.init(target)
-  local clocked_add = {4,3,2,3,4}
-  local clocked_num = {7,5,3,4,5}
-  
   clocked_delays =
   { 16, 63/4,   47/4,   31/2,   46/3,   61/4
   , 15, 59/4,   44/3,   29/2,   43/3,   57/4
@@ -22,14 +19,6 @@ function delays.init(target)
   , 2,  7/4,    5/3 ,   3/2,    4/3 ,   5/4
   , 1,  4/5,    3/4 ,   2/3,    3/5,    4/7 , 1/2, 1/4
   }
-  -- clocked_fracs = {(1+1), (1+3/4), (1+2/3), (1+1/2), (1+1/3), (1+1/4), (1/1),(4/5),(3/4),(2/3),(3/5),(4/7),(1/2)}
-  -- flipped = 2,7,5,3,4,5,1
-  -- flopped = 1,4,3,2,3,4,1
-  -- flopped[1]/flipped[1], 
-  clocked_num = {1260,1176,1155,1120,1092,1080,1050,840,735,700,630,560,525,420,336,315,280,252,240,210}
-  clocked_denom = 420
-  clocked_mults = 5
-  clocked_rates = {}
   
   delay = {}
   for i = 1,2 do
@@ -40,6 +29,7 @@ function delays.init(target)
     delay[i].rate = 1
     delay[i].start_point = 41 + (30*(i-1))
     delay[i].end_point = delay[i].start_point + clock.get_beat_sec()
+    delay[i].clocked_index = nil
     delay[i].clocked_length = clocked_delays[7]
     delay[i].free_end_point = delay[i].start_point + 1
     delay[i].modifier = 1
@@ -75,10 +65,11 @@ function delays.build_bundle(target,slot)
     local b = delay_bundle[target][slot]
     local delay_name = target == 1 and "delay L: " or "delay R: "
     b.mode = params:get(delay_name.."mode")
-    b.clocked_length = params:get(delay_name.."div/mult")
+    b.modifier = delay[target].modifier
+    b.clocked_length = delay[target].clocked_length
+    b.clocked_index = params:get(delay_name.."div/mult")
     b.free_end_point = params:get(delay_name.."free length")
     b.fade_time = params:get(delay_name.."fade time")
-    b.modifier = delay[target].modifier
     b.rate = params:get(delay_name.."rate")
     b.feedback = params:get(delay_name.."feedback")
     b.filter_cut = params:get(delay_name.."filter cut")
@@ -99,11 +90,11 @@ function delays.restore_bundle(target,slot)
   local delay_name = target == 1 and "delay L: " or "delay R: "
   if b.mode ~= nil then
     params:set(delay_name.."mode", b.mode)
-    params:set(delay_name.."div/mult", b.clocked_length)
+    delay[target].modifier = b.modifier
+    params:set(delay_name.."div/mult", b.clocked_index)
     params:set(delay_name.."free length", b.free_end_point)
     params:set(delay_name.."fade time", b.fade_time)
     params:set(delay_name.."rate", b.rate)
-    delay[target].modifier = b.modifier
     params:set(delay_name.."feedback", b.feedback)
     params:set(delay_name.."filter cut", b.filter_cut)
     params:set(delay_name.."filter q", b.filter_q)
@@ -112,6 +103,10 @@ function delays.restore_bundle(target,slot)
     params:set(delay_name.."filter bp", b.filter_bp)
     params:set(delay_name.."filter dry", b.filter_dry)
     params:set(delay_name.."global level", b.global_level)
+    local delay_rate_to_time = clock.get_beat_sec() * delay[target].clocked_length * delay[target].modifier
+    local delay_time = delay_rate_to_time + (41 + (30*(target-1)))
+    delay[target].end_point = delay_time
+    softcut.loop_end(target+4,delay[target].end_point)
   else
     print(delay_name.."no data saved in slot "..slot)
   end
@@ -307,6 +302,24 @@ function delays.save_delay(source)
   local name = id.."-"..(source == 1 and "L-" or "R-")..params:get("bpm")..".wav"
   local duration = delay[source].mode == "clocked" and delay[source].end_point-delay[source].start_point or delay[source].free_end_point-delay[source].start_point
   softcut.buffer_write_mono(_path.dust.."audio/cc_saved_delays/"..os.date("%y%m%d").."/"..name,delay[source].start_point,duration,1)
+end
+
+function delays.load_delay(file,destination)
+  if file ~= "-" then
+    local ch, len = audio.file_info(file)
+    local sample_length;
+    if len/48000 < 30 then
+      sample_length = len/48000
+    else
+      sample_length = 30
+    end
+    softcut.buffer_clear_region_channel(1, 41 + (30*(destination-1)), 30)
+    softcut.buffer_read_mono(file, 0, 41 + (30*(destination-1)), 30, 1, 1)
+    local delay_name = {"delay L: ", "delay R: "}
+    params:set(delay_name[destination].."global level",0)
+    params:set(delay_name[destination].."feedback",100)
+  end
+
 end
 
 return delays

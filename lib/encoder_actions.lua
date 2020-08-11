@@ -430,6 +430,8 @@ function encoder_actions.init(n,d)
             end
             local working = util.clamp(which_scale+d,1,#MusicUtil.SCALES)
             current.offset_scale = MusicUtil.SCALES[working].name
+          elseif current.param == "filter tilt" then
+            current.filter_min = util.clamp(current.filter_min+d/100,-1,current.filter_max-0.01)
           end
         end
       end
@@ -708,6 +710,8 @@ function encoder_actions.init(n,d)
             current.rate_slew_max = util.clamp(current.rate_slew_max+d/10,current.rate_slew_min+0.1,20)
           elseif current.param == "semitone offset" then
             -- nothing!
+          elseif current.param == "filter tilt" then
+            current.filter_max = util.clamp(current.filter_max+d/100,current.filter_min+0.01,1)
           end
         end
       end

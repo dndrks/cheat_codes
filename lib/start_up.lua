@@ -306,9 +306,17 @@ function start_up.init()
       end)
   end
   
-  params:add_group("delay params",44)
+  params:add_group("delay params",49)
 
-  params:add{type = "trigger", id = "save_delays", name = "** save delay audio ** [K3]", action = function() for i = 1,2 do del.save_delay(i) end end}
+  params:add_separator("manage delay audio")
+  params:add{type = "trigger", id = "save_left_delay", name = "** save L delay", action = function() del.save_delay(1) end}
+  params:add{type = "trigger", id = "save_right_delay", name = "save R delay **", action = function() del.save_delay(2) end}
+  params:add{type = "trigger", id = "save_both_delays", name = "** save both delays **", action = function() for i = 1,2 do del.save_delay(i) end end}
+  params:add_file("load_left_delay", "--> load L delay")
+  params:set_action("load_left_delay", function(file) del.load_delay(file,1) end)
+  params:add_file("load_right_delay", "load R delay <--")
+  params:set_action("load_right_delay", function(file) del.load_delay(file,2) end)
+  
   
   for i = 4,5 do
     local sides = {"L","R"}
@@ -347,7 +355,7 @@ function start_up.init()
     params:set_action("delay "..sides[i-3]..": div/mult", function(x)
       delay[i-3].clocked_length = clocked_delays[x]
       delay[i-3].id = x
-      local delay_rate_to_time = clock.get_beat_sec() * clocked_delays[x]
+      local delay_rate_to_time = clock.get_beat_sec() * clocked_delays[x] * delay[i-3].modifier
       local delay_time = delay_rate_to_time + (41 + (30*(i-4)))
       delay[i-3].end_point = delay_time
       softcut.loop_end(i+1,delay[i-3].end_point)

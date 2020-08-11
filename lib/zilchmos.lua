@@ -63,8 +63,8 @@ function z.pan_nudge_right( pad ) z.pan_nudge( pad, 0.1 ) end
 function z.rate_double( pad )  z.rate_mul( pad, 2 ) end
 function z.rate_halve( pad )   z.rate_mul( pad, 0.5 ) end
 function z.rate_reverse( pad ) z.rate_mul( pad, -1 ) end
-function z.loop_sync_left( pad )  z.loop_sync( pad, -1 ) end
-function z.loop_sync_right( pad ) z.loop_sync( pad, 1 ) end
+function z.slew_zero( pad )  z.slew( pad, "zero" ) end
+function z.slew_add( pad ) z.slew( pad, "add" ) end
 
 -- core pad modifiers
 
@@ -244,13 +244,21 @@ function zilchmos.loop_halve( pad )
   pad.end_point = pad.end_point - half
 end
 
-function zilchmos.loop_sync( pad, dir )
-  local src_bank_num = (pad.bank_id-1 + dir)%3 + 1
-  local src_bank     = bank[src_bank_num] -- FIXME global access of bank
-  local src_pad      = src_bank[src_bank.id]
-  -- shift start/end by the difference between clips
-  pad.start_point = src_pad.start_point + 8*(pad.clip - src_pad.clip)
-  pad.end_point   = src_pad.end_point   + 8*(pad.clip - src_pad.clip)
+-- function zilchmos.loop_sync( pad, dir )
+--   local src_bank_num = (pad.bank_id-1 + dir)%3 + 1
+--   local src_bank     = bank[src_bank_num] -- FIXME global access of bank
+--   local src_pad      = src_bank[src_bank.id]
+--   -- shift start/end by the difference between clips
+--   pad.start_point = src_pad.start_point + 8*(pad.clip - src_pad.clip)
+--   pad.end_point   = src_pad.end_point   + 8*(pad.clip - src_pad.clip)
+-- end
+
+function zilchmos.slew( pad, dir )
+  if dir == "add" then
+    pad.rate_slew = pad.rate_slew + 0.1
+  else
+    pad.rate_slew = 0
+  end
 end
 
 function zilchmos.rate_mul( pad, mul )
@@ -334,9 +342,13 @@ function zilchmos.sc.rate( pad, i )
   end
 end
 
-function zilchmos.sc.sync( pad, i )
-  zilchmos.sc.start_end( pad, i )
-  softcut.position(i+1, pad.start_point )
+-- function zilchmos.sc.sync( pad, i )
+--   zilchmos.sc.start_end( pad, i )
+--   softcut.position(i+1, pad.start_point )
+-- end
+
+function zilchmos.sc.slew( pad, i )
+  softcut.rate_slew_time(i+1, pad.rate_slew)
 end
 
 function zilchmos.sc.cheat( pad, i, p )
@@ -377,8 +389,8 @@ zilchmos.actions =
   , ['23']   = { z.start_end_random     , z.sc.start_end }
   , ['13']   = { z.loop_double          , z.sc.start_end }
   , ['24']   = { z.loop_halve           , z.sc.start_end }
-  , ['123']  = { z.loop_sync_left       , z.sc.sync }
-  , ['234']  = { z.loop_sync_right      , z.sc.sync }
+  , ['123']  = { z.slew_zero            , z.sc.slew }
+  , ['234']  = { z.slew_add             , z.sc.slew }
   , ['124']  = { z.rate_double          , z.sc.rate }
   , ['134']  = { z.rate_halve           , z.sc.rate }
   , ['14']   = { z.rate_reverse         , z.sc.rate }

@@ -6,8 +6,8 @@ MusicUtil = include "lib/cc_musicutil"
 
 function rnd.init(t)
   rnd[t] = {}
-  rnd.targets = {"pan","rate","rate slew","delay send","loop","semitone offset"}
-  for i = 1,5 do
+  rnd.targets = {"pan","rate","rate slew","delay send","loop","semitone offset","filter tilt"}
+  for i = 1,7 do
       rnd[t][i] = {}
       rnd[t][i].param = rnd.targets[i]
       rnd[t][i].playing = false
@@ -22,6 +22,8 @@ function rnd.init(t)
       rnd[t][i].rate_max = 4
       rnd[t][i].offset_scale = MusicUtil.SCALES[1].name
       rnd[t][i].offset_octave = 2
+      rnd[t][i].filter_min = -1
+      rnd[t][i].filter_max = 1
       rnd[t][i].mode = "non-destructive"
   end
   math.randomseed(os.time())
@@ -62,6 +64,8 @@ function rnd.advance(t,i)
         rnd.loop(t)
     elseif rnd[t][i].param == "semitone offset" then
         rnd.offset(t,i)
+    elseif rnd[t][i].param == "filter tilt" then
+      rnd.filter_tilt(t,i)
     end
   end
 end
@@ -149,6 +153,23 @@ function rnd.offset(t,i)
         bank[t][bank[t].id].offset = math.pow(0.5, -rand_offset / 12)
     end
     softcut.rate(t+1,bank[t][bank[t].id].rate*(math.pow(0.5, -rand_offset / 12)))
+end
+
+function rnd.filter_tilt(t,i)
+  local filt_min = math.modf(rnd[t][i].filter_min*100)
+  local filt_max = math.modf(rnd[t][i].filter_max*100)
+  local rand_tilt = math.random(filt_min,filt_max)/100
+  if rnd[t][i].mode == "destructive" then
+    bank[t][bank[t].id].tilt = rand_tilt
+  end
+  for j = 1,16 do
+    local target = bank[t][j]
+    if slew_counter[t] ~= nil then
+      slew_counter[t].prev_tilt = target.tilt
+    end
+    target.tilt = rand_tilt
+  end
+  slew_filter(t,slew_counter[t].prev_tilt,bank[t][bank[t].id].tilt,bank[t][bank[t].id].q,bank[t][bank[t].id].q,bank[t][bank[t].id].tilt_ease_time)
 end
 
 return rnd

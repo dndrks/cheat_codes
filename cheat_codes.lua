@@ -2109,6 +2109,7 @@ function reset_all_banks( banks )
       pad.crow_pad_execute  = 1
       pad.left_delay_thru   = false
       pad.right_delay_thru  = false
+      pad.rate_slew         = 0
     end
     cross_filter[i]         = {}
     cross_filter[i].fc      = 12000
