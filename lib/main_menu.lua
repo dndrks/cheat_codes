@@ -609,7 +609,7 @@ function main_menu.init()
       , ["2"] = "1/2"
       , ["4"] = "1"
       }
-      local lookup = string.format("%.4g",rytm.clock_div[rytm.track_edit])
+      local lookup = string.format("%.4g",rytm.track[rytm.track_edit].clock_div)
       screen.text(rytm.track_edit.." rate: "..divs_to_frac[lookup])
     end
     local labels = {"(k","n)","o","+/-"}
@@ -723,7 +723,7 @@ function main_menu.init()
     if page.rnd_page_section == 1 then
       local some_playing = {}
       some_playing[page.rnd_page] = false
-      for j = 1,5 do
+      for j = 1,#rnd.targets do
         if rnd[page.rnd_page][j].playing then
           some_playing[page.rnd_page] = true
           break

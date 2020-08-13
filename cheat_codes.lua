@@ -2619,7 +2619,7 @@ function key(n,z)
     elseif menu == 10 then
       if page.rnd_page_section == 1 then
         if key1_hold then
-          for i = 1,5 do
+          for i = 1,#rnd.targets do
             rnd.transport(page.rnd_page,i,"off")
             rnd.restore_default(page.rnd_page,i)
           end
@@ -3801,36 +3801,36 @@ function savestate()
 
   io.write("cc2.0".."\n")
 
-  for i = 1,3 do
-    local save_arp = arp[i].hold == true and "true" or "false"
-    io.write("arp["..i.."] savestate: "..save_arp.."\n")
-    if arp[i].hold == true then
-      print("saving arp "..i)
-      io.write("#arp["..i.."].notes: "..#arp[i].notes.."\n")
-      for j = 1,#arp[i].notes do
-        io.write("arp["..i.."].notes["..j.."]: "..arp[i].notes[j].."\n")
-      end
-      io.write("arp["..i.."].time: "..arp[i].time.."\n")
-      io.write("arp["..i.."].start_point: "..arp[i].start_point.."\n")
-      io.write("arp["..i.."].end_point: "..arp[i].end_point.."\n")
-      io.write("arp["..i.."].retrigger: "..tostring(arp[i].retrigger).."\n")
-      io.write("arp["..i.."].mode: "..arp[i].mode.."\n")
-    end
-  end
+  -- for i = 1,3 do
+  --   local save_arp = arp[i].hold == true and "true" or "false"
+  --   io.write("arp["..i.."] savestate: "..save_arp.."\n")
+  --   if arp[i].hold == true then
+  --     print("saving arp "..i)
+  --     io.write("#arp["..i.."].notes: "..#arp[i].notes.."\n")
+  --     for j = 1,#arp[i].notes do
+  --       io.write("arp["..i.."].notes["..j.."]: "..arp[i].notes[j].."\n")
+  --     end
+  --     io.write("arp["..i.."].time: "..arp[i].time.."\n")
+  --     io.write("arp["..i.."].start_point: "..arp[i].start_point.."\n")
+  --     io.write("arp["..i.."].end_point: "..arp[i].end_point.."\n")
+  --     io.write("arp["..i.."].retrigger: "..tostring(arp[i].retrigger).."\n")
+  --     io.write("arp["..i.."].mode: "..arp[i].mode.."\n")
+  --   end
+  -- end
 
-  io.write("euclid".."\n")
-  for i = 1,3 do
-    io.write("clock div: "..rytm.clock_div[i].."\n")
-    io.write("track.["..i.."].pad_offset: "..rytm.track[i].pad_offset.."\n")
-    io.write("track.["..i.."].mode: "..rytm.track[i].mode.."\n") -- string
-    io.write("track.["..i.."].n: "..rytm.track[i].n.."\n")
-    io.write("track.["..i.."].k: "..rytm.track[i].k.."\n")
-    io.write("track.["..i.."].rotation: "..rytm.track[i].rotation.."\n")
-    io.write("track.["..i.."] s count: "..#rytm.track[i].s.."\n")
-    for j = 1,#rytm.track[i].s do
-      io.write("track.["..i.."].s["..j.."]: "..tostring(rytm.track[i].s[j]).."\n") -- boolean
-    end
-  end
+  -- io.write("euclid".."\n")
+  -- for i = 1,3 do
+  --   io.write("clock div: "..rytm.clock_div[i].."\n")
+  --   io.write("track.["..i.."].pad_offset: "..rytm.track[i].pad_offset.."\n")
+  --   io.write("track.["..i.."].mode: "..rytm.track[i].mode.."\n") -- string
+  --   io.write("track.["..i.."].n: "..rytm.track[i].n.."\n")
+  --   io.write("track.["..i.."].k: "..rytm.track[i].k.."\n")
+  --   io.write("track.["..i.."].rotation: "..rytm.track[i].rotation.."\n")
+  --   io.write("track.["..i.."] s count: "..#rytm.track[i].s.."\n")
+  --   for j = 1,#rytm.track[i].s do
+  --     io.write("track.["..i.."].s["..j.."]: "..tostring(rytm.track[i].s[j]).."\n") -- boolean
+  --   end
+  -- end
 
   io.close(file)
   if selected_coll ~= params:get("collection") then
@@ -3848,51 +3848,80 @@ function savestate()
   for i = 1,2 do
     del.savestate(i,selected_coll)
   end
+  rnd.savestate()
+  arps.savestate()
+  rytm.savestate()
 end
 
--- function testsavestate()
---   local dirname = _path.data.."cheat_codes2/"
---   local collection = params:get("collection")
---   if os.rename(dirname, dirname) == nil then
---     os.execute("mkdir " .. dirname)
---   end
+function testsavestate()
+  local dirname = _path.data.."cheat_codes2/"
+  local collection = params:get("collection")
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
   
---   local dirname = _path.data.."cheat_codes2/collection-"..collection.."/"
---   if os.rename(dirname, dirname) == nil then
---     os.execute("mkdir " .. dirname)
---   end
+  local dirname = _path.data.."cheat_codes2/collection-"..collection.."/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
 
---   local dirname = _path.data.."cheat_codes2/collection-"..collection.."/banks/"
---   if os.rename(dirname, dirname) == nil then
---     os.execute("mkdir " .. dirname)
---   end
+  local dirnames = {"banks/","params/","arc-pat/","grid-pat/","step-seq/","arps/","rytms/","rnd/"}
+  for i = 1,#dirnames do
+    print(_path.data.."cheat_codes2/collection-"..collection.."/"..dirnames[i])
+    local directory = _path.data.."cheat_codes2/collection-"..collection.."/"..dirnames[i]
+    if os.rename(directory, directory) == nil then
+      os.execute("mkdir " .. directory)
+    end
+  end
 
---   local dirname = _path.data.."cheat_codes2/collection-"..collection.."/params/"
---   if os.rename(dirname, dirname) == nil then
---     os.execute("mkdir " .. dirname)
---   end
+  for i = 1,3 do
+    tab.save(bank[i],_path.data .. "cheat_codes2/collection-"..collection.."/banks/"..i..".data")
+    tab.save(arc_pat[i],_path.data .. "cheat_codes2/collection-"..collection.."/arc-pat/"..i..".data")
+    tab.save(step_seq[i],_path.data .. "cheat_codes2/collection-"..collection.."/step-seq/"..i..".data")
+    tab.save(grid_pat[i],_path.data .. "cheat_codes2/collection-"..collection.."/grid-pat/"..i..".data")
+    tab.save(arp[i],_path.data .. "cheat_codes2/collection-"..collection.."/arps/"..i..".data")
+  end
+  tab.save(rytm,_path.data .. "cheat_codes2/collection-"..collection.."/rytms/rytms.data")
+  params:write(_path.data.."cheat_codes2/collection-"..collection.."/params/all.pset")
 
---   for i = 1,3 do
---     local bank_names = {"a","b","c"}
---     tab.save(bank[i],_path.data .. "cheat_codes2/collection-"..collection.."/banks/"..bank_names[i]..".data")
---   end
+  for i = 1,3 do
+    tab.save(rnd[i],_path.data .. "cheat_codes2/collection-"..collection.."/rnd/"..i..".data")
+  end
 
---   params:write(_path.data.."cheat_codes2/collection-"..collection.."/params/all.pset")
+end
 
--- end
+function testloadstate()
+  local collection = params:get("collection")
+  -- for i = 1,3 do
+  --   if tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/banks/"..i..".data") ~= nil then
+  --     bank[i] = tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/banks/"..i..".data")
+  --   end
+  --   -- if tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/arc-pat/"..i..".data") ~= nil then
+  --   --   arc_pat[i] = tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/arc-pat/"..i..".data")
+  --   -- end
+  --   if tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/step-seq/"..i..".data") ~= nil then
+  --     step_seq[i] = tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/step-seq/"..i..".data")
+  --   end
+  --   -- if tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/grid-pat/"..i..".data") ~= nil then
+  --   --   grid_pat[i] = tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/grid-pat/"..i..".data")
+  --   -- end
+  --   if tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/arps/"..i..".data") ~= nil then
+  --     arp[i] = tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/arps/"..i..".data")
+  --   end
+  -- end
+  -- params:read(_path.data.."cheat_codes2/collection-"..collection.."/params/all.pset")
+  -- -- params:bang()
+  for i = 1,3 do
+    rnd[i] = tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/rnd/"..i..".data")
+    for j = 1,#rnd[i] do
+      rnd[i][j].clock = nil
+      if rnd[i][j].playing then
+        rnd[i][j].clock = clock.run(rnd.advance, i, j)
+      end
+    end
+  end
 
--- function testloadstate()
---   local collection = params:get("collection")
---   local bank_names = {"a","b","c"}
---   for i = 1,3 do
---     if tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/banks/"..bank_names[i]..".data") ~= nil then
---       bank[i] = tab.load(_path.data .. "cheat_codes2/collection-"..collection.."/banks/"..bank_names[i]..".data")
---     end
---   end
---   params:read(_path.data.."cheat_codes2/collection-"..collection.."/params/all.pset")
--- end
-
-
+end
 
 function loadstate()
   selected_coll = params:get("collection")
@@ -4107,40 +4136,40 @@ function loadstate()
       for i = 1,3 do
         pre_cc2_sample[i] = false
         params:set("clip "..i.." sample", restored_clip_file[i])
-        local restore_arp = string.match(io.read(), ': (.*)')
-        if restore_arp == "true" then
-          print("restoring arp "..i)
-          local how_many_notes = tonumber(string.match(io.read(), ': (.*)'))
-          for j = 1,how_many_notes do
-            arp[i].notes[j] = tonumber(string.match(io.read(), ': (.*)'))
-          end
-          arp[i].time = tonumber(string.match(io.read(), ': (.*)'))
-          arp[i].start_point = tonumber(string.match(io.read(), ': (.*)'))
-          arp[i].end_point = tonumber(string.match(io.read(), ': (.*)'))
-          local retrigger = string.match(io.read(), ': (.*)')
-          arp[i].retrigger = retrigger == "true" and true or false
-          arp[i].mode = string.match(io.read(), ': (.*)')
-          arp[i].hold = true
-          arp[i].pause = true
-          arp[i].playing = false
-        end
+        -- local restore_arp = string.match(io.read(), ': (.*)')
+        -- if restore_arp == "true" then
+        --   print("restoring arp "..i)
+        --   local how_many_notes = tonumber(string.match(io.read(), ': (.*)'))
+        --   for j = 1,how_many_notes do
+        --     arp[i].notes[j] = tonumber(string.match(io.read(), ': (.*)'))
+        --   end
+        --   arp[i].time = tonumber(string.match(io.read(), ': (.*)'))
+        --   arp[i].start_point = tonumber(string.match(io.read(), ': (.*)'))
+        --   arp[i].end_point = tonumber(string.match(io.read(), ': (.*)'))
+        --   local retrigger = string.match(io.read(), ': (.*)')
+        --   arp[i].retrigger = retrigger == "true" and true or false
+        --   arp[i].mode = string.match(io.read(), ': (.*)')
+        --   arp[i].hold = true
+        --   arp[i].pause = true
+        --   arp[i].playing = false
+        -- end
       end
-      if io.read() == "euclid" then
-        for i = 1,3 do
-          rytm.clock_div[i] = tonumber(string.match(io.read(), ': (.*)'))
-          rytm.track[i].pad_offset = tonumber(string.match(io.read(), ': (.*)'))
-          rytm.track[i].mode = string.match(io.read(), ': (.*)')
-          rytm.track[i].n = tonumber(string.match(io.read(), ': (.*)'))
-          rytm.track[i].k = tonumber(string.match(io.read(), ': (.*)'))
-          rytm.track[i].rotation = tonumber(string.match(io.read(), ': (.*)'))
-          local limit = tonumber(string.match(io.read(), ': (.*)'))
-          for j = 1,limit do
-            local state = string.match(io.read(), ': (.*)')
-            rytm.track[i].s[j] = state == "true" and true or false
-          end
-        end
-        rytm.reset_pattern()
-      end
+      -- if io.read() == "euclid" then
+      --   for i = 1,3 do
+      --     rytm.clock_div[i] = tonumber(string.match(io.read(), ': (.*)'))
+      --     rytm.track[i].pad_offset = tonumber(string.match(io.read(), ': (.*)'))
+      --     rytm.track[i].mode = string.match(io.read(), ': (.*)')
+      --     rytm.track[i].n = tonumber(string.match(io.read(), ': (.*)'))
+      --     rytm.track[i].k = tonumber(string.match(io.read(), ': (.*)'))
+      --     rytm.track[i].rotation = tonumber(string.match(io.read(), ': (.*)'))
+      --     local limit = tonumber(string.match(io.read(), ': (.*)'))
+      --     for j = 1,limit do
+      --       local state = string.match(io.read(), ': (.*)')
+      --       rytm.track[i].s[j] = state == "true" and true or false
+      --     end
+      --   end
+      --   rytm.reset_pattern()
+      -- end
     else
       for i = 1,3 do
         pre_cc2_sample[i] = true
@@ -4149,6 +4178,11 @@ function loadstate()
     end
       
     io.close(file)
+
+    rnd.loadstate()
+    arps.loadstate()
+    rytm.loadstate()
+
     for i = 1,3 do
       if bank[i][bank[i].id].loop == true then
         cheat(i,bank[i].id)

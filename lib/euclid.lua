@@ -35,11 +35,11 @@ function euclid.init()
   euclid.track_edit = 1
   euclid.current_pattern = 0
   euclid.clock_div = {1/2,1/2,1/2}
-  euclid.clock =
-    { clock.run(euclid.step,1)
-    , clock.run(euclid.step,2)
-    , clock.run(euclid.step,3)
-    }
+  -- euclid.clock =
+  --   { clock.run(euclid.step,1)
+  --   , clock.run(euclid.step,2)
+  --   , clock.run(euclid.step,3)
+  --   }
   euclid.screen_focus = "left"
 
   euclid.track = {}
@@ -52,8 +52,10 @@ function euclid.init()
       rotation = 0,
       focus = 1,
       pad_offset = 0,
-      mode = "single"
+      mode = "single",
+      clock_div = 1/2
     }
+    clock.run(euclid.step,i)
   end
 
   euclid.pattern = {}
@@ -81,7 +83,7 @@ end
 
 function euclid.step(target)
   while true do
-    clock.sync(euclid.clock_div[target])
+    clock.sync(euclid.track[target].clock_div)
     euclid.track[target].pos = (euclid.track[target].pos % euclid.track[target].n) + 1
     euclid.trig(target)
     redraw()
@@ -106,6 +108,33 @@ function euclid.rotate_pads(i)
     i = (16 - (1 - i) % (15))+1;
   end
   return 1 + (i - 1) % 16
+end
+
+function euclid.savestate()
+  local collection = params:get("collection")
+  local dirname = _path.data.."cheat_codes/rytm/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+  
+  local dirname = _path.data.."cheat_codes/rytm/collection-"..collection.."/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+
+  for i = 1,3 do
+    tab.save(euclid.track[i],_path.data .. "cheat_codes/rytm/collection-"..collection.."/"..i..".data")
+  end
+end
+
+function euclid.loadstate()
+  local collection = params:get("collection")
+  for i = 1,3 do
+    if tab.load(_path.data .. "cheat_codes/rytm/collection-"..collection.."/"..i..".data") ~= nil then
+      euclid.track[i] = tab.load(_path.data .. "cheat_codes/rytm/collection-"..collection.."/"..i..".data")
+    end
+  end
+  euclid.reset_pattern()
 end
 
 return euclid

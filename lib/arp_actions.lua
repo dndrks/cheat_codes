@@ -13,7 +13,8 @@ function arp_actions.init(target)
     arp[target].mode = "fwd"
     arp[target].start_point = 1
     arp[target].end_point = 1
-    arp[target].clock = clock.run(arp_actions.arpeggiate, target)
+    -- arp[target].clock = clock.run(arp_actions.arpeggiate, target)
+    clock.run(arp_actions.arpeggiate, target)
     arp[target].retrigger = true
 end
 
@@ -136,6 +137,38 @@ function arp_actions.clear(target)
     arp[target].notes = {}
     arp[target].start_point = 1
     arp[target].end_point = 1
+end
+
+function arp_actions.savestate()
+  local collection = params:get("collection")
+  local dirname = _path.data.."cheat_codes/arp/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+  
+  local dirname = _path.data.."cheat_codes/arp/collection-"..collection.."/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+
+  for i = 1,3 do
+    tab.save(arp[i],_path.data .. "cheat_codes/arp/collection-"..collection.."/"..i..".data")
+  end
+end
+
+function arp_actions.loadstate()
+  local collection = params:get("collection")
+  for i = 1,3 do
+    if tab.load(_path.data .. "cheat_codes/arp/collection-"..collection.."/"..i..".data") ~= nil then
+      arp[i] = tab.load(_path.data .. "cheat_codes/arp/collection-"..collection.."/"..i..".data")
+      -- arp[i].clock = nil
+      -- arp[i].pause = true
+      -- arp[i].playing = false
+      -- if arp[i].playing then
+      --   arp[i].clock = clock.run(arp_actions.arpeggiate, i)
+      -- end
+    end
+  end
 end
 
 return arp_actions

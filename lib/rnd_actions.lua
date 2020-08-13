@@ -160,16 +160,52 @@ function rnd.filter_tilt(t,i)
   local filt_max = math.modf(rnd[t][i].filter_max*100)
   local rand_tilt = math.random(filt_min,filt_max)/100
   if rnd[t][i].mode == "destructive" then
-    bank[t][bank[t].id].tilt = rand_tilt
-  end
-  for j = 1,16 do
-    local target = bank[t][j]
     if slew_counter[t] ~= nil then
-      slew_counter[t].prev_tilt = target.tilt
+      slew_counter[t].prev_tilt = bank[t][bank[t].id].tilt
     end
-    target.tilt = rand_tilt
+    bank[t][bank[t].id].tilt = rand_tilt
+  else
+    for j = 1,16 do
+      local target = bank[t][j]
+      if slew_counter[t] ~= nil then
+        slew_counter[t].prev_tilt = target.tilt
+      end
+      target.tilt = rand_tilt
+    end
   end
   slew_filter(t,slew_counter[t].prev_tilt,bank[t][bank[t].id].tilt,bank[t][bank[t].id].q,bank[t][bank[t].id].q,bank[t][bank[t].id].tilt_ease_time)
+end
+
+function rnd.savestate()
+  local collection = params:get("collection")
+  local dirname = _path.data.."cheat_codes/rnd/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+  
+  local dirname = _path.data.."cheat_codes/rnd/collection-"..collection.."/"
+  if os.rename(dirname, dirname) == nil then
+    os.execute("mkdir " .. dirname)
+  end
+
+  for i = 1,3 do
+    tab.save(rnd[i],_path.data .. "cheat_codes/rnd/collection-"..collection.."/"..i..".data")
+  end
+end
+
+function rnd.loadstate()
+  local collection = params:get("collection")
+  for i = 1,3 do
+    if tab.load(_path.data .. "cheat_codes/rnd/collection-"..collection.."/"..i..".data") ~= nil then
+      rnd[i] = tab.load(_path.data .. "cheat_codes/rnd/collection-"..collection.."/"..i..".data")
+      for j = 1,#rnd[i] do
+        rnd[i][j].clock = nil
+        if rnd[i][j].playing then
+          rnd[i][j].clock = clock.run(rnd.advance, i, j)
+        end
+      end
+    end
+  end
 end
 
 return rnd
