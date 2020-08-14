@@ -41,7 +41,9 @@ function grid_actions.init(x,y,z)
             end
             pad_clipboard = nil
             if bank[i].quantize_press == 0 then
-              if (arp[i].hold or (menu == 9)) and grid_pat[i].rec == 0 and not arp[i].pause then
+              -- if (arp[i].hold or (menu == 9)) and grid_pat[i].rec == 0 and not arp[i].pause then
+              if (arp[i].enabled or (menu == 9)) and grid_pat[i].rec == 0 and not arp[i].pause then
+                arp[i].time = bank[i][bank[i].id].arp_time
                 arps.momentary(i, bank[i].id, "on")
               else
                 cheat(i, bank[i].id)
@@ -106,11 +108,8 @@ function grid_actions.init(x,y,z)
         if bank[i][released_pad].play_mode == "momentary" then
           softcut.rate(i+1,0)
         end
-        if menu == 9 then
-          local target = i
-          if not arp[i].hold then
-            arps.momentary(i, released_pad, "off")
-          end
+        if (arp[i].enabled and not arp[i].hold) or (menu == 9 and not arp[i].hold) then
+          arps.momentary(i, released_pad, "off")
         end
       end
     end
@@ -499,9 +498,17 @@ function grid_actions.init(x,y,z)
           --if grid.alt == 0 then
           if not bank[i].alt_lock and grid.alt == 0 then
             if y == 3 then
-              
-              if #arp[i].notes > 0 then
-                if arp[i].hold == true then
+
+              if not arp[i].enabled then
+                arp[i].enabled = true
+              elseif not arp[i].hold then
+                if #arp[i].notes > 0 then
+                  arp[i].hold = true
+                else
+                  arp[i].enabled = false
+                end
+              else
+                if #arp[i].notes > 0 then
                   if arp[i].playing == true then
                     arp[i].pause = true
                     arp[i].playing = false
@@ -512,14 +519,6 @@ function grid_actions.init(x,y,z)
                   end
                 end
               end
-              
-              
-              if arp[i].hold == false then
-                arp[i].hold = true
-              end
-
-              
-
             else
               if key1_hold == true then key1_hold = false end
               if y == 4 then
@@ -542,6 +541,7 @@ function grid_actions.init(x,y,z)
               if not arp[i].hold then
                 arps.clear(i)
               end
+              arp[i].enabled = false
 
 
 
@@ -762,6 +762,9 @@ function grid_actions.init(x,y,z)
           del.set_value(6-y, x-3, "feedback")
         end
       elseif x == 9 then
+        if grid.alt_delay then
+          del.quick_action(6-y, "clear")
+        end
         del.quick_action(6-y,"feedback mute")
       end
     elseif y == 1 or y == 8 then
@@ -814,18 +817,29 @@ function grid_actions.init(x,y,z)
       end
     end
 
-    if z == 1 and x >= 10 and x <= 13 and y >=3 and y <=6 then
+    if x >= 10 and x <= 13 and y >=3 and y <=6 then
       local id = delay_grid.bank
-      local xval = {9,4,-1}
-      selected[id].x = x - xval[id]
-      selected[id].y = y + 2
-      selected[id].id = (math.abs(selected[id].y-9)+((selected[id].x-1)*4))-(20*(id-1))
-      bank[id].id = selected[id].id
-      if (arp[id].hold or (menu == 9)) and grid_pat[id].rec == 0 and not arp[id].pause then
-        arps.momentary(id, bank[id].id, "on")
+      if z == 1 then
+        local xval = {9,4,-1}
+        selected[id].x = x - xval[id]
+        selected[id].y = y + 2
+        selected[id].id = (math.abs(selected[id].y-9)+((selected[id].x-1)*4))-(20*(id-1))
+        bank[id].id = selected[id].id
+        -- if (arp[id].hold or (menu == 9)) and grid_pat[id].rec == 0 and not arp[id].pause then
+        if (arp[id].enabled or (menu == 9)) and grid_pat[id].rec == 0 and not arp[id].pause then
+          arp[id].time = bank[id][bank[id].id].arp_time
+          arps.momentary(id, bank[id].id, "on")
+        else
+          cheat(id, bank[id].id)
+          grid_pattern_watch(id)
+        end
       else
-        cheat(id, bank[id].id)
-        grid_pattern_watch(id)
+        -- if not arp[id].hold then
+        if arp[id].enabled and not arp[id].hold then
+          local xval = {9,4,-1}
+          local released_pad = (math.abs((y + 2)-9)+(((x - xval[id])-1)*4))-(20*(id-1))
+          arps.momentary(id, released_pad, "off")
+        end
       end
     end
 

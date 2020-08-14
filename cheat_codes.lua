@@ -2110,6 +2110,7 @@ function reset_all_banks( banks )
       pad.left_delay_thru   = false
       pad.right_delay_thru  = false
       pad.rate_slew         = 0
+      pad.arp_time          = 1/4
     end
     cross_filter[i]         = {}
     cross_filter[i].fc      = 12000
@@ -3060,13 +3061,16 @@ function grid_redraw()
           elseif bank[i][bank[i].id].loop == true then
             g:led(3+(5*(i-1)),4,4)
           end
-          if arp[i].hold == false then
+          -- if arp[i].hold == false then
+          if not arp[i].enabled then
             g:led(3+(5*(i-1)),3,0)
           else
-            if arp[i].playing == true then
+            if arp[i].playing and arp[i].hold then
               g:led(3+(5*(i-1)),3,10)
-            else
+            elseif arp[i].hold then
               g:led(3+(5*(i-1)),3,6)
+            else
+              g:led(3+(5*(i-1)),3,4)
             end
           end
         else

@@ -177,6 +177,11 @@ function delays.quick_action(target,param)
     else
       softcut.level_cut_cut(delay_grid.bank+1,target+4,target == 1 and bank[delay_grid.bank][bank[delay_grid.bank].id].left_delay_level or bank[delay_grid.bank][bank[delay_grid.bank].id].right_delay_level)
     end
+  elseif param == "clear" then
+    softcut.level(target+4,0)
+    local duration = delay[target].mode == "clocked" and delay[target].end_point-delay[target].start_point or delay[target].free_end_point-delay[target].start_point
+    softcut.buffer_clear_region_channel(1, 41 + (30*(target-1)), duration+ params:get(target == 1 and "delay L: fade time" or "delay R: fade time"))
+    softcut.level(target+4,params:get(target == 1 and "delay L: global level" or "delay R: global level"))
   end
 end
 

@@ -44,16 +44,28 @@ function main_menu.init()
     screen.text("loops")
     local rate_to_frac =
     { ["-4.0"] = "-4"
+    , ["-3.0"] = "-3"
+    , ["-2.5"] = "-2.5"
     , ["-2.0"] = "-2"
+    , ["-1.5"] = "-1.5"
     , ["-1.0"] = "-1"
+    , ["-0.75"] = "-3/4"
     , ["-0.5"] = "-1/2"
+    , ["-0.375"] = "-3/8"
     , ["-0.25"] = "-1/4"
+    , ["-0.188"] = "-3/16"
     , ["-0.125"] = "-1/8"
     , ["0.125"] = "1/8"
+    , ["0.188"] = "3/16"
     , ["0.25"] = "1/4"
+    , ["0.375"] = "3/8"
     , ["0.5"] = "1/2"
+    , ["0.75"] = "3/4"
     , ["1.0"] = "1"
+    , ["1.5"] = "1.5"
     , ["2.0"] = "2"
+    , ["2.5"] = "2.5"
+    , ["3.0"] = "3"
     , ["4.0"] = "4"
     }
     local bank_a = rate_to_frac[tostring(util.round(bank[1][bank[1].id].rate, 0.001))]
@@ -663,6 +675,9 @@ function main_menu.init()
       screen.move(75+(i*15),10)
       screen.text(header[i])
     end
+    screen.level(page.arp_page_sel == page.arp_page_sel and 15 or 3)
+    screen.move(75+(page.arp_page_sel*15),13)
+    screen.text("_")
     if key1_hold then
       screen.move(0,20)
       screen.level(15)

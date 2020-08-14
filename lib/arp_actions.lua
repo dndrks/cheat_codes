@@ -7,6 +7,7 @@ function arp_actions.init(target)
     arp[target].playing = false
     arp[target].pause = false
     arp[target].hold = false
+    arp[target].enabled = false
     arp[target].time = 1/4
     arp[target].step = 1
     arp[target].notes = {}
@@ -46,29 +47,29 @@ function arp_actions.add(target, value)
 end
 
 function arp_actions.arpeggiate(target)
-    while true do
-        clock.sync(arp[target].time)
-        if #arp[target].notes > 0 then
-            if arp[target].pause == false then
-                if arp[target].mode == "fwd" then
-                    arp_actions.forward(target)
-                elseif arp[target].mode == "bkwd" then
-                    arp_actions.backward(target)
-                elseif arp[target].mode == "pend" then
-                    arp_actions.pendulum(target)
-                elseif arp[target].mode == "rnd" then
-                    arp_actions.random(target)
-                end
-                arp[target].playing = true
-                arp_actions.cheat(target,arp[target].step)
-            else
-                arp[target].playing = false
-            end
-        else
-            arp[target].playing = false
+  while true do
+    clock.sync(arp[target].time)
+    if #arp[target].notes > 0 then
+      if arp[target].pause == false then
+        if arp[target].mode == "fwd" then
+          arp_actions.forward(target)
+        elseif arp[target].mode == "bkwd" then
+          arp_actions.backward(target)
+        elseif arp[target].mode == "pend" then
+          arp_actions.pendulum(target)
+        elseif arp[target].mode == "rnd" then
+          arp_actions.random(target)
         end
-        redraw()
+        arp[target].playing = true
+        arp_actions.cheat(target,arp[target].step)
+      else
+        arp[target].playing = false
+      end
+    else
+      arp[target].playing = false
     end
+    redraw()
+  end
 end
 
 function arp_actions.forward(target)
